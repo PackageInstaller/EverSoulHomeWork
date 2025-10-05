@@ -11,6 +11,7 @@ interface HomeworkUploadProps {
 export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: HomeworkUploadProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [formData, setFormData] = useState({
     nickname: '',
     description: '',
@@ -51,6 +52,7 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsUploading(true);
+    setUploadProgress(0);
     setError('');
 
     try {
@@ -64,25 +66,54 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
         data.append('images', image);
       });
 
-      const response = await fetch('/api/homework/upload', {
-        method: 'POST',
-        body: data
+      // 使用XMLHttpRequest以支持进度监听
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+
+        // 监听上传进度
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            const percentComplete = Math.round((e.loaded / e.total) * 100);
+            setUploadProgress(percentComplete);
+          }
+        });
+
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(JSON.parse(xhr.responseText));
+          } else {
+            reject(new Error(`HTTP Error: ${xhr.status}`));
+          }
+        });
+
+        xhr.addEventListener('error', () => {
+          reject(new Error('Network Error'));
+        });
+
+        xhr.addEventListener('abort', () => {
+          reject(new Error('Upload Aborted'));
+        });
+
+        xhr.open('POST', '/api/homework/upload');
+        xhr.send(data);
+      }).then((result: any) => {
+        if (result.success) {
+          setIsOpen(false);
+          setFormData({ nickname: '', description: '', images: [] });
+          setUploadProgress(0);
+          onUploadSuccess();
+          alert('作业上传成功！等待管理员审核后将显示在页面中。');
+        } else {
+          setError(result.error || '上传失败');
+        }
       });
 
-      const result = await response.json();
-
-      if (result.success) {
-        setIsOpen(false);
-        setFormData({ nickname: '', description: '', images: [] });
-        onUploadSuccess();
-        alert('作业上传成功！等待管理员审核后将显示在页面中。');
-      } else {
-        setError(result.error || '上传失败');
-      }
     } catch (error) {
       setError('网络错误，请稍后重试');
+      console.error('上传失败:', error);
     } finally {
       setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -175,12 +206,32 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
                 </div>
               )}
 
+              {/* 上传进度条 */}
+              {isUploading && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm text-white/70">
+                    <span>上传进度</span>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-green-500 to-blue-500 transition-all duration-300 ease-out"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                  <p className="text-white/60 text-xs text-center">
+                    正在上传，请勿关闭页面...
+                  </p>
+                </div>
+              )}
+
               {/* 按钮 */}
               <div className="flex space-x-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  className="flex-1 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-colors border border-white/20"
+                  disabled={isUploading}
+                  className="flex-1 bg-white/10 hover:bg-white/20 disabled:bg-gray-500 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition-colors border border-white/20"
                 >
                   取消
                 </button>

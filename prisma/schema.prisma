@@ -94,20 +94,6 @@ model PointsHistory {
   @@map("points_history")
 }
 
-// 自动结算配置模型
-model AutoSettlementConfig {
-  id              String   @id @default(cuid())
-  enabled         Boolean  @default(false) // 是否启用自动结算
-  dayOfMonth      Int      @default(1) // 每月几号结算（1-28）
-  hour            Int      @default(0) // 结算小时（0-23）
-  minute          Int      @default(0) // 结算分钟（0-59）
-  lastSettledMonth String? // 上次结算的月份
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  @@map("auto_settlement_configs")
-}
-
 // 系统配置模型
 model SystemConfig {
   id              String   @id @default(cuid())
