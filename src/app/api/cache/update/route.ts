@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { DataSource } from '@/types';
+import { saveCacheToFile } from '@/lib/fileCache';
 
 // GitHub 数据获取基础 URL
 const GITHUB_BASE_URL = 'https://edgeone.gh-proxy.com/raw.githubusercontent.com/PackageInstaller/DataTable/master/EverSoul/MasterData/Global';
@@ -53,39 +54,21 @@ async function fetchDataFile(dataSource: DataSource, fileName: string): Promise<
 }
 
 /**
- * 更新指定数据源的所有缓存
+ * 更新指定数据源的所有缓存（使用文件系统）
  */
 async function updateCacheForDataSource(dataSource: DataSource, taskId: string): Promise<number> {
   let updatedFiles = 0;
   
   for (const fileName of DATA_FILES) {
     try {
-      console.log(`📥 正在获取 ${dataSource}/${fileName}...`);
+      console.log(`📥 [FileCache] 正在获取 ${dataSource}/${fileName}...`);
       const data = await fetchDataFile(dataSource, fileName);
       
-      // 保存到数据库
-      await prisma.gameDataCache.upsert({
-        where: {
-          dataSource_fileName: {
-            dataSource,
-            fileName
-          }
-        },
-        update: {
-          data: JSON.stringify(data),
-          fetchedAt: new Date(),
-          isValid: true
-        },
-        create: {
-          dataSource,
-          fileName,
-          data: JSON.stringify(data),
-          isValid: true
-        }
-      });
+      // 保存到文件系统
+      await saveCacheToFile(dataSource, fileName, data);
       
       updatedFiles++;
-      console.log(`✅ ${dataSource}/${fileName} 缓存已更新`);
+      console.log(`✅ [FileCache] ${dataSource}/${fileName} 缓存已更新`);
       
       // 更新任务进度
       await prisma.cacheUpdateTask.update({
@@ -199,21 +182,9 @@ export async function GET() {
       take: 10
     });
     
-    // 获取缓存统计
-    const cacheStats = await prisma.gameDataCache.groupBy({
-      by: ['dataSource'],
-      _count: {
-        id: true
-      },
-      _max: {
-        updatedAt: true
-      }
-    });
-    
     return NextResponse.json({
       success: true,
-      recentTasks,
-      cacheStats
+      recentTasks
     });
     
   } catch (error) {

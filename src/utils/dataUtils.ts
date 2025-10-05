@@ -64,20 +64,23 @@ function debugLog(message: string, data?: any) {
 }
 
 /**
- * 从数据库获取缓存数据
+ * 从文件缓存获取数据
  */
-async function getCachedDataFromDB(dataSource: DataSource, fileName: string): Promise<any | null> {
+async function getCachedDataFromFile(dataSource: DataSource, fileName: string): Promise<any | null> {
   if (!CACHE_CONFIG.enableDatabaseCache || typeof window === 'undefined') return null;
   
+  const startTime = Date.now();
   try {
     const baseUrl = window.location.origin;
     const cacheEntry = await fetch(`${baseUrl}/api/cache/get/${dataSource}/${fileName}`);
+    
     if (!cacheEntry.ok) {
       if (cacheEntry.status === 404) {
-        debugLog(`💭 数据库缓存不存在: ${dataSource}/${fileName} (首次访问)`);
+        console.log(`💭 [FileCache] 缓存不存在: ${dataSource}/${fileName}`);
       }
-      return null; // 缓存不存在或过期
+      return null;
     }
+    
     const data = await cacheEntry.json();
     if (!data || !data.isValid) {
       return null;
@@ -88,16 +91,17 @@ async function getCachedDataFromDB(dataSource: DataSource, fileName: string): Pr
     expiryTime.setHours(expiryTime.getHours() + CACHE_CONFIG.cacheExpiryHours);
     
     if (new Date() > expiryTime) {
-      debugLog(`⏰ 数据库缓存已过期: ${dataSource}/${fileName}`);
+      console.log(`⏰ [FileCache] 缓存已过期: ${dataSource}/${fileName}`);
       return null;
     }
     
+    const elapsed = Date.now() - startTime;
     global.__appCache!.dbHitCount++;
-    debugLog(`🗄️ 数据库缓存命中: ${dataSource}/${fileName} (DB命中: ${global.__appCache!.dbHitCount})`);
+    console.log(`✅ [FileCache] 缓存命中: ${dataSource}/${fileName} (${elapsed}ms, 累计命中: ${global.__appCache!.dbHitCount})`);
     
     return JSON.parse(data.data);
   } catch (error) {
-    debugLog(`数据库缓存读取失败: ${dataSource}/${fileName}`, error);
+    console.error(`❌ [FileCache] 读取失败: ${dataSource}/${fileName}`, error);
     return null;
   }
 }
@@ -125,40 +129,40 @@ async function saveCachedDataToDB(dataSource: DataSource, fileName: string, data
 }
 
 /**
- * 从 GitHub 获取 JSON 数据（使用数据库缓存 + 内存缓存）
+ * 从 GitHub 获取 JSON 数据（使用文件缓存 + 内存缓存）
  */
 export async function fetchJsonFromGitHub(dataSource: DataSource, fileName: string): Promise<any> {
   initializeMemoryCache();
   
   const cacheKey = `${dataSource}-${fileName}`;
   
-  debugLog(`🔍 尝试获取数据: ${fileName} (数据源: ${dataSource})`);
+  console.log(`🔍 [DataUtils] 尝试获取数据: ${fileName} (数据源: ${dataSource})`);
   
   // 1. 检查内存缓存
   if (CACHE_CONFIG.enableMemoryCache && global.__appCache!.dataCache.has(cacheKey)) {
     global.__appCache!.cacheHitCount++;
-    debugLog(`⚡ 内存缓存命中: ${fileName} (内存命中: ${global.__appCache!.cacheHitCount})`);
+    console.log(`⚡ [MemCache] 命中: ${fileName} (累计: ${global.__appCache!.cacheHitCount})`);
     return global.__appCache!.dataCache.get(cacheKey);
   }
   
-  // 2. 检查数据库缓存
-  const dbData = await getCachedDataFromDB(dataSource, fileName);
-  if (dbData) {
-    // 将数据库缓存加载到内存缓存
+  // 2. 检查文件缓存
+  const fileData = await getCachedDataFromFile(dataSource, fileName);
+  if (fileData) {
+    // 将文件缓存加载到内存缓存
     if (CACHE_CONFIG.enableMemoryCache) {
-      global.__appCache!.dataCache.set(cacheKey, dbData);
+      global.__appCache!.dataCache.set(cacheKey, fileData);
       manageMemoryCacheSize();
     }
-    return dbData;
+    return fileData;
   }
   
   // 3. 从GitHub下载数据
   global.__appCache!.cacheMissCount++;
-  debugLog(`❌ 所有缓存未命中，开始下载: ${fileName} (未命中: ${global.__appCache!.cacheMissCount})`);
+  const networkStartTime = Date.now();
+  console.log(`🌐 [Download] 缓存未命中，开始下载: ${fileName} (累计未命中: ${global.__appCache!.cacheMissCount})`);
 
   try {
     const url = `${GITHUB_BASE_URL}/${dataSource}/${fileName}.json`;
-    debugLog(`🌐 发起网络请求: ${url}`);
     
     const response = await fetch(url, {
       headers: {
@@ -167,34 +171,20 @@ export async function fetchJsonFromGitHub(dataSource: DataSource, fileName: stri
       }
     });
     
-    debugLog(`📡 响应状态: ${response.status} ${response.statusText}`);
-    
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText} - URL: ${url}`);
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
     
     const text = await response.text();
-    debugLog(`响应文本长度: ${text.length} 字符`);
+    let data = JSON.parse(text);
     
-    let data;
-    try {
-      data = JSON.parse(text);
-      debugLog(`JSON 解析成功，数据类型: ${Array.isArray(data) ? `数组 (${data.length} 项)` : typeof data}`);
-      
-      // 检查数据结构
-      if (data && typeof data === 'object' && data.json && Array.isArray(data.json)) {
-        debugLog(`检测到包装格式，提取 json 数组: ${data.json.length} 项`);
-        data = data.json; // 提取实际的数据数组
-      } else if (Array.isArray(data)) {
-        debugLog(`直接数组格式: ${data.length} 项`);
-      } else {
-        debugLog(`其他数据格式`, { keys: Object.keys(data || {}), type: typeof data });
-      }
-      
-    } catch (parseError) {
-      debugLog(`JSON 解析失败: ${parseError}`, text.substring(0, 200));
-      throw new Error(`JSON 解析失败: ${parseError}`);
+    // 检查数据结构
+    if (data && typeof data === 'object' && data.json && Array.isArray(data.json)) {
+      data = data.json;
     }
+    
+    const networkElapsed = Date.now() - networkStartTime;
+    console.log(`✅ [Download] 完成: ${fileName} (${networkElapsed}ms, ${(text.length / 1024).toFixed(2)} KB)`);
     
     // 保存到内存缓存
     if (CACHE_CONFIG.enableMemoryCache) {
@@ -202,17 +192,14 @@ export async function fetchJsonFromGitHub(dataSource: DataSource, fileName: stri
       manageMemoryCacheSize();
     }
     
-    // 异步保存到数据库缓存
+    // 异步保存到文件缓存
     saveCachedDataToDB(dataSource, fileName, data).catch(err => {
-      console.error('异步保存数据库缓存失败:', err);
+      console.error('异步保存文件缓存失败:', err);
     });
-    
-    debugLog(`💾 数据已缓存: ${fileName}, 最终数据类型: ${Array.isArray(data) ? `数组 (${data.length} 项)` : typeof data}`);
     
     return data;
   } catch (error) {
-    debugLog(`获取数据失败: ${fileName}`, error);
-    console.error(`Error fetching ${fileName} from ${dataSource}:`, error);
+    console.error(`❌ [Download] 失败: ${fileName}`, error);
     throw error;
   }
 }

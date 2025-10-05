@@ -10,12 +10,19 @@ interface CacheStats {
   };
   database: {
     hits: number;
-    stats: Array<{
-      dataSource: string;
-      _count: { id: number };
-      _max: { updatedAt: string };
-    }> | null;
   };
+  file: {
+    total: number;
+    totalSize: number;
+    totalSizeMB: string;
+    bySource: Array<{
+      dataSource: string;
+      count: number;
+      lastUpdate: string | null;
+      size: number;
+      sizeMB: string;
+    }>;
+  } | null;
 }
 
 interface UpdateTask {
@@ -40,16 +47,31 @@ export default function CacheManagement() {
   // 加载缓存状态
   const loadCacheStats = async () => {
     try {
-      const response = await fetch('/api/cache/update');
-      if (response.ok) {
-        const data = await response.json();
+      // 获取更新任务
+      const tasksResponse = await fetch('/api/cache/update');
+      if (tasksResponse.ok) {
+        const data = await tasksResponse.json();
         setRecentTasks(data.recentTasks || []);
+      }
+      
+      // 获取文件缓存统计
+      const fileStatsResponse = await fetch('/api/cache/stats');
+      let fileStats = null;
+      if (fileStatsResponse.ok) {
+        const data = await fileStatsResponse.json();
+        fileStats = data.stats;
       }
       
       // 从前端获取内存缓存统计
       const { getCacheStats } = await import('@/utils/dataUtils');
-      const stats = await getCacheStats();
-      setCacheStats(stats);
+      const memoryStats = await getCacheStats();
+      
+      // 合并统计信息
+      setCacheStats({
+        memory: memoryStats.memory,
+        database: memoryStats.database,
+        file: fileStats
+      });
     } catch (error) {
       console.error('加载缓存状态失败:', error);
     }
@@ -284,32 +306,47 @@ export default function CacheManagement() {
             </div>
           </div>
 
-          {/* 数据库缓存统计 */}
+          {/* 文件缓存统计 */}
           <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">数据库缓存</h3>
-            {cacheStats.database.stats && cacheStats.database.stats.length > 0 ? (
+            <h3 className="text-lg font-semibold text-white mb-4">文件缓存</h3>
+            {cacheStats.file && cacheStats.file.total > 0 ? (
               <div className="space-y-3">
-                {cacheStats.database.stats.map((stat) => (
-                  <div key={stat.dataSource} className="flex justify-between">
-                    <span className="capitalize text-white/70">{stat.dataSource}:</span>
-                    <div className="text-right">
-                      <div className="font-semibold text-green-400">{stat._count.id} 个文件</div>
-                      <div className="text-sm text-white/50">
-                        {new Date(stat._max.updatedAt).toLocaleString()}
+                <div className="flex justify-between pb-3 border-b border-white/10">
+                  <span className="text-white/70">总文件数:</span>
+                  <span className="font-semibold text-white">{cacheStats.file.total}</span>
+                </div>
+                <div className="flex justify-between pb-3 border-b border-white/10">
+                  <span className="text-white/70">总大小:</span>
+                  <span className="font-semibold text-blue-400">{cacheStats.file.totalSizeMB} MB</span>
+                </div>
+                
+                {cacheStats.file.bySource.map((source) => (
+                  <div key={source.dataSource} className="pt-2">
+                    <div className="flex justify-between">
+                      <span className="capitalize text-white font-medium">{source.dataSource}:</span>
+                      <div className="text-right">
+                        <div className="font-semibold text-green-400">{source.count} 个文件</div>
+                        <div className="text-sm text-blue-300">{source.sizeMB} MB</div>
+                        {source.lastUpdate && (
+                          <div className="text-xs text-white/50">
+                            {new Date(source.lastUpdate).toLocaleString()}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
                 ))}
+                
                 <div className="mt-4 p-3 bg-green-900/20 border border-green-500/20 rounded">
                   <div className="flex items-center">
                     <span className="text-green-400 mr-2">✅</span>
-                    <span className="text-green-300 text-sm font-medium">数据库缓存已激活</span>
+                    <span className="text-green-300 text-sm font-medium">文件缓存已激活</span>
                   </div>
                 </div>
               </div>
             ) : (
               <div>
-                <p className="text-white/50 mb-3">暂无数据库缓存</p>
+                <p className="text-white/50 mb-3">暂无文件缓存</p>
                 <div className="p-3 bg-yellow-900/20 border border-yellow-500/20 rounded">
                   <div className="flex items-center">
                     <span className="text-yellow-400 mr-2">⚠️</span>
