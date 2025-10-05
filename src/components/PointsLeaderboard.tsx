@@ -1,0 +1,298 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import UserHomeworkModal from './UserHomeworkModal';
+
+interface LeaderboardEntry {
+  rank: number;
+  nickname: string;
+  points: number;
+  homeworkCount: number;
+  estimatedReward: number;
+  updatedAt: string;
+}
+
+interface PrizePool {
+  basePool: number;
+  carryOver: number;
+  totalPool: number;
+  isSettled: boolean;
+  distributed: number;
+  settledAt: string | null;
+}
+
+interface LeaderboardData {
+  yearMonth: string;
+  totalPoints: number;
+  prizePool: PrizePool;
+  leaderboard: LeaderboardEntry[];
+}
+
+interface PointsLeaderboardProps {
+  initialYearMonth?: string;
+}
+
+export default function PointsLeaderboard({ initialYearMonth }: PointsLeaderboardProps) {
+  // 如果没有传入初始月份，使用当前年月
+  const getCurrentYearMonth = () => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  };
+
+  const [data, setData] = useState<LeaderboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState(initialYearMonth || getCurrentYearMonth());
+  const [availableMonths, setAvailableMonths] = useState<Array<{
+    yearMonth: string;
+    isSettled: boolean;
+  }>>([]);
+  const [selectedUser, setSelectedUser] = useState<string | null>(null);
+
+  // 获取可用月份列表
+  const fetchMonths = async () => {
+    try {
+      const response = await fetch('/api/points/months');
+      const result = await response.json();
+
+      if (result.success) {
+        setAvailableMonths(result.months);
+        
+        // 如果没有选择月份，使用最新的月份或当前月份
+        if (!selectedMonth) {
+          if (result.months.length > 0) {
+            setSelectedMonth(result.months[0].yearMonth);
+          } else {
+            // 如果没有任何月份记录，使用当前年月
+            const now = new Date();
+            const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            setSelectedMonth(currentYearMonth);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('获取月份列表失败:', error);
+      // 发生错误时，使用当前年月
+      if (!selectedMonth) {
+        const now = new Date();
+        const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        setSelectedMonth(currentYearMonth);
+      }
+    }
+  };
+
+  // 获取排行榜数据
+  const fetchLeaderboard = async () => {
+    try {
+      setLoading(true);
+      const url = selectedMonth 
+        ? `/api/points/leaderboard?yearMonth=${selectedMonth}`
+        : '/api/points/leaderboard';
+      
+      const response = await fetch(url);
+      const result = await response.json();
+
+      if (result.success) {
+        setData(result);
+      } else {
+        setError('获取排行榜失败');
+      }
+    } catch (error) {
+      setError('网络错误');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMonths();
+  }, []);
+
+  useEffect(() => {
+    if (selectedMonth) {
+      fetchLeaderboard();
+    }
+  }, [selectedMonth]);
+
+  if (loading) {
+    return (
+      <div className="stage-card">
+        <h2 className="text-2xl font-bold text-white mb-4">💎 积分排行榜</h2>
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-2 text-white/70">正在加载排行榜...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="stage-card">
+        <h2 className="text-2xl font-bold text-white mb-4">💎 积分排行榜</h2>
+        <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4">
+          <p className="text-red-300">{error || '加载失败'}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const { prizePool, leaderboard, totalPoints } = data;
+
+  return (
+    <div className="space-y-6">
+      {/* 月份选择器 */}
+      {availableMonths.length > 0 && (
+        <div className="stage-card">
+          <label className="block text-white/80 mb-2 text-sm">选择月份：</label>
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            className="w-full md:w-auto px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-blue-500"
+          >
+            {availableMonths.map((month) => (
+              <option key={month.yearMonth} value={month.yearMonth} className="bg-gray-900">
+                {month.yearMonth} {month.isSettled ? '（已结算）' : '（进行中）'}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* 奖池信息 */}
+      <div className="stage-card">
+        <h2 className="text-2xl font-bold text-white mb-4">
+          💰 奖池信息 - {data.yearMonth}
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-xl p-4 border border-yellow-500/30">
+            <div className="text-white/70 text-sm mb-1">基础奖池</div>
+            <div className="text-2xl font-bold text-yellow-300">¥{prizePool.basePool}</div>
+          </div>
+          
+          {prizePool.carryOver > 0 && (
+            <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-xl p-4 border border-green-500/30">
+              <div className="text-white/70 text-sm mb-1">上月累加</div>
+              <div className="text-2xl font-bold text-green-300">¥{prizePool.carryOver}</div>
+            </div>
+          )}
+          
+          <div className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-xl p-4 border border-blue-500/30">
+            <div className="text-white/70 text-sm mb-1">总奖池</div>
+            <div className="text-2xl font-bold text-blue-300">¥{prizePool.totalPool}</div>
+          </div>
+          
+          <div className="bg-gradient-to-br from-pink-500/20 to-red-500/20 rounded-xl p-4 border border-pink-500/30">
+            <div className="text-white/70 text-sm mb-1">当月总积分</div>
+            <div className="text-2xl font-bold text-pink-300">{totalPoints.toFixed(1)}</div>
+          </div>
+        </div>
+
+        {/* 奖励规则说明 */}
+        <div className="mt-4 bg-white/5 rounded-lg p-4 border border-white/10">
+          <h3 className="text-white font-semibold mb-2">📋 奖励规则</h3>
+          <ul className="text-white/70 text-sm space-y-1">
+            <li>• 19图起，每个无作业的图：单队0.1分，双队0.5分，三队1分</li>
+            <li>• 有作业的图按减半积分计算</li>
+            <li>• 总积分不足200：按1:1发放，剩余累加至下月</li>
+            <li>• 总积分高于200但小于总奖池：按1:1发放</li>
+            <li>• 总积分大于总奖池：按比例分配</li>
+          </ul>
+        </div>
+
+        {prizePool.isSettled && (
+          <div className="mt-4 bg-green-500/20 border border-green-500/50 rounded-lg p-3">
+            <p className="text-green-300 text-sm">
+              ✅ 本月已于 {new Date(prizePool.settledAt!).toLocaleString('zh-CN')} 结算完成
+              {prizePool.distributed > 0 && `，发放奖励 ¥${prizePool.distributed}`}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* 排行榜 */}
+      <div className="stage-card">
+        <h2 className="text-2xl font-bold text-white mb-4">🏆 排行榜</h2>
+        
+        {leaderboard.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-white/70">本月暂无积分记录</p>
+            <p className="text-white/50 text-sm mt-2">快来提交作业，成为第一名吧！</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {leaderboard.map((entry) => {
+              // 特殊样式：前三名
+              let rankStyle = 'bg-white/5';
+              let rankIcon = '👤';
+              
+              if (entry.rank === 1) {
+                rankStyle = 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-2 border-yellow-500/50';
+                rankIcon = '🥇';
+              } else if (entry.rank === 2) {
+                rankStyle = 'bg-gradient-to-r from-gray-400/20 to-gray-500/20 border-2 border-gray-400/50';
+                rankIcon = '🥈';
+              } else if (entry.rank === 3) {
+                rankStyle = 'bg-gradient-to-r from-orange-400/20 to-orange-600/20 border-2 border-orange-400/50';
+                rankIcon = '🥉';
+              }
+
+              return (
+                <div
+                  key={entry.nickname}
+                  className={`${rankStyle} backdrop-blur-sm rounded-xl p-4 border border-white/10 transition-transform hover:scale-[1.02]`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="text-2xl font-bold text-white/80 w-12 text-center">
+                        {entry.rank <= 3 ? rankIcon : `#${entry.rank}`}
+                      </div>
+                      <div>
+                        <button
+                          onClick={() => setSelectedUser(entry.nickname)}
+                          className="text-lg font-semibold text-white hover:text-blue-300 transition-colors cursor-pointer text-left group"
+                        >
+                          <span className="group-hover:underline">{entry.nickname}</span>
+                          <span className="ml-2 text-sm text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                            查看作业 →
+                          </span>
+                        </button>
+                        <div className="text-sm text-white/60">
+                          共 {entry.homeworkCount} 个作业
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="text-right">
+                      <div className="text-xl font-bold text-blue-300">
+                        {entry.points.toFixed(1)} 积分
+                      </div>
+                      {!prizePool.isSettled && entry.estimatedReward > 0 && (
+                        <div className="text-sm text-green-300">
+                          预估 ¥{entry.estimatedReward.toFixed(2)}
+                        </div>
+                      )}
+                      {prizePool.isSettled && entry.estimatedReward > 0 && (
+                        <div className="text-sm text-yellow-300 font-semibold">
+                          奖励 ¥{entry.estimatedReward.toFixed(2)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* 玩家作业详情模态框 */}
+      {selectedUser && (
+        <UserHomeworkModal
+          nickname={selectedUser}
+          onClose={() => setSelectedUser(null)}
+        />
+      )}
+    </div>
+  );
+}

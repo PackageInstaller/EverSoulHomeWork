@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { unlink } from 'fs/promises'
 import path from 'path'
+import { calculateHomeworkPoints, addPointsToUser, removePointsFromUser } from '@/lib/pointsCalculator'
 
 export const dynamic = 'force-dynamic'
 
@@ -63,6 +64,18 @@ export async function PATCH(
       )
     }
 
+    // 获取原始作业状态
+    const originalHomework = await prisma.userHomework.findUnique({
+      where: { id }
+    })
+
+    if (!originalHomework) {
+      return NextResponse.json(
+        { error: '作业不存在' },
+        { status: 404 }
+      )
+    }
+
     // 更新作业状态
     const homework = await prisma.userHomework.update({
       where: { id },
@@ -75,6 +88,59 @@ export async function PATCH(
       }
     })
 
+    // 积分变动信息
+    let pointsInfo = null
+
+    // 如果从approved状态变为其他状态，扣除积分
+    if (originalHomework.status === 'approved' && status !== 'approved') {
+      try {
+        await removePointsFromUser(
+          homework.nickname,
+          homework.id
+        )
+
+        pointsInfo = {
+          action: 'removed',
+          message: '积分已扣除'
+        }
+      } catch (error) {
+        console.error('扣除积分失败:', error)
+        // 积分扣除失败不影响作业状态更新
+      }
+    }
+
+    // 如果从非approved状态变为approved，计算并添加积分
+    if (originalHomework.status !== 'approved' && status === 'approved') {
+      try {
+        const { points, isHalved } = await calculateHomeworkPoints(
+          homework.stageId,
+          homework.teamCount,
+          homework.id
+        )
+
+        if (points > 0) {
+          await addPointsToUser(
+            homework.nickname,
+            homework.id,
+            homework.stageId,
+            homework.teamCount,
+            points,
+            isHalved
+          )
+
+          pointsInfo = {
+            action: 'added',
+            points,
+            isHalved,
+            message: `获得${points}积分${isHalved ? '（已有作业，减半）' : ''}`
+          }
+        }
+      } catch (error) {
+        console.error('计算积分失败:', error)
+        // 积分计算失败不影响作业审核
+      }
+    }
+
     return NextResponse.json({
       success: true,
       homework: {
@@ -84,7 +150,8 @@ export async function PATCH(
         description: homework.description,
         status: homework.status,
         updatedAt: homework.updatedAt
-      }
+      },
+      points: pointsInfo
     })
 
   } catch (error) {
@@ -126,6 +193,20 @@ export async function DELETE(
         { error: '作业不存在' },
         { status: 404 }
       )
+    }
+
+    // 如果作业是已通过状态，先扣除积分
+    if (homework.status === 'approved') {
+      try {
+        await removePointsFromUser(
+          homework.nickname,
+          homework.id
+        )
+        console.log(`删除已通过作业，已扣除 ${homework.nickname} 的积分`)
+      } catch (error) {
+        console.error('删除作业时扣除积分失败:', error)
+        // 继续删除流程
+      }
     }
 
     // 删除图片文件

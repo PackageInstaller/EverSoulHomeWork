@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import CacheManagement from '@/components/CacheManagement';
+import PointsSettlement from '@/components/PointsSettlement';
 
 interface HomeworkImage {
   id: string;
@@ -36,7 +37,7 @@ export default function AdminHomeworkPage() {
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'homework' | 'cache'>('homework');
+  const [activeTab, setActiveTab] = useState<'homework' | 'cache' | 'points'>('homework');
   
   const [homeworks, setHomeworks] = useState<Homework[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,6 +50,8 @@ export default function AdminHomeworkPage() {
     totalPages: 0
   });
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedHomeworks, setSelectedHomeworks] = useState<Set<string>>(new Set());
+  const [batchLoading, setBatchLoading] = useState(false);
 
   // 检查认证状态
   const checkAuth = async () => {
@@ -202,6 +205,106 @@ export default function AdminHomeworkPage() {
     }
   };
 
+  // 切换作业选中状态
+  const toggleHomeworkSelection = (homeworkId: string) => {
+    setSelectedHomeworks(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(homeworkId)) {
+        newSet.delete(homeworkId);
+      } else {
+        newSet.add(homeworkId);
+      }
+      return newSet;
+    });
+  };
+
+  // 全选/取消全选
+  const toggleSelectAll = () => {
+    if (selectedHomeworks.size === homeworks.length) {
+      setSelectedHomeworks(new Set());
+    } else {
+      setSelectedHomeworks(new Set(homeworks.map(hw => hw.id)));
+    }
+  };
+
+  // 批量更新状态
+  const handleBatchUpdate = async (newStatus: string) => {
+    if (selectedHomeworks.size === 0) {
+      alert('请先选择要操作的作业');
+      return;
+    }
+
+    if (!confirm(`确定要将选中的 ${selectedHomeworks.size} 个作业状态更新为 ${getStatusText(newStatus)} 吗？`)) {
+      return;
+    }
+
+    setBatchLoading(true);
+    try {
+      const promises = Array.from(selectedHomeworks).map(homeworkId =>
+        fetch(`/api/admin/homework/${homeworkId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        })
+      );
+
+      const results = await Promise.all(promises);
+      const successCount = results.filter(r => r.ok).length;
+
+      if (successCount === selectedHomeworks.size) {
+        alert(`成功更新 ${successCount} 个作业`);
+      } else {
+        alert(`更新完成：成功 ${successCount} 个，失败 ${selectedHomeworks.size - successCount} 个`);
+      }
+
+      // 清空选择并刷新列表
+      setSelectedHomeworks(new Set());
+      fetchHomeworks(selectedStatus, pagination.page);
+    } catch (error) {
+      alert('批量操作失败');
+    } finally {
+      setBatchLoading(false);
+    }
+  };
+
+  // 批量删除
+  const handleBatchDelete = async () => {
+    if (selectedHomeworks.size === 0) {
+      alert('请先选择要删除的作业');
+      return;
+    }
+
+    if (!confirm(`确定要删除选中的 ${selectedHomeworks.size} 个作业吗？此操作不可撤销！`)) {
+      return;
+    }
+
+    setBatchLoading(true);
+    try {
+      const promises = Array.from(selectedHomeworks).map(homeworkId =>
+        fetch(`/api/admin/homework/${homeworkId}`, {
+          method: 'DELETE'
+        })
+      );
+
+      const results = await Promise.all(promises);
+      const successCount = results.filter(r => r.ok).length;
+
+      if (successCount === selectedHomeworks.size) {
+        alert(`成功删除 ${successCount} 个作业`);
+      } else {
+        alert(`删除完成：成功 ${successCount} 个，失败 ${selectedHomeworks.size - successCount} 个`);
+      }
+
+      // 清空选择并刷新列表
+      setSelectedHomeworks(new Set());
+      fetchHomeworks(selectedStatus, pagination.page);
+    } catch (error) {
+      alert('批量删除失败');
+    } finally {
+      setBatchLoading(false);
+    }
+  };
+
   const getStatusText = (status: string) => {
     switch (status) {
       case 'pending': return '待审核';
@@ -264,6 +367,13 @@ export default function AdminHomeworkPage() {
             >
               {loginLoading ? '登录中...' : '登录'}
             </button>
+            
+            <a
+              href="/"
+              className="block w-full text-center bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-4 rounded-lg transition-colors"
+            >
+              ← 返回主页
+            </a>
           </form>
         </div>
       </div>
@@ -277,12 +387,20 @@ export default function AdminHomeworkPage() {
         <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6 mb-6">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-white mb-4">管理后台</h1>
-            <button
-              onClick={handleLogout}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors text-sm"
-            >
-              登出
-            </button>
+            <div className="flex items-center space-x-3">
+              <a
+                href="/"
+                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors text-sm"
+              >
+                ← 返回主页
+              </a>
+              <button
+                onClick={handleLogout}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors text-sm"
+              >
+                登出
+              </button>
+            </div>
           </div>
           
           {/* 标签页切换 */}
@@ -296,6 +414,16 @@ export default function AdminHomeworkPage() {
               }`}
             >
               📝 作业管理
+            </button>
+            <button
+              onClick={() => setActiveTab('points')}
+              className={`px-6 py-3 rounded-lg transition-colors ${
+                activeTab === 'points'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-white/10 text-white/70 hover:bg-white/20'
+              }`}
+            >
+              💎 积分结算
             </button>
             <button
               onClick={() => setActiveTab('cache')}
@@ -337,10 +465,111 @@ export default function AdminHomeworkPage() {
         {/* 根据活跃标签页显示内容 */}
         {activeTab === 'homework' ? (
           <>
-            {/* 统计信息 */}
+            {/* 统计信息和批量操作 */}
             <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-4 mb-6">
-              <div className="text-white text-sm">
-                共 {pagination.total} 个作业 • 第 {pagination.page} 页，共 {pagination.totalPages} 页
+              <div className="flex items-center justify-between">
+                <div className="text-white text-sm">
+                  共 {pagination.total} 个作业 • 第 {pagination.page} 页，共 {pagination.totalPages} 页
+                  {selectedHomeworks.size > 0 && (
+                    <span className="ml-4 text-blue-300">
+                      已选择 {selectedHomeworks.size} 个作业
+                    </span>
+                  )}
+                </div>
+                
+                {/* 批量操作按钮 */}
+                {homeworks.length > 0 && (
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={toggleSelectAll}
+                      className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition-colors"
+                    >
+                      {selectedHomeworks.size === homeworks.length ? '取消全选' : '全选'}
+                    </button>
+                    
+                    {selectedHomeworks.size > 0 && (
+                      <>
+                        {/* 待审核状态：显示通过和拒绝 */}
+                        {selectedStatus === 'pending' && (
+                          <>
+                            <button
+                              onClick={() => handleBatchUpdate('approved')}
+                              disabled={batchLoading}
+                              className="px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-green-800 text-white text-sm rounded-lg transition-colors"
+                            >
+                              批量通过
+                            </button>
+                            <button
+                              onClick={() => handleBatchUpdate('rejected')}
+                              disabled={batchLoading}
+                              className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 disabled:bg-yellow-800 text-white text-sm rounded-lg transition-colors"
+                            >
+                              批量拒绝
+                            </button>
+                          </>
+                        )}
+                        
+                        {/* 已通过状态：显示取消通过 */}
+                        {selectedStatus === 'approved' && (
+                          <button
+                            onClick={() => handleBatchUpdate('pending')}
+                            disabled={batchLoading}
+                            className="px-3 py-1.5 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-800 text-white text-sm rounded-lg transition-colors"
+                          >
+                            批量取消通过
+                          </button>
+                        )}
+                        
+                        {/* 已拒绝状态：显示重新审核 */}
+                        {selectedStatus === 'rejected' && (
+                          <button
+                            onClick={() => handleBatchUpdate('pending')}
+                            disabled={batchLoading}
+                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white text-sm rounded-lg transition-colors"
+                          >
+                            批量重新审核
+                          </button>
+                        )}
+                        
+                        {/* 全部状态：显示完整操作 */}
+                        {selectedStatus === 'all' && (
+                          <>
+                            <button
+                              onClick={() => handleBatchUpdate('approved')}
+                              disabled={batchLoading}
+                              className="px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-green-800 text-white text-sm rounded-lg transition-colors"
+                            >
+                              批量通过
+                            </button>
+                            <button
+                              onClick={() => handleBatchUpdate('rejected')}
+                              disabled={batchLoading}
+                              className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 disabled:bg-yellow-800 text-white text-sm rounded-lg transition-colors"
+                            >
+                              批量拒绝
+                            </button>
+                            <button
+                              onClick={() => handleBatchUpdate('pending')}
+                              disabled={batchLoading}
+                              className="px-3 py-1.5 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-800 text-white text-sm rounded-lg transition-colors"
+                            >
+                              批量改为待审核
+                            </button>
+                          </>
+                        )}
+                        
+                        {/* 所有状态都有删除按钮 */}
+                        <button
+                          onClick={handleBatchDelete}
+                          disabled={batchLoading}
+                          className="px-3 py-1.5 bg-red-600 hover:bg-red-700 disabled:bg-red-800 text-white text-sm rounded-lg transition-colors"
+                        >
+                          批量删除
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -367,6 +596,19 @@ export default function AdminHomeworkPage() {
             ) : (
               homeworks.map(homework => (
                 <div key={homework.id} className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6">
+                  {/* 复选框 */}
+                  <div className="flex items-start justify-between mb-4">
+                    <label className="flex items-center space-x-2 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={selectedHomeworks.has(homework.id)}
+                        onChange={() => toggleHomeworkSelection(homework.id)}
+                        className="w-5 h-5 rounded border-2 border-white/30 bg-white/10 checked:bg-blue-500 checked:border-blue-500 cursor-pointer transition-colors"
+                      />
+                      <span className="text-white/70 group-hover:text-white text-sm">选择此作业</span>
+                    </label>
+                  </div>
+                  
                   {/* 作业基本信息 */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                     <div>
@@ -479,6 +721,9 @@ export default function AdminHomeworkPage() {
           </div>
           )}
         </>
+      ) : activeTab === 'points' ? (
+        /* 积分结算标签页 */
+        <PointsSettlement />
       ) : (
         /* 缓存管理标签页 */
         <CacheManagement />
@@ -486,20 +731,57 @@ export default function AdminHomeworkPage() {
 
         {/* 图片预览模态框 */}
         {selectedImage && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="relative max-w-5xl max-h-[90vh] w-full h-full flex items-center justify-center">
-              <img
-                src={selectedImage}
-                alt="作业预览"
-                className="max-w-full max-h-full object-contain rounded-lg"
-              />
-              <button
-                onClick={() => setSelectedImage(null)}
-                className="absolute top-4 right-4 bg-black/50 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-black/70 transition-colors"
-              >
-                ✕
-              </button>
-            </div>
+          <div 
+            className="fixed z-[999999]"
+            style={{ 
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 999999,
+              pointerEvents: 'auto'
+            }}
+          >
+            {/* 背景遮罩 */}
+            <div 
+              className="fixed inset-0"
+              style={{
+                position: 'fixed',
+                top: '-50vh',
+                left: '-50vw',
+                width: '200vw',
+                height: '200vh',
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                backdropFilter: 'blur(4px)',
+                zIndex: -1
+              }}
+              onClick={() => setSelectedImage(null)}
+            />
+
+            {/* 主图片 - 使用transform居中 */}
+            <img
+              src={selectedImage}
+              alt="作业预览"
+              className="rounded-xl shadow-2xl"
+              style={{ 
+                maxWidth: '90vw', 
+                maxHeight: '90vh',
+                display: 'block'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            />
+
+            {/* 关闭按钮 - 相对于图片定位 */}
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="absolute bg-black/80 hover:bg-black/90 text-white rounded-full w-12 h-12 flex items-center justify-center transition-all duration-200 shadow-lg"
+              style={{
+                top: '-20px',
+                right: '-20px'
+              }}
+            >
+              <span className="text-xl font-bold">✕</span>
+            </button>
           </div>
         )}
       </div>

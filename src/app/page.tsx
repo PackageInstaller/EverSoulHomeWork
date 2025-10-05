@@ -94,6 +94,12 @@ export default function HomePage() {
                 作业分享平台，一起逃课吧
               </div>
               <a 
+                href="/leaderboard"
+                className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm transition-colors font-semibold"
+              >
+                🏆 积分榜
+              </a>
+              <a 
                 href="/admin"
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
               >

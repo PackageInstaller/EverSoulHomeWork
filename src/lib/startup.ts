@@ -1,6 +1,8 @@
 import { performDatabaseHealthCheck } from './migration';
+import { startAutoSettlementService } from './autoSettlementService';
 
 let migrationChecked = false;
+let autoSettlementStarted = false;
 
 /**
  * 应用启动时的数据库健康检查
@@ -32,6 +34,16 @@ export async function performStartupMigrationCheck(): Promise<void> {
   } catch (error) {
     console.error('❌ 启动时数据库检查失败:', error);
     console.warn('⚠️ 应用将继续启动，建议手动检查数据库状态');
+  }
+  
+  // 启动自动结算服务
+  if (!autoSettlementStarted) {
+    try {
+      startAutoSettlementService();
+      autoSettlementStarted = true;
+    } catch (error) {
+      console.error('❌ 自动结算服务启动失败:', error);
+    }
   }
 }
 

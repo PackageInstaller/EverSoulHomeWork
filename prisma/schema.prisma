@@ -85,4 +85,78 @@ model CacheUpdateTask {
   updatedFiles Int     @default(0) // 更新的文件数量
   
   @@map("cache_update_tasks")
+}
+
+// 用户积分记录模型
+model UserPoints {
+  id          String   @id @default(cuid())
+  nickname    String   // 用户昵称
+  yearMonth   String   // 年月标识 (如: "2025-10")
+  points      Float    @default(0) // 累计积分
+  homeworkCount Int    @default(0) // 作业数量
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // 复合唯一索引，确保每个用户每个月只有一条记录
+  @@unique([nickname, yearMonth])
+  @@map("user_points")
+}
+
+// 月度奖池记录模型
+model MonthlyPrizePool {
+  id              String   @id @default(cuid())
+  yearMonth       String   @unique // 年月标识 (如: "2025-10")
+  basePool        Float    @default(200) // 基础奖池
+  carryOver       Float    @default(0) // 上月累加
+  totalPool       Float    // 总奖池 (basePool + carryOver)
+  totalPoints     Float    @default(0) // 当月总积分
+  distributed     Float    @default(0) // 已发放奖励
+  nextCarryOver   Float    @default(0) // 下月累加
+  isSettled       Boolean  @default(false) // 是否已结算
+  settledAt       DateTime? // 结算时间
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("monthly_prize_pools")
+}
+
+// 积分历史记录模型
+model PointsHistory {
+  id          String   @id @default(cuid())
+  nickname    String   // 用户昵称
+  homeworkId  String   // 作业ID
+  stageId     String   // 关卡ID
+  teamCount   Int      // 队伍数量
+  points      Float    // 获得积分
+  isHalved    Boolean  @default(false) // 是否减半
+  yearMonth   String   // 年月标识
+  createdAt   DateTime @default(now())
+  
+  @@map("points_history")
+}
+
+// 自动结算配置模型
+model AutoSettlementConfig {
+  id              String   @id @default(cuid())
+  enabled         Boolean  @default(false) // 是否启用自动结算
+  dayOfMonth      Int      @default(1) // 每月几号结算（1-28）
+  hour            Int      @default(0) // 结算小时（0-23）
+  minute          Int      @default(0) // 结算分钟（0-59）
+  lastSettledMonth String? // 上次结算的月份
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("auto_settlement_configs")
+}
+
+// 系统配置模型
+model SystemConfig {
+  id              String   @id @default(cuid())
+  key             String   @unique // 配置键名
+  value           String   // 配置值
+  description     String?  // 配置说明
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("system_configs")
 } 
