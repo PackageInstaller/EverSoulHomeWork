@@ -39,6 +39,3 @@ prisma/migrations/
 
 # Uploads
 public/uploads/
-
-# File Cache
-data-cache/

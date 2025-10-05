@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import CacheManagement from '@/components/CacheManagement';
 import PointsSettlement from '@/components/PointsSettlement';
 
 interface HomeworkImage {
@@ -37,7 +36,7 @@ export default function AdminHomeworkPage() {
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'homework' | 'cache' | 'points'>('homework');
+  const [activeTab, setActiveTab] = useState<'homework' | 'points'>('homework');
   
   const [homeworks, setHomeworks] = useState<Homework[]>([]);
   const [loading, setLoading] = useState(true);
@@ -425,16 +424,6 @@ export default function AdminHomeworkPage() {
             >
               💎 积分结算
             </button>
-            <button
-              onClick={() => setActiveTab('cache')}
-              className={`px-6 py-3 rounded-lg transition-colors ${
-                activeTab === 'cache'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white/10 text-white/70 hover:bg-white/20'
-              }`}
-            >
-              💾 缓存管理
-            </button>
           </div>
           
           {/* 作业管理的状态筛选 */}
@@ -721,12 +710,9 @@ export default function AdminHomeworkPage() {
           </div>
           )}
         </>
-      ) : activeTab === 'points' ? (
+      ) : (
         /* 积分结算标签页 */
         <PointsSettlement />
-      ) : (
-        /* 缓存管理标签页 */
-        <CacheManagement />
       )}
 
         {/* 图片预览模态框 */}

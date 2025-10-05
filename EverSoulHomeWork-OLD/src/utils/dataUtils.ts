@@ -9,8 +9,8 @@ import {
   StageBattle
 } from '@/types';
 
-// GitHub 数据获取基础 URL（使用CDN加速）
-const GITHUB_BASE_URL = 'https://edgeone.gh-proxy.com/raw.githubusercontent.com/PackageInstaller/DataTable/master/EverSoul/MasterData/Global';
+// GitHub 数据获取基础 URL
+const GITHUB_BASE_URL = 'https://raw.githubusercontent.com/PackageInstaller/DataTable/master/EverSoul/MasterData/Global';
 
 // 缓存数据 - 使用全局对象确保在不同模块间共享
 declare global {
