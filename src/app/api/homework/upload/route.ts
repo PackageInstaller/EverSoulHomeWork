@@ -5,6 +5,8 @@ import path from 'path'
 import { randomUUID } from 'crypto'
 import sharp from 'sharp'
 
+export const dynamic = 'force-dynamic'
+
 // 配置文件大小限制 (3MB)
 const MAX_FILE_SIZE = 3 * 1024 * 1024
 const UPLOAD_DIR = path.join(process.cwd(), 'public/uploads/homework')

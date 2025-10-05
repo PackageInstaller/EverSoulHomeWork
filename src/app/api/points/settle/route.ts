@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { settleMonthlyPrizePool } from '@/lib/pointsCalculator'
 
+export const dynamic = 'force-dynamic'
+
 // 验证管理员会话
 async function validateAdminSession(request: NextRequest) {
   const sessionToken = request.cookies.get('admin_session')?.value;

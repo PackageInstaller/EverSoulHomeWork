@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { settleMonthlyPrizePool, getCurrentYearMonth } from '@/lib/pointsCalculator'
 
+export const dynamic = 'force-dynamic'
+
 // 这个API用于定时任务调用，执行自动结算
 export async function POST(request: NextRequest) {
   try {

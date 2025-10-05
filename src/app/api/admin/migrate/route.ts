@@ -5,6 +5,8 @@ import {
   performDatabaseHealthCheck 
 } from '@/lib/migration';
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/admin/migrate
  * 检查数据库迁移状态
