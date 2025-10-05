@@ -205,10 +205,47 @@ export async function fetchJsonFromGitHub(dataSource: DataSource, fileName: stri
 }
 
 /**
- * 加载完整的游戏数据
+ * 批量从文件缓存获取数据（优化版）
+ */
+async function batchLoadFromCache(dataSource: DataSource, fileNames: string[]): Promise<Map<string, any> | null> {
+  if (typeof window === 'undefined') return null;
+  
+  try {
+    const baseUrl = window.location.origin;
+    const files = fileNames.map(fileName => ({ dataSource, fileName }));
+    
+    const response = await fetch(`${baseUrl}/api/cache/batch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ files })
+    });
+
+    if (!response.ok) return null;
+
+    const result = await response.json();
+    if (!result.success) return null;
+
+    console.log(`📦 [BatchCache] 批量加载: ${result.cached}/${result.requested} 个文件命中`);
+    
+    // 转换为Map
+    const dataMap = new Map<string, any>();
+    Object.entries(result.data).forEach(([key, value]) => {
+      const fileName = key.split('/')[1];
+      dataMap.set(fileName, value);
+    });
+
+    return dataMap;
+  } catch (error) {
+    console.error('批量加载缓存失败:', error);
+    return null;
+  }
+}
+
+/**
+ * 加载完整的游戏数据（优化版：使用批量加载）
  */
 export async function loadGameData(dataSource: DataSource): Promise<GameData> {
-  debugLog(`开始加载完整游戏数据，数据源: ${dataSource}`);
+  console.log(`📚 [LoadData] 开始加载游戏数据，数据源: ${dataSource}`);
   
   const dataFiles = [
     'Stage',
@@ -228,23 +265,35 @@ export async function loadGameData(dataSource: DataSource): Promise<GameData> {
     'HeroLevelGrade'
   ];
 
-  debugLog(`需要加载 ${dataFiles.length} 个数据文件`, dataFiles);
+  const loadStartTime = Date.now();
 
   try {
-    const promises = dataFiles.map(file => fetchJsonFromGitHub(dataSource, file));
-    const results = await Promise.all(promises);
+    // 先尝试批量加载
+    const batchData = await batchLoadFromCache(dataSource, dataFiles);
     
-    debugLog(`所有数据文件加载完成`);
+    let results: any[];
     
-    // 验证每个结果
-    results.forEach((result, index) => {
-      const fileName = dataFiles[index];
-      if (Array.isArray(result)) {
-        debugLog(`${fileName}: 数组，包含 ${result.length} 项`);
-      } else {
-        debugLog(`${fileName}: ${typeof result}`, result);
-      }
-    });
+    if (batchData && batchData.size > 0) {
+      // 从批量结果中提取，缺失的文件单独加载
+      results = await Promise.all(
+        dataFiles.map(async file => {
+          if (batchData.has(file)) {
+            return batchData.get(file);
+          } else {
+            console.log(`⚠️ [LoadData] 批量加载缺失: ${file}，单独加载`);
+            return await fetchJsonFromGitHub(dataSource, file);
+          }
+        })
+      );
+    } else {
+      // 批量加载失败，回退到逐个加载
+      console.log(`⚠️ [LoadData] 批量加载失败，使用逐个加载`);
+      const promises = dataFiles.map(file => fetchJsonFromGitHub(dataSource, file));
+      results = await Promise.all(promises);
+    }
+
+    const loadElapsed = Date.now() - loadStartTime;
+    console.log(`✅ [LoadData] 加载完成 (${loadElapsed}ms)`);
 
     const gameData = {
       stage: { json: results[0] },
@@ -264,10 +313,9 @@ export async function loadGameData(dataSource: DataSource): Promise<GameData> {
       hero_level_grade: { json: results[14] }
     };
     
-    debugLog(`游戏数据结构构建完成`);
     return gameData;
   } catch (error) {
-    debugLog(`加载游戏数据失败`, error);
+    console.error(`❌ [LoadData] 加载失败`, error);
     throw error;
   }
 }

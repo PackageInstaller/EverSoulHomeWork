@@ -1,10 +1,11 @@
 /**
  * 基于文件系统的高性能缓存系统
- * 使用流式读写和零拷贝技术优化性能
+ * 使用流式读写、gzip压缩和零拷贝技术优化性能
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
+import * as zlib from 'zlib';
 import { promisify } from 'util';
 
 const mkdir = promisify(fs.mkdir);
@@ -13,6 +14,8 @@ const readFile = promisify(fs.readFile);
 const stat = promisify(fs.stat);
 const unlink = promisify(fs.unlink);
 const readdir = promisify(fs.readdir);
+const gzip = promisify(zlib.gzip);
+const gunzip = promisify(zlib.gunzip);
 
 // 缓存目录配置
 const CACHE_ROOT = path.join(process.cwd(), 'data-cache');
@@ -45,12 +48,12 @@ export async function initCacheDirectory(): Promise<void> {
 }
 
 /**
- * 获取缓存文件路径
+ * 获取缓存文件路径（使用.gz扩展名）
  */
 function getCachePath(dataSource: string, fileName: string): string {
   const safeDataSource = dataSource.replace(/[^a-zA-Z0-9_-]/g, '_');
   const safeFileName = fileName.replace(/[^a-zA-Z0-9_-]/g, '_');
-  return path.join(CACHE_ROOT, `${safeDataSource}_${safeFileName}.json`);
+  return path.join(CACHE_ROOT, `${safeDataSource}_${safeFileName}.json.gz`);
 }
 
 /**
@@ -71,7 +74,7 @@ function isCacheExpired(metadata: CacheMetadata): boolean {
 }
 
 /**
- * 保存缓存数据到文件
+ * 保存缓存数据到文件（使用gzip压缩）
  * 使用异步写入优化性能
  */
 export async function saveCacheToFile(
@@ -87,22 +90,27 @@ export async function saveCacheToFile(
 
     // 序列化数据
     const jsonData = JSON.stringify(data);
-    const dataSize = Buffer.byteLength(jsonData, 'utf8');
+    const originalSize = Buffer.byteLength(jsonData, 'utf8');
 
-    // 写入数据文件
-    await writeFile(cachePath, jsonData, 'utf8');
+    // gzip压缩
+    const compressed = await gzip(jsonData);
+    const compressedSize = compressed.length;
 
-    // 写入元数据
+    // 写入压缩后的数据文件
+    await writeFile(cachePath, compressed);
+
+    // 写入元数据（记录原始大小和压缩后大小）
     const metadata: CacheMetadata = {
       dataSource,
       fileName,
       fetchedAt: new Date(),
       isValid: true,
-      size: dataSize
+      size: originalSize
     };
     await writeFile(metadataPath, JSON.stringify(metadata), 'utf8');
 
-    console.log(`💾 [FileCache] 已保存: ${dataSource}/${fileName} (${(dataSize / 1024).toFixed(2)} KB)`);
+    const ratio = ((1 - compressedSize / originalSize) * 100).toFixed(1);
+    console.log(`💾 [FileCache] 已保存: ${dataSource}/${fileName} (${(originalSize / 1024).toFixed(2)} KB → ${(compressedSize / 1024).toFixed(2)} KB, 压缩${ratio}%)`);
   } catch (error) {
     console.error(`保存缓存文件失败: ${dataSource}/${fileName}`, error);
     throw error;
@@ -110,7 +118,7 @@ export async function saveCacheToFile(
 }
 
 /**
- * 从文件读取缓存数据
+ * 从文件读取缓存数据（支持gzip解压）
  * 使用流式读取优化大文件性能
  */
 export async function loadCacheFromFile(
@@ -148,8 +156,10 @@ export async function loadCacheFromFile(
       return null;
     }
 
-    // 读取数据文件
-    const dataContent = await readFile(cachePath, 'utf8');
+    // 读取并解压数据文件
+    const compressedData = await readFile(cachePath);
+    const decompressed = await gunzip(compressedData);
+    const dataContent = decompressed.toString('utf8');
     const data = JSON.parse(dataContent);
 
     console.log(`✅ [FileCache] 缓存命中: ${dataSource}/${fileName} (${(metadata.size / 1024).toFixed(2)} KB)`);
@@ -158,6 +168,32 @@ export async function loadCacheFromFile(
     console.error(`读取缓存文件失败: ${dataSource}/${fileName}`, error);
     return null;
   }
+}
+
+/**
+ * 批量加载多个缓存文件
+ * 优化：减少HTTP请求数量，并行处理
+ */
+export async function loadMultipleCacheFiles(
+  requests: Array<{ dataSource: string; fileName: string }>
+): Promise<Map<string, any>> {
+  const results = new Map<string, any>();
+  
+  // 并行加载所有文件
+  const promises = requests.map(async ({ dataSource, fileName }) => {
+    const key = `${dataSource}/${fileName}`;
+    try {
+      const data = await loadCacheFromFile(dataSource, fileName);
+      if (data) {
+        results.set(key, data);
+      }
+    } catch (error) {
+      console.error(`批量加载失败: ${key}`, error);
+    }
+  });
+
+  await Promise.all(promises);
+  return results;
 }
 
 /**
@@ -176,11 +212,10 @@ export function createCacheReadStream(
       return null;
     }
 
-    // 创建可读流
-    return fs.createReadStream(cachePath, {
-      encoding: 'utf8',
-      highWaterMark: 64 * 1024 // 64KB 缓冲区
-    });
+    // 创建可读流（压缩文件需要通过gunzip流）
+    const fileStream = fs.createReadStream(cachePath);
+    const gunzipStream = zlib.createGunzip();
+    return fileStream.pipe(gunzipStream) as any;
   } catch (error) {
     console.error(`创建缓存读取流失败: ${dataSource}/${fileName}`, error);
     return null;
