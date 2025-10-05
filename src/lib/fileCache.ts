@@ -29,7 +29,8 @@ interface CacheMetadata {
   fileName: string;
   fetchedAt: Date;
   isValid: boolean;
-  size: number; // 文件大小（字节）
+  size: number; // 原始文件大小（字节）
+  compressedSize: number; // 压缩后大小（字节）
 }
 
 /**
@@ -105,7 +106,8 @@ export async function saveCacheToFile(
       fileName,
       fetchedAt: new Date(),
       isValid: true,
-      size: originalSize
+      size: originalSize,
+      compressedSize: compressedSize
     };
     await writeFile(metadataPath, JSON.stringify(metadata), 'utf8');
 
@@ -162,7 +164,9 @@ export async function loadCacheFromFile(
     const dataContent = decompressed.toString('utf8');
     const data = JSON.parse(dataContent);
 
-    console.log(`✅ [FileCache] 缓存命中: ${dataSource}/${fileName} (${(metadata.size / 1024).toFixed(2)} KB)`);
+    const compressedSize = metadata.compressedSize || compressedData.length;
+    const ratio = metadata.compressedSize ? ((1 - compressedSize / metadata.size) * 100).toFixed(1) : '?';
+    console.log(`✅ [FileCache] 缓存命中: ${dataSource}/${fileName} (${(compressedSize / 1024).toFixed(2)} KB gzip, 原始${(metadata.size / 1024).toFixed(2)} KB, 压缩${ratio}%)`);
     return data;
   } catch (error) {
     console.error(`读取缓存文件失败: ${dataSource}/${fileName}`, error);
@@ -290,10 +294,12 @@ export async function clearAllCache(): Promise<number> {
 export async function getCacheStats(): Promise<{
   totalFiles: number;
   totalSize: number;
+  totalCompressedSize: number;
   files: Array<{
     dataSource: string;
     fileName: string;
     size: number;
+    compressedSize: number;
     fetchedAt: Date;
     isExpired: boolean;
   }>;
@@ -303,10 +309,12 @@ export async function getCacheStats(): Promise<{
 
     const files = await readdir(CACHE_ROOT);
     let totalSize = 0;
+    let totalCompressedSize = 0;
     const fileStats: Array<{
       dataSource: string;
       fileName: string;
       size: number;
+      compressedSize: number;
       fetchedAt: Date;
       isExpired: boolean;
     }> = [];
@@ -319,12 +327,15 @@ export async function getCacheStats(): Promise<{
         const metadataContent = await readFile(metadataPath, 'utf8');
         const metadata: CacheMetadata = JSON.parse(metadataContent);
 
+        const compressedSize = metadata.compressedSize || metadata.size;
         totalSize += metadata.size;
+        totalCompressedSize += compressedSize;
 
         fileStats.push({
           dataSource: metadata.dataSource,
           fileName: metadata.fileName,
           size: metadata.size,
+          compressedSize: compressedSize,
           fetchedAt: new Date(metadata.fetchedAt),
           isExpired: isCacheExpired(metadata)
         });
@@ -336,6 +347,7 @@ export async function getCacheStats(): Promise<{
     return {
       totalFiles: fileStats.length,
       totalSize,
+      totalCompressedSize,
       files: fileStats
     };
   } catch (error) {
@@ -343,6 +355,7 @@ export async function getCacheStats(): Promise<{
     return {
       totalFiles: 0,
       totalSize: 0,
+      totalCompressedSize: 0,
       files: []
     };
   }
