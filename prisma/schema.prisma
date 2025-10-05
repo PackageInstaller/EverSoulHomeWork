@@ -45,48 +45,6 @@ model HomeworkImage {
   @@map("homework_images")
 }
 
-// 管理员用户模型
-model AdminUser {
-  id        String   @id @default(cuid())
-  username  String   @unique
-  password  String   // 加密后的密码
-  email     String?  @unique
-  role      String   @default("admin") // admin, super_admin
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  @@map("admin_users")
-}
-
-// 游戏数据缓存模型
-model GameDataCache {
-  id          String   @id @default(cuid())
-  dataSource  String   // 'live' 或 'review'
-  fileName    String   // 数据文件名 (如: 'Stage', 'StageBattle' 等)
-  data        String   // JSON 格式的游戏数据
-  version     String   @default("1.0") // 缓存版本
-  fetchedAt   DateTime @default(now()) // 数据获取时间
-  updatedAt   DateTime @updatedAt
-  isValid     Boolean  @default(true) // 数据是否有效
-  
-  // 复合唯一索引，确保每个数据源的每个文件只有一条记录
-  @@unique([dataSource, fileName])
-  @@map("game_data_cache")
-}
-
-// 缓存更新任务模型
-model CacheUpdateTask {
-  id          String   @id @default(cuid())
-  taskType    String   // 'auto' 或 'manual'
-  dataSource  String   // 'live' 或 'review' 或 'all'
-  status      String   @default("pending") // pending, running, completed, failed
-  startedAt   DateTime @default(now())
-  completedAt DateTime?
-  errorMessage String?  // 错误信息
-  updatedFiles Int     @default(0) // 更新的文件数量
-  
-  @@map("cache_update_tasks")
-}
 
 // 用户积分记录模型
 model UserPoints {
