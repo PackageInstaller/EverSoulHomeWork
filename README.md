@@ -11,33 +11,33 @@
 
 ## 🚀 快速开始
 
-### 安装依赖
+### 首次部署
 
 ```bash
+# 1. 安装依赖
 npm install
-```
 
-### 配置数据库
+# 2. 初始化数据库
+node scripts/init-db.js
 
-```bash
-npx prisma generate
-npx prisma db push
-```
+# 3. 构建项目
+npm run build
 
-### 运行开发服务器
-
-```bash
-npm run dev
+# 4. 启动服务
+npm start
 ```
 
 访问 [http://localhost:3000](http://localhost:3000)
 
-### 构建生产版本
+### 开发环境
 
 ```bash
-npm run build
-npm start
+npm install
+node scripts/init-db.js
+npm run dev
 ```
+
+📖 **详细启动指南**：[QUICK_START.md](./QUICK_START.md)
 
 ## 📦 技术栈
 
