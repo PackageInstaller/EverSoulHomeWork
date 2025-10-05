@@ -29,9 +29,10 @@ export async function POST(request: NextRequest) {
       // 设置cookie (有效期1小时)
       response.cookies.set('admin_session', sessionToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 3600 // 1小时
+        secure: false, // 允许HTTP连接（如果使用HTTPS，改为true）
+        sameSite: 'lax', // 使用lax以兼容更多场景
+        maxAge: 3600, // 1小时
+        path: '/' // 明确指定路径
       });
 
       return response;
