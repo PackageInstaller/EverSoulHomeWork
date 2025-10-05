@@ -13,7 +13,6 @@ export async function performStartupMigrationCheck(): Promise<void> {
   const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build';
   
   if (isBuildTime) {
-    console.log('⏭️  构建阶段，跳过数据库检查');
     return;
   }
   
