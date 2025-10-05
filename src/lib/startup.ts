@@ -4,18 +4,16 @@ import { startAutoSettlementService } from './autoSettlementService';
 let migrationChecked = false;
 let autoSettlementStarted = false;
 
-// 检测是否在构建时
-const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || 
-                    process.env.npm_lifecycle_event === 'build';
-
 /**
  * 应用启动时的数据库健康检查
  * 只在第一次调用时执行，避免重复检查
- * 构建时跳过执行
  */
 export async function performStartupMigrationCheck(): Promise<void> {
-  // 构建时跳过
+  // 检测是否在构建阶段（使用更可靠的检测方法）
+  const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build';
+  
   if (isBuildTime) {
+    console.log('⏭️  构建阶段，跳过数据库检查');
     return;
   }
   
