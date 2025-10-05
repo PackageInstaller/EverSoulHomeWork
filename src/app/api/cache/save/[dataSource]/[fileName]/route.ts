@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { saveCacheToFile } from '@/lib/fileCache';
 
 export async function POST(
   request: NextRequest,
@@ -8,28 +8,13 @@ export async function POST(
   try {
     const { dataSource, fileName } = params;
     const body = await request.json();
-    const { data, fetchedAt, isValid } = body;
+    const { data } = body;
 
-    await prisma.gameDataCache.upsert({
-      where: {
-        dataSource_fileName: {
-          dataSource,
-          fileName
-        }
-      },
-      update: {
-        data,
-        fetchedAt: new Date(fetchedAt),
-        isValid
-      },
-      create: {
-        dataSource,
-        fileName,
-        data,
-        fetchedAt: new Date(fetchedAt),
-        isValid
-      }
-    });
+    // 解析数据（如果是字符串）
+    const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
+
+    // 保存到文件系统
+    await saveCacheToFile(dataSource, fileName, parsedData);
 
     return NextResponse.json({
       success: true,

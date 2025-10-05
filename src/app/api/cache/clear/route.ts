@@ -1,22 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { clearAllCache, cleanExpiredCache } from '@/lib/fileCache';
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
-    // 获取删除前的记录数
-    const beforeCount = await prisma.gameDataCache.count();
-    
-    // 实际删除所有缓存记录
-    const result = await prisma.gameDataCache.deleteMany({});
-    
-    // 执行VACUUM操作以收缩数据库文件
-    await prisma.$executeRaw`VACUUM`;
+    // 从请求体获取参数（可选）
+    let onlyExpired = false;
+    try {
+      const body = await request.json();
+      onlyExpired = body.onlyExpired || false;
+    } catch {
+      // 如果没有请求体，默认清除所有
+    }
+
+    let deletedCount = 0;
+    let message = '';
+
+    if (onlyExpired) {
+      // 只清理过期缓存
+      deletedCount = await cleanExpiredCache();
+      message = `已清理 ${deletedCount} 个过期缓存文件`;
+    } else {
+      // 清除所有缓存
+      deletedCount = await clearAllCache();
+      message = `缓存已清除，删除了 ${deletedCount} 个文件`;
+    }
 
     return NextResponse.json({
       success: true,
-      message: `缓存已清除，删除了 ${result.count} 条记录，数据库已优化`,
-      deletedCount: result.count,
-      beforeCount
+      message,
+      deletedCount
     });
 
   } catch (error) {
@@ -26,4 +38,4 @@ export async function POST() {
       { status: 500 }
     );
   }
-} 
+}

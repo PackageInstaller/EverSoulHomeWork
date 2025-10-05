@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { loadCacheFromFile } from '@/lib/fileCache';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(
   request: NextRequest,
@@ -8,16 +10,10 @@ export async function GET(
   try {
     const { dataSource, fileName } = params;
 
-    const cacheEntry = await prisma.gameDataCache.findUnique({
-      where: {
-        dataSource_fileName: {
-          dataSource,
-          fileName
-        }
-      }
-    });
+    // 从文件系统加载缓存
+    const data = await loadCacheFromFile(dataSource, fileName);
 
-    if (!cacheEntry || !cacheEntry.isValid) {
+    if (!data) {
       return NextResponse.json(
         { success: false, message: '缓存不存在或已失效' },
         { status: 404 }
@@ -26,9 +22,9 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      data: cacheEntry.data,
-      fetchedAt: cacheEntry.fetchedAt,
-      isValid: cacheEntry.isValid
+      data: JSON.stringify(data),
+      fetchedAt: new Date(),
+      isValid: true
     });
 
   } catch (error) {
