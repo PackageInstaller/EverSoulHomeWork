@@ -31,12 +31,22 @@ interface PaginationInfo {
   totalPages: number;
 }
 
+// 总积分排行项接口
+interface TotalPointsRankItem {
+  id: number; // 用户ID
+  rank: number; // 排名
+  nickname: string; // 用户名
+  totalPoints: number; // 总积分
+  homeworkCount: number; // 作业总数
+  lastUpdated: string; // 最后更新时间
+}
+
 export default function AdminHomeworkPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'homework' | 'points'>('homework');
+  const [activeTab, setActiveTab] = useState<'homework' | 'points' | 'totalRank'>('homework');
   
   const [homeworks, setHomeworks] = useState<Homework[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,6 +61,47 @@ export default function AdminHomeworkPage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedHomeworks, setSelectedHomeworks] = useState<Set<string>>(new Set());
   const [batchLoading, setBatchLoading] = useState(false);
+
+  // 总积分排行数据和分页状态
+  const [searchTerm, setSearchTerm] = useState(''); // 添加搜索关键词状态
+  const totalPointsRankData: TotalPointsRankItem[] = [
+    { id:1 ,rank: 1, nickname: "张三", totalPoints: 2850.5, homeworkCount: 42, lastUpdated: "2024-10-05 18:30:22" },
+    { id:2 ,rank: 2, nickname: "李四", totalPoints: 2530.2, homeworkCount: 38, lastUpdated: "2024-10-05 16:15:47" },
+    { id:3 ,rank: 3, nickname: "王五", totalPoints: 2180.8, homeworkCount: 35, lastUpdated: "2024-10-05 14:20:19" },
+    { id:4 ,rank: 4, nickname: "赵六", totalPoints: 1980.5, homeworkCount: 30, lastUpdated: "2024-10-05 12:10:05" },
+    { id: 5,rank: 5, nickname: "孙七", totalPoints: 1780.5, homeworkCount: 25, lastUpdated: "2024-10-05 10:30:00" },
+    { id: 6,rank: 6, nickname: "周八", totalPoints: 1580.5, homeworkCount: 20, lastUpdated: "2024-10-05 09:00:00" },
+    { id: 7,rank: 7, nickname: "吴九", totalPoints: 1380.5, homeworkCount: 15, lastUpdated: "2024-10-05 07:45:30" },
+    { id: 8,rank: 8, nickname: "郑十", totalPoints: 1280.5, homeworkCount: 10, lastUpdated: "2024-10-05 05:30:00" },
+    { id: 9,rank: 9, nickname: "小十1", totalPoints: 1180.5, homeworkCount: 5, lastUpdated: "2024-10-05 03:30:00" },
+    { id: 10,rank: 10, nickname: "小十2", totalPoints: 1180.5, homeworkCount: 5, lastUpdated: "2024-10-05 03:30:00" },
+    { id: 11,rank: 11, nickname: "小十3", totalPoints: 1180.5, homeworkCount: 5, lastUpdated: "2024-10-05 03:30:00" }
+  ];
+
+  // 总积分排行分页状态
+  const [rankPagination, setRankPagination] = useState<PaginationInfo>({
+    page: 1,
+    limit: 10,
+    total: totalPointsRankData.length,
+    totalPages: Math.ceil(totalPointsRankData.length / 10)
+  });
+  const [currentRankList, setCurrentRankList] = useState<TotalPointsRankItem[]>([]);
+  const [rankLoading, setRankLoading] = useState(false);
+
+  // 计算当前页的排行数据
+  useEffect(() => {
+    setRankLoading(true);
+    // 根据搜索关键词过滤数据
+    const filteredData = searchTerm 
+      ? totalPointsRankData.filter(item => item.nickname.includes(searchTerm))
+      : totalPointsRankData;
+    
+    const { page, limit } = rankPagination;
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    setCurrentRankList(filteredData.slice(startIndex, endIndex));
+    setRankLoading(false);
+  }, [rankPagination.page, rankPagination.limit, searchTerm]);
 
   // 检查认证状态
   const checkAuth = async () => {
@@ -164,7 +215,6 @@ export default function AdminHomeworkPage() {
       const result = await response.json();
 
       if (result.success) {
-        // 刷新列表
         fetchHomeworks(selectedStatus, pagination.page);
         alert(`作业状态已更新为: ${getStatusText(newStatus)}`);
       } else {
@@ -193,7 +243,6 @@ export default function AdminHomeworkPage() {
       const result = await response.json();
 
       if (result.success) {
-        // 刷新列表
         fetchHomeworks(selectedStatus, pagination.page);
         alert('作业删除成功');
       } else {
@@ -256,7 +305,6 @@ export default function AdminHomeworkPage() {
         alert(`更新完成：成功 ${successCount} 个，失败 ${selectedHomeworks.size - successCount} 个`);
       }
 
-      // 清空选择并刷新列表
       setSelectedHomeworks(new Set());
       fetchHomeworks(selectedStatus, pagination.page);
     } catch (error) {
@@ -294,7 +342,6 @@ export default function AdminHomeworkPage() {
         alert(`删除完成：成功 ${successCount} 个，失败 ${selectedHomeworks.size - successCount} 个`);
       }
 
-      // 清空选择并刷新列表
       setSelectedHomeworks(new Set());
       fetchHomeworks(selectedStatus, pagination.page);
     } catch (error) {
@@ -302,6 +349,12 @@ export default function AdminHomeworkPage() {
     } finally {
       setBatchLoading(false);
     }
+  };
+
+  // 总积分排行分页切换
+  const handleRankPageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > rankPagination.totalPages) return;
+    setRankPagination(prev => ({ ...prev, page: newPage }));
   };
 
   const getStatusText = (status: string) => {
@@ -326,7 +379,7 @@ export default function AdminHomeworkPage() {
     return (bytes / 1024 / 1024).toFixed(2) + 'MB';
   };
 
-  // 如果未认证，显示登录表单
+  // 未认证时显示登录表单
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center">
@@ -343,11 +396,6 @@ export default function AdminHomeworkPage() {
                 className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent password-input"
                 placeholder="给我一首歌的时间"
                 autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="off"
-                spellCheck="false"
-                inputMode="text"
-                lang="zh-CN"
                 required
                 disabled={loginLoading}
               />
@@ -362,7 +410,7 @@ export default function AdminHomeworkPage() {
             <button
               type="submit"
               disabled={loginLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white font-medium py-3 px-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-transparent"
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white font-medium py-3 px-4 rounded-lg transition-colors"
             >
               {loginLoading ? '登录中...' : '登录'}
             </button>
@@ -424,6 +472,16 @@ export default function AdminHomeworkPage() {
             >
               💎 积分结算
             </button>
+            <button
+              onClick={() => setActiveTab('totalRank')}
+              className={`px-6 py-3 rounded-lg transition-colors ${
+                activeTab === 'totalRank'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-white/10 text-white/70 hover:bg-white/20'
+              }`}
+            >
+              📊 总积分排行
+            </button>
           </div>
           
           {/* 作业管理的状态筛选 */}
@@ -478,7 +536,6 @@ export default function AdminHomeworkPage() {
                     
                     {selectedHomeworks.size > 0 && (
                       <>
-                        {/* 待审核状态：显示通过和拒绝 */}
                         {selectedStatus === 'pending' && (
                           <>
                             <button
@@ -498,7 +555,6 @@ export default function AdminHomeworkPage() {
                           </>
                         )}
                         
-                        {/* 已通过状态：显示取消通过 */}
                         {selectedStatus === 'approved' && (
                           <button
                             onClick={() => handleBatchUpdate('pending')}
@@ -509,7 +565,6 @@ export default function AdminHomeworkPage() {
                           </button>
                         )}
                         
-                        {/* 已拒绝状态：显示重新审核 */}
                         {selectedStatus === 'rejected' && (
                           <button
                             onClick={() => handleBatchUpdate('pending')}
@@ -520,7 +575,6 @@ export default function AdminHomeworkPage() {
                           </button>
                         )}
                         
-                        {/* 全部状态：显示完整操作 */}
                         {selectedStatus === 'all' && (
                           <>
                             <button
@@ -547,7 +601,6 @@ export default function AdminHomeworkPage() {
                           </>
                         )}
                         
-                        {/* 所有状态都有删除按钮 */}
                         <button
                           onClick={handleBatchDelete}
                           disabled={batchLoading}
@@ -710,9 +763,129 @@ export default function AdminHomeworkPage() {
           </div>
           )}
         </>
-      ) : (
-        /* 积分结算标签页 */
+      ) : activeTab === 'points' ? (
         <PointsSettlement />
+      ) : (
+        /* 总积分排行标签页 - 带分页功能 */
+        <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-start mb-6">
+            <h2 className="text-2xl font-bold text-white mb-4 md:mb-0">📊 总积分排行</h2>
+            
+            {/* 添加搜索框 */}
+            <div className="w-full md:w-auto p-6">
+              <input
+                type="text"
+                placeholder="搜索用户昵称..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setRankPagination(prev => ({ ...prev, page: 1 })); // 重置到第一页
+                }}
+                className="px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full max-w-md"
+              />
+            </div>
+          </div>
+
+          {/* 总积分统计卡片 */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-xl p-4 border border-blue-500/30">
+              <div className="text-white/70 text-sm mb-1">参与用户总数</div>
+              <div className="text-2xl font-bold text-blue-300">{totalPointsRankData.length} 人</div>
+            </div>
+            <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-xl p-4 border border-green-500/30">
+              <div className="text-white/70 text-sm mb-1">总积分最高</div>
+              <div className="text-2xl font-bold text-green-300">{totalPointsRankData[0].totalPoints.toFixed(1)} 分</div>
+            </div>
+            <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-xl p-4 border border-yellow-500/30">
+              <div className="text-white/70 text-sm mb-1">平均作业数</div>
+              <div className="text-2xl font-bold text-yellow-300">
+                {Math.round(totalPointsRankData.reduce((sum, item) => sum + item.homeworkCount, 0) / totalPointsRankData.length)} 个
+              </div>
+            </div>
+          </div>
+
+          {/* 总积分排行列表 */}
+          {rankLoading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+              <p className="mt-4 text-white/70">正在加载排行数据...</p>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-3 mb-6">
+                {currentRankList.map((item) => {
+                  let rankStyle = 'bg-white/5';
+                  let rankIcon = `#${item.rank}`;
+                  
+                  if (item.rank === 1) {
+                    rankStyle = 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-2 border-yellow-500/50';
+                    rankIcon = '🥇';
+                  } else if (item.rank === 2) {
+                    rankStyle = 'bg-gradient-to-r from-gray-400/20 to-gray-500/20 border-2 border-gray-400/50';
+                    rankIcon = '🥈';
+                  } else if (item.rank === 3) {
+                    rankStyle = 'bg-gradient-to-r from-orange-400/20 to-orange-600/20 border-2 border-orange-400/50';
+                    rankIcon = '🥉';
+                  }
+
+                  return (
+                    <div
+                      // key={`${item.nickname}-${item.rank}`}
+                      key={`${item.id}`}
+                      className={`${rankStyle} backdrop-blur-sm rounded-xl p-4 border border-white/10 transition-transform hover:scale-[1.02]`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className="text-2xl font-bold text-white/80 w-12 text-center">
+                            {rankIcon}
+                          </div>
+                          <div>
+                            <div className="text-lg font-semibold text-white">{item.nickname}</div>
+                            <div className="text-sm text-white/60">
+                              完成作业 {item.homeworkCount} 个 • 最后更新：{item.lastUpdated}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="text-right">
+                          <div className="text-xl font-bold text-blue-300">
+                            {item.totalPoints.toFixed(1)} 总积分
+                          </div>
+                          <div className="text-sm text-white/50">
+                            平均每作业 {((item.totalPoints / item.homeworkCount) || 0).toFixed(1)} 分
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* 总积分排行分页控件 */}
+              {rankPagination.totalPages > 1 && (
+                <div className="flex justify-center space-x-2 mt-4">
+                  <button
+                    onClick={() => handleRankPageChange(rankPagination.page - 1)}
+                    disabled={rankPagination.page === 1}
+                    className="px-4 py-2 bg-white/10 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-colors"
+                  >
+                    上一页
+                  </button>
+                  <span className="px-4 py-2 text-white">
+                    第 {rankPagination.page} 页 / 共 {rankPagination.totalPages} 页
+                  </span>
+                  <button
+                    onClick={() => handleRankPageChange(rankPagination.page + 1)}
+                    disabled={rankPagination.page === rankPagination.totalPages}
+                    className="px-4 py-2 bg-white/10 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-colors"
+                  >
+                    下一页
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       )}
 
         {/* 图片预览模态框 */}
@@ -744,7 +917,6 @@ export default function AdminHomeworkPage() {
               onClick={() => setSelectedImage(null)}
             />
 
-            {/* 主图片 - 使用transform居中 */}
             <img
               src={selectedImage}
               alt="作业预览"
@@ -757,7 +929,6 @@ export default function AdminHomeworkPage() {
               onClick={(e) => e.stopPropagation()}
             />
 
-            {/* 关闭按钮 - 相对于图片定位 */}
             <button
               onClick={() => setSelectedImage(null)}
               className="absolute bg-black/80 hover:bg-black/90 text-white rounded-full w-12 h-12 flex items-center justify-center transition-all duration-200 shadow-lg"
@@ -773,4 +944,4 @@ export default function AdminHomeworkPage() {
       </div>
     </div>
   );
-} 
+}
