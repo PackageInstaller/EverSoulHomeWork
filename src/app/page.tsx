@@ -105,6 +105,12 @@ export default function HomePage() {
               >
                 🔐 管理后台
               </a>
+              <a 
+                href="/loginResignter"
+                className="bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2 rounded-lg text-sm transition-colors duration-300"
+              >
+                登录
+              </a>
             </div>
           </div>
         </div>
