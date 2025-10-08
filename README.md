@@ -45,16 +45,18 @@ npm run dev
 - **数据库**: Prisma + SQLite
 - **样式**: Tailwind CSS
 - **图表**: Recharts
-- **数据源**: GitHub (CDN加速)
+- **数据源**: GitHub (CDN 加速)
 
 ## 🎯 缓存机制
 
-使用**纯内存缓存**，配合CDN加速：
+使用**纯内存缓存**，配合 CDN 加速：
+
 - 从 CDN 下载游戏数据
 - 缓存在内存中
 - 重启后自动重新加载
 
 详见：
+
 - 📄 [RESTORE_OLD_CACHE.md](./RESTORE_OLD_CACHE.md) - 缓存机制说明
 - 📄 [CLEANUP_GUIDE.md](./CLEANUP_GUIDE.md) - 项目清理优化指南
 
@@ -111,6 +113,7 @@ pm2 start npm --name "eversoul" -- start
 ### 环境变量
 
 创建 `.env` 文件：
+
 ```env
 DATABASE_URL="file:./prisma/dev.db"
 ```
