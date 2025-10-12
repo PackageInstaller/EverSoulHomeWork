@@ -1,55 +1,134 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from "react";
 
-type ActiveTab = 'stage' | 'guild' | 'arena' | 'strategy';
+type ActiveTab = "stage" | "guild" | "arena" | "strategy";
+
+// 定义用户类型
+interface User {
+  id: string;
+  email: string;
+  nickname: string;
+}
+
+// 静态用户数据模拟数据库
+const userList: User[] = [
+  {
+    id: "1",
+    email: "admin@example.com",
+    nickname: "管理员",
+  },
+  {
+    id: "2",
+    email: "user1@example.com",
+    nickname: "用户一",
+  },
+  {
+    id: "3",
+    email: "user2@example.com",
+    nickname: "用户二",
+  },
+];
+
+// 模拟数据库操作
+const userDatabase = {
+  getUsers: () => userList,
+  getUserById: (id: string) => userList.find((u) => u.id === id),
+  getUserByEmail: (email: string) => userList.find((u) => u.email === email),
+  addUser: (user: User) => {
+    userList.push(user);
+  },
+  updateUser: (id: string, updates: Partial<User>) => {
+    const index = userList.findIndex((u) => u.id === id);
+    if (index !== -1) {
+      userList[index] = { ...userList[index], ...updates };
+      return true;
+    }
+    return false;
+  },
+};
 
 export default function HomePage() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('stage');
+  const [activeTab, setActiveTab] = useState<ActiveTab>("stage");
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  // 页面加载时检查是否有登录用户
+  useEffect(() => {
+    const token = localStorage.getItem("Token");
+    if (token) {
+      try {
+        const decoded = decodeURIComponent(atob(token));
+        const userData = JSON.parse(decoded);
+
+        // 使用userDatabase获取最新用户信息
+        const user = userDatabase.getUserById(userData.id);
+        if (user) {
+          setCurrentUser({
+            id: user.id,
+            email: user.email,
+            nickname: user.nickname,
+          });
+        }
+      } catch (e) {
+        console.error("解析用户信息失败", e);
+      }
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("Token");
+    setCurrentUser(null);
+    setShowUserMenu(false);
+    // 如果需要跳转到登录页可以取消下面的注释
+    // window.location.href = '/loginResignter';
+  };
 
   const menuItems = [
     {
-      id: 'stage' as ActiveTab,
-      name: '主线关卡',
-      icon: '⚔️',
-      description: '查看主线关卡详细信息',
+      id: "stage" as ActiveTab,
+      name: "主线关卡",
+      icon: "⚔️",
+      description: "查看主线关卡详细信息",
       available: true,
-      href: '/stage'
+      href: "/stage",
     },
     {
-      id: 'guild' as ActiveTab,
-      name: '会战攻略',
-      icon: '🏰',
-      description: '会战关卡攻略和推荐阵容',
+      id: "guild" as ActiveTab,
+      name: "会战攻略",
+      icon: "🏰",
+      description: "会战关卡攻略和推荐阵容",
       available: false,
-      href: '#'
-    }
+      href: "#",
+    },
   ];
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'stage':
+      case "stage":
         return (
           <div className="space-y-6">
-            <div 
+            <div
               className="bg-gradient-to-r from-blue-900/90 to-purple-900/90 rounded-lg p-6 sm:p-8 text-white relative overflow-hidden"
               style={{
-                backgroundImage: 'url(/images/bg_worldmap.webp)',
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat'
+                backgroundImage: "url(/images/bg_worldmap.webp)",
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
               }}
             >
               {/* 半透明覆盖层 */}
               <div className="absolute inset-0 bg-gradient-to-r from-blue-900/80 to-purple-900/80 rounded-lg"></div>
-              
+
               {/* 内容 */}
               <div className="relative z-10">
-                <h2 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-4">主线关卡作业</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-4">
+                  主线关卡作业
+                </h2>
                 <p className="text-blue-100 mb-4 sm:mb-6">
                   查看详细的关卡信息，包括敌方阵容、战力要求、掉落物品概率等。支持正式服和测试服数据切换。
                 </p>
-                <a 
+                <a
                   href="/stage"
                   className="inline-block bg-white text-blue-600 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors shadow-lg"
                 >
@@ -64,12 +143,14 @@ export default function HomePage() {
         return (
           <div className="bg-white rounded-lg p-6 sm:p-8 text-center">
             <div className="text-4xl sm:text-6xl mb-2 sm:mb-4">🚧</div>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 sm:mb-4">功能开发中</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 sm:mb-4">
+              功能开发中
+            </h2>
             <p className="text-gray-600 mb-4 sm:mb-6">
               该功能正在开发中，敬请期待！
             </p>
-            <button 
-              onClick={() => setActiveTab('stage')}
+            <button
+              onClick={() => setActiveTab("stage")}
               className="bg-blue-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg hover:bg-blue-700 transition-colors"
             >
               返回主线关卡
@@ -84,62 +165,122 @@ export default function HomePage() {
       {/* 顶部导航栏 */}
       <div className="bg-white border-b border-gray-200">
         <div className="mx-auto px-4 sm:px-6 p-2">
- 
           <div className="flex items-center justify-between h-14 sm:h-16 flex-col sm:flex-row">
             <div className="flex items-center">
-              <h1 className="text-base sm:text-xl font-bold text-gray-900">EverSoul 作业站</h1>
+              <h1 className="text-base sm:text-xl font-bold text-gray-900">
+                EverSoul 作业站
+              </h1>
             </div>
             <div className="flex items-center space-x-4">
               <div className="text-sm text-gray-600">
                 作业分享平台，一起逃课吧
               </div>
-              <a 
+              <a
                 href="/leaderboard"
                 className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm transition-colors font-semibold"
               >
                 🏆 积分榜
               </a>
-              <a 
+              <a
                 href="/admin"
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
               >
                 🔐 管理后台
               </a>
-              <a 
-                href="/loginResignter"
-                className="bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2 rounded-lg text-sm transition-colors duration-300"
-              >
-                登录
-              </a>
+              {currentUser ? (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                    className="flex items-center space-x-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-colors duration-300"
+                  >
+                    <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center text-blue-500 font-bold">
+                      {currentUser.nickname.charAt(0)}
+                    </div>
+                    <span
+                      style={{
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        maxWidth: "100px",
+                      }}
+                    >
+                      {currentUser.nickname}
+                    </span>
+                  </button>
+
+                  {showUserMenu && (
+                    <div
+                      className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200"
+                      onMouseLeave={() => setShowUserMenu(false)}
+                    >
+                      <a
+                        href="/profile"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        编辑资料
+                      </a>
+                      <button
+                        onClick={handleLogout}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        退出登录
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <a
+                  href="/loginResignter"
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2 rounded-lg text-sm transition-colors duration-300"
+                >
+                  登录
+                </a>
+              )}
             </div>
           </div>
         </div>
       </div>
 
       <div className="mx-auto px-4 sm:px-6">
-        <div className={`flex flex-col sm:flex-row ${activeTab === 'stage' ? '' : ''}`}>
+        <div
+          className={`flex flex-col sm:flex-row ${
+            activeTab === "stage" ? "" : ""
+          }`}
+        >
           {/* 左侧导航 */}
-          <div className={`w-full sm:w-64 bg-white border-b sm:border-b-0 sm:border-r border-gray-200  sm:min-h-screen p-4 sm:p-6 ${activeTab === 'stage' ? '' : ''}`}>
-            <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-4">功能导航</h2>
+          <div
+            className={`w-full sm:w-64 bg-white border-b sm:border-b-0 sm:border-r border-gray-200  sm:min-h-screen p-4 sm:p-6 ${
+              activeTab === "stage" ? "" : ""
+            }`}
+          >
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-4">
+              功能导航
+            </h2>
             <nav className="space-y-2">
               {menuItems.map((item) => (
                 <button
                   key={item.id}
-                  onClick={() => item.available ? setActiveTab(item.id) : null}
+                  onClick={() =>
+                    item.available ? setActiveTab(item.id) : null
+                  }
                   className={`w-full text-left p-2 sm:p-3 rounded-lg transition-colors ${
                     activeTab === item.id
-                      ? 'bg-blue-100 text-blue-700 border-2 border-blue-200'
+                      ? "bg-blue-100 text-blue-700 border-2 border-blue-200"
                       : item.available
-                      ? 'hover:bg-gray-100 text-gray-700'
-                      : 'text-gray-400 cursor-not-allowed'
+                      ? "hover:bg-gray-100 text-gray-700"
+                      : "text-gray-400 cursor-not-allowed"
                   }`}
                   disabled={!item.available}
                 >
                   <div className="flex items-center space-x-2 sm:space-x-3">
                     <span className="text-base sm:text-xl">{item.icon}</span>
                     <div>
-                      <div className="font-medium text-sm sm:text-base">{item.name}</div>
-                      <div className="text-xs sm:text-sm text-gray-500">{item.description}</div>
+                      <div className="font-medium text-sm sm:text-base">
+                        {item.name}
+                      </div>
+                      <div className="text-xs sm:text-sm text-gray-500">
+                        {item.description}
+                      </div>
                     </div>
                   </div>
                   {!item.available && (
@@ -151,7 +292,9 @@ export default function HomePage() {
           </div>
 
           {/* 右侧内容区域 */}
-          <div className={`flex-1 p-4 sm:p-6 ${activeTab === 'stage' ? '' : ''}`}>
+          <div
+            className={`flex-1 p-4 sm:p-6 ${activeTab === "stage" ? "" : ""}`}
+          >
             {renderContent()}
           </div>
         </div>
