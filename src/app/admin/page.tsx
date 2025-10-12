@@ -68,131 +68,70 @@ export default function AdminHomeworkPage() {
 
   // 总积分排行数据和分页状态
   const [searchTerm, setSearchTerm] = useState(""); // 添加搜索关键词状态
-  const totalPointsRankData: TotalPointsRankItem[] = [
-    {
-      id: 1,
-      rank: 1,
-      nickname: "张三",
-      totalPoints: 2850.5,
-      homeworkCount: 42,
-      lastUpdated: "2024-10-05 18:30:22",
-    },
-    {
-      id: 2,
-      rank: 2,
-      nickname: "李四",
-      totalPoints: 2530.2,
-      homeworkCount: 38,
-      lastUpdated: "2024-10-05 16:15:47",
-    },
-    {
-      id: 3,
-      rank: 3,
-      nickname: "王五",
-      totalPoints: 2180.8,
-      homeworkCount: 35,
-      lastUpdated: "2024-10-05 14:20:19",
-    },
-    {
-      id: 4,
-      rank: 4,
-      nickname: "赵六",
-      totalPoints: 1980.5,
-      homeworkCount: 30,
-      lastUpdated: "2024-10-05 12:10:05",
-    },
-    {
-      id: 5,
-      rank: 5,
-      nickname: "孙七",
-      totalPoints: 1780.5,
-      homeworkCount: 25,
-      lastUpdated: "2024-10-05 10:30:00",
-    },
-    {
-      id: 6,
-      rank: 6,
-      nickname: "周八",
-      totalPoints: 1580.5,
-      homeworkCount: 20,
-      lastUpdated: "2024-10-05 09:00:00",
-    },
-    {
-      id: 7,
-      rank: 7,
-      nickname: "吴九",
-      totalPoints: 1380.5,
-      homeworkCount: 15,
-      lastUpdated: "2024-10-05 07:45:30",
-    },
-    {
-      id: 8,
-      rank: 8,
-      nickname: "郑十",
-      totalPoints: 1280.5,
-      homeworkCount: 10,
-      lastUpdated: "2024-10-05 05:30:00",
-    },
-    {
-      id: 9,
-      rank: 9,
-      nickname: "小十1",
-      totalPoints: 1180.5,
-      homeworkCount: 5,
-      lastUpdated: "2024-10-05 03:30:00",
-    },
-    {
-      id: 10,
-      rank: 10,
-      nickname: "小十2",
-      totalPoints: 1180.5,
-      homeworkCount: 5,
-      lastUpdated: "2024-10-05 03:30:00",
-    },
-    {
-      id: 11,
-      rank: 11,
-      nickname: "小十3",
-      totalPoints: 1180.5,
-      homeworkCount: 5,
-      lastUpdated: "2024-10-05 03:30:00",
-    },
-    {
-      id: 12,
-      rank: 1,
-      nickname: "张三",
-      totalPoints: 1180.5,
-      homeworkCount: 5,
-      lastUpdated: "2025-10-05 03:30:00",
-    },
-  ];
-
-  // 总积分排行分页状态
   const [rankPagination, setRankPagination] = useState<PaginationInfo>({
     page: 1,
     limit: 10,
-    total: totalPointsRankData.length,
-    totalPages: Math.ceil(totalPointsRankData.length / 10),
+    total: 0,
+    totalPages: 0,
   });
   const [currentRankList, setCurrentRankList] = useState<TotalPointsRankItem[]>(
     []
   );
   const [rankLoading, setRankLoading] = useState(false);
+  const [rankStats, setRankStats] = useState({
+    totalUsers: 0,
+    highestPoints: 0,
+    avgHomework: 0,
+  });
 
-  // 计算当前页的排行数据
-  useEffect(() => {
+  // 获取总积分排行数据
+  const fetchTotalRank = async () => {
     setRankLoading(true);
-    // 根据搜索关键词过滤数据
-    const filteredData = searchTerm
-      ? totalPointsRankData.filter((item) => item.nickname.includes(searchTerm))
-      : totalPointsRankData;
+    try {
+      const response = await fetch(
+        `/api/points/total-rank?page=${rankPagination.page}&limit=${rankPagination.limit}&search=${searchTerm}`
+      );
+      const result = await response.json();
 
-    const { page, limit } = rankPagination;
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    setCurrentRankList(filteredData.slice(startIndex, endIndex));
-    setRankLoading(false);
-  }, [rankPagination.page, rankPagination.limit, searchTerm]);
+      if (result.success) {
+        setCurrentRankList(result.data);
+        setRankPagination((prev) => ({
+          ...prev,
+          total: result.pagination.total,
+          totalPages: result.pagination.totalPages,
+        }));
+
+        // 计算统计数据
+        if (result.data.length > 0) {
+          const totalUsers = result.pagination.total;
+          const highestPoints = result.data[0]?.totalPoints || 0;
+          const avgHomework =
+            result.data.reduce(
+              (sum: number, item: TotalPointsRankItem) =>
+                sum + item.homeworkCount,
+              0
+            ) / result.data.length;
+
+          setRankStats({
+            totalUsers,
+            highestPoints,
+            avgHomework: Math.round(avgHomework),
+          });
+        }
+      }
+    } catch (error) {
+      console.error("获取总积分排行失败:", error);
+    } finally {
+      setRankLoading(false);
+    }
+  };
+
+  // 当页码或搜索词变化时重新获取数据
+  useEffect(() => {
+    if (activeTab === "totalRank" && isAuthenticated) {
+      fetchTotalRank();
+    }
+  }, [rankPagination.page, searchTerm, activeTab, isAuthenticated]);
 
   // 检查认证状态
   const checkAuth = async () => {
@@ -466,6 +405,12 @@ export default function AdminHomeworkPage() {
   const handleRankPageChange = (newPage: number) => {
     if (newPage < 1 || newPage > rankPagination.totalPages) return;
     setRankPagination((prev) => ({ ...prev, page: newPage }));
+  };
+
+  // 搜索词变化时重置页码
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setRankPagination((prev) => ({ ...prev, page: 1 }));
   };
 
   const getStatusText = (status: string) => {
@@ -940,10 +885,7 @@ export default function AdminHomeworkPage() {
                   type="text"
                   placeholder="搜索用户昵称..."
                   value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setRankPagination((prev) => ({ ...prev, page: 1 })); // 重置到第一页
-                  }}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                   className="px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full max-w-md"
                 />
               </div>
@@ -954,25 +896,19 @@ export default function AdminHomeworkPage() {
               <div className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-xl p-4 border border-blue-500/30">
                 <div className="text-white/70 text-sm mb-1">参与用户总数</div>
                 <div className="text-2xl font-bold text-blue-300">
-                  {totalPointsRankData.length} 人
+                  {rankStats.totalUsers} 人
                 </div>
               </div>
               <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-xl p-4 border border-green-500/30">
                 <div className="text-white/70 text-sm mb-1">总积分最高</div>
                 <div className="text-2xl font-bold text-green-300">
-                  {totalPointsRankData[0].totalPoints.toFixed(1)} 分
+                  {rankStats.highestPoints.toFixed(1)} 分
                 </div>
               </div>
               <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-xl p-4 border border-yellow-500/30">
                 <div className="text-white/70 text-sm mb-1">平均作业数</div>
                 <div className="text-2xl font-bold text-yellow-300">
-                  {Math.round(
-                    totalPointsRankData.reduce(
-                      (sum, item) => sum + item.homeworkCount,
-                      0
-                    ) / totalPointsRankData.length
-                  )}{" "}
-                  个
+                  {rankStats.avgHomework} 个
                 </div>
               </div>
             </div>

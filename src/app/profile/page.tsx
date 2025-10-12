@@ -141,28 +141,46 @@ export default function ProfilePage() {
 
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div>加载中...</div>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{
+          backgroundImage: "url('/images/bg_worldmap.webp')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          backgroundAttachment: "fixed",
+        }}
+      >
+        <div className="text-white text-lg">加载中...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div
+      className="min-h-screen py-12 px-4 sm:px-6 lg:px-8"
+      style={{
+        backgroundImage: "url('/images/bg_worldmap.webp')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        backgroundAttachment: "fixed",
+      }}
+    >
       <div className="max-w-md w-full mx-auto space-y-8">
         <div>
-          <h1 className="text-center text-3xl font-extrabold text-gray-900">
+          <h1 className="text-center text-3xl font-extrabold text-white">
             编辑个人资料
           </h1>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-8">
           {message && (
             <div
               className={`mb-4 p-3 rounded-md text-center ${
                 message.type === "error"
-                  ? "bg-red-100 text-red-700"
-                  : "bg-green-100 text-green-700"
+                  ? "bg-red-500/20 text-red-300 border border-red-500/50"
+                  : "bg-green-500/20 text-green-300 border border-green-500/50"
               }`}
             >
               {message.text}
@@ -173,7 +191,7 @@ export default function ProfilePage() {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-white/80"
               >
                 邮箱地址
               </label>
@@ -184,16 +202,20 @@ export default function ProfilePage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-gray-100"
+                className="mt-1 block w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 disabled
+                style={{
+                  WebkitTextFillColor: "rgba(255, 255, 255, 0.5)",
+                  WebkitBoxShadow: "0 0 0px 1000px rgba(0, 0, 0, 0.3) inset",
+                }}
               />
-              <p className="mt-1 text-sm text-gray-500">邮箱地址不可更改</p>
+              <p className="mt-1 text-sm text-white/50">邮箱地址不可更改</p>
             </div>
 
             <div>
               <label
                 htmlFor="nickname"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-white/80"
               >
                 昵称
               </label>
@@ -204,7 +226,13 @@ export default function ProfilePage() {
                 required
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="mt-1 block w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="请输入昵称"
+                autoComplete="nickname"
+                style={{
+                  WebkitTextFillColor: "white",
+                  WebkitBoxShadow: "0 0 0px 1000px rgba(0, 0, 0, 0.3) inset",
+                }}
               />
             </div>
 
@@ -215,11 +243,11 @@ export default function ProfilePage() {
                 type="checkbox"
                 checked={showPasswordFields}
                 onChange={(e) => setShowPasswordFields(e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-white/20 rounded bg-black/30"
               />
               <label
                 htmlFor="change-password"
-                className="ml-2 block text-sm text-gray-700"
+                className="ml-2 block text-sm text-white/80"
               >
                 修改密码
               </label>
@@ -230,7 +258,7 @@ export default function ProfilePage() {
                 <div>
                   <label
                     htmlFor="old-password"
-                    className="block text-sm font-medium text-gray-700"
+                    className="block text-sm font-medium text-white/80"
                   >
                     当前密码
                   </label>
@@ -240,14 +268,20 @@ export default function ProfilePage() {
                     type="password"
                     value={oldPassword}
                     onChange={(e) => setOldPassword(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="mt-1 block w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="请输入当前密码"
+                    autoComplete="current-password"
+                    style={{
+                      WebkitTextFillColor: "white",
+                      WebkitBoxShadow: "0 0 0px 1000px rgba(0, 0, 0, 0.3) inset",
+                    }}
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="new-password"
-                    className="block text-sm font-medium text-gray-700"
+                    className="block text-sm font-medium text-white/80"
                   >
                     新密码
                   </label>
@@ -257,15 +291,20 @@ export default function ProfilePage() {
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="mt-1 block w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="至少6位字符"
+                    autoComplete="new-password"
+                    style={{
+                      WebkitTextFillColor: "white",
+                      WebkitBoxShadow: "0 0 0px 1000px rgba(0, 0, 0, 0.3) inset",
+                    }}
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="confirm-password"
-                    className="block text-sm font-medium text-gray-700"
+                    className="block text-sm font-medium text-white/80"
                   >
                     确认新密码
                   </label>
@@ -275,7 +314,13 @@ export default function ProfilePage() {
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="mt-1 block w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="请再次输入新密码"
+                    autoComplete="new-password"
+                    style={{
+                      WebkitTextFillColor: "white",
+                      WebkitBoxShadow: "0 0 0px 1000px rgba(0, 0, 0, 0.3) inset",
+                    }}
                   />
                 </div>
               </>
@@ -284,7 +329,7 @@ export default function ProfilePage() {
             <div className="flex space-x-3">
               <button
                 type="submit"
-                className="flex-1 flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                className="flex-1 flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 transition-colors"
                 disabled={loading}
               >
                 {loading ? "保存中..." : "保存更改"}
@@ -293,7 +338,7 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="flex-1 flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="flex-1 flex justify-center py-3 px-4 border border-white/20 rounded-lg shadow-sm text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
               >
                 返回
               </button>

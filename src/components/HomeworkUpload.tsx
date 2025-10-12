@@ -29,7 +29,13 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
       if (token) {
         try {
           // 解析JWT token（简单解析，不验证签名）
-          const payload = JSON.parse(atob(token.split('.')[1]));
+          const base64Url = token.split('.')[1];
+          // 将Base64URL转换为标准Base64
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          // 添加padding
+          const padding = '='.repeat((4 - base64.length % 4) % 4);
+          const payload = JSON.parse(atob(base64 + padding));
+          
           if (payload.nickname && !formData.nickname) {
             setFormData(prev => ({ ...prev, nickname: payload.nickname }));
           }
