@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import UserHomeworkModal from './UserHomeworkModal';
 
 // 总积分排行项接口
 interface TotalPointsRankItem {
@@ -34,6 +35,7 @@ export default function TotalPointsRanking() {
     highestPoints: 0,
     avgHomework: 0,
   });
+  const [selectedUser, setSelectedUser] = useState<string | null>(null);
 
   // 获取总积分排行数据
   const fetchTotalRank = async () => {
@@ -221,9 +223,15 @@ export default function TotalPointsRanking() {
                         {item.rank <= 3 ? rankIcon : `#${item.rank}`}
                       </div>
                       <div className="flex-1">
-                        <div className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
-                          {item.nickname}
-                        </div>
+                        <button
+                          onClick={() => setSelectedUser(item.nickname)}
+                          className="text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors cursor-pointer text-left group/name"
+                        >
+                          <span className="group-hover/name:underline">{item.nickname}</span>
+                          <span className="ml-2 text-sm text-blue-500 opacity-0 group-hover/name:opacity-100 transition-opacity">
+                            查看作业 →
+                          </span>
+                        </button>
                         <div className="text-sm text-gray-600 mt-1 flex items-center gap-2 flex-wrap">
                           <span className="inline-flex items-center gap-1">
                             📚 {item.homeworkCount} 个作业
@@ -288,6 +296,14 @@ export default function TotalPointsRanking() {
             </div>
           )}
         </>
+      )}
+
+      {/* 玩家作业详情模态框 */}
+      {selectedUser && (
+        <UserHomeworkModal
+          nickname={selectedUser}
+          onClose={() => setSelectedUser(null)}
+        />
       )}
     </div>
   );
