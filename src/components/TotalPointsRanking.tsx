@@ -94,9 +94,9 @@ export default function TotalPointsRanking() {
   };
 
   return (
-    <div className="space-y-6 px-4 py-6">
+    <div className="space-y-6 p-4 md:p-6">
       {/* 标题和搜索 */}
-      <div className="bg-gradient-to-br from-black/30 to-black/20 backdrop-blur-md rounded-2xl border border-white/30 p-6 shadow-2xl">
+      <div className="bg-gradient-to-br from-black/30 to-black/20 backdrop-blur-md rounded-2xl border border-white/30 p-4 md:p-6 shadow-2xl">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
             <h2 className="text-3xl font-bold text-white flex items-center gap-3">
