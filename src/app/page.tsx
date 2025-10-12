@@ -118,7 +118,7 @@ export default function HomePage() {
       case "totalRank":
         return (
           <div
-            className="min-h-screen py-8"
+            className="min-h-screen"
             style={{
               backgroundImage: "url(/images/bg_worldmap.webp)",
               backgroundSize: "cover",
