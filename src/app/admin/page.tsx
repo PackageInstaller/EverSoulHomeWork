@@ -115,7 +115,7 @@ export default function AdminHomeworkPage() {
       nickname: "周八",
       totalPoints: 1580.5,
       homeworkCount: 20,
-      lastUpdated: "2024-10-05 09:0 0:00",
+      lastUpdated: "2024-10-05 09:00:00",
     },
     {
       id: 7,
