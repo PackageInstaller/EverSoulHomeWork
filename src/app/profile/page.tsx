@@ -3,35 +3,11 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-// 定义用户类型
 interface User {
   id: string;
   email: string;
-  password: string;
   nickname: string;
 }
-
-// 静态用户数据模拟数据库
-let userList: User[] = [
-  {
-    id: "1",
-    email: "admin@example.com",
-    password: "admin123",
-    nickname: "管理员",
-  },
-  {
-    id: "2",
-    email: "user1@example.com",
-    password: "user123",
-    nickname: "用户一",
-  },
-  {
-    id: "3",
-    email: "user2@example.com",
-    password: "user456",
-    nickname: "用户二",
-  },
-];
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -47,33 +23,40 @@ export default function ProfilePage() {
   );
   const [showPasswordFields, setShowPasswordFields] = useState(false);
 
-  // 页面加载时检查是否有登录用户
   useEffect(() => {
-    const token = localStorage.getItem("Token");
-    if (token) {
-      try {
-        const decoded = decodeURIComponent(atob(token));
-        const userData = JSON.parse(decoded);
+    const fetchUserProfile = async () => {
+      const token = localStorage.getItem("Token");
+      if (!token) {
+        router.push("/loginResignter");
+        return;
+      }
 
-        // 在模拟数据中查找当前用户
-        const user = userList.find((u) => u.id === userData.id);
-        if (user) {
-          setCurrentUser(user);
-          setNickname(user.nickname);
-          setEmail(user.email);
+      try {
+        const response = await fetch('/api/user/profile', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.user) {
+          setCurrentUser(data.user);
+          setNickname(data.user.nickname);
+          setEmail(data.user.email);
         } else {
           router.push("/loginResignter");
         }
-      } catch (e) {
-        console.error("解析用户信息失败", e);
+      } catch (error) {
+        console.error('获取用户信息失败', error);
         router.push("/loginResignter");
       }
-    } else {
-      router.push("/loginResignter");
-    }
+    };
+
+    fetchUserProfile();
   }, [router]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setMessage(null);
@@ -81,16 +64,6 @@ export default function ProfilePage() {
     // 验证输入
     if (!nickname.trim()) {
       setMessage({ type: "error", text: "昵称不能为空" });
-      setLoading(false);
-      return;
-    }
-
-    // 检查昵称是否已被其他用户使用
-    const nicknameExists = userList.some(
-      (u) => u.nickname === nickname && u.id !== currentUser?.id
-    );
-    if (nicknameExists) {
-      setMessage({ type: "error", text: "该昵称已被其他用户使用" });
       setLoading(false);
       return;
     }
@@ -114,64 +87,56 @@ export default function ProfilePage() {
         setLoading(false);
         return;
       }
+    }
 
-      // 验证旧密码
-      if (currentUser && oldPassword !== currentUser.password) {
-        setMessage({ type: "error", text: "当前密码不正确" });
-        setLoading(false);
+    try {
+      const token = localStorage.getItem("Token");
+      if (!token) {
+        router.push("/loginResignter");
         return;
       }
-    }
 
-    // 更新用户信息
-    if (currentUser) {
-      // 更新内存中的用户数据
-      userList = userList.map((user) => {
-        if (user.id === currentUser.id) {
-          return {
-            ...user,
-            nickname,
-            password: showPasswordFields ? newPassword : user.password,
-          };
-        }
-        return user;
+      const requestBody: any = { nickname };
+      if (showPasswordFields && oldPassword && newPassword) {
+        requestBody.oldPassword = oldPassword;
+        requestBody.newPassword = newPassword;
+      }
+
+      const response = await fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
       });
 
-      // 更新当前用户状态
-      const updatedUser = {
-        ...currentUser,
-        nickname,
-        password: showPasswordFields ? newPassword : currentUser.password,
-      };
-      setCurrentUser(updatedUser);
+      const data = await response.json();
 
-      // 更新本地存储的token
-      const token = btoa(
-        encodeURIComponent(
-          JSON.stringify({
-            id: updatedUser.id,
-            email: updatedUser.email,
-            nickname: updatedUser.nickname,
-            timestamp: Date.now(),
-          })
-        )
-      );
-      localStorage.setItem("Token", token);
+      if (data.success) {
+        // 更新本地token
+        localStorage.setItem("Token", data.token);
+        setMessage({ type: "success", text: "资料更新成功" });
 
-      setMessage({ type: "success", text: "资料更新成功" });
+        // 重置密码字段
+        setOldPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+        setShowPasswordFields(false);
 
-      // 重置密码字段
-      setOldPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-
-      // 延迟跳转以显示成功提示
-      setTimeout(() => {
-        router.push("/");
-      }, 500);
+        // 延迟跳转
+        setTimeout(() => {
+          router.push("/");
+        }, 1000);
+      } else {
+        setMessage({ type: "error", text: data.message || "更新失败" });
+      }
+    } catch (error) {
+      console.error('更新用户信息失败', error);
+      setMessage({ type: "error", text: "网络错误，请稍后重试" });
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   if (!currentUser) {

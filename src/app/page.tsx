@@ -11,43 +11,6 @@ interface User {
   nickname: string;
 }
 
-// 静态用户数据模拟数据库
-const userList: User[] = [
-  {
-    id: "1",
-    email: "admin@example.com",
-    nickname: "管理员",
-  },
-  {
-    id: "2",
-    email: "user1@example.com",
-    nickname: "用户一",
-  },
-  {
-    id: "3",
-    email: "user2@example.com",
-    nickname: "用户二",
-  },
-];
-
-// 模拟数据库操作
-const userDatabase = {
-  getUsers: () => userList,
-  getUserById: (id: string) => userList.find((u) => u.id === id),
-  getUserByEmail: (email: string) => userList.find((u) => u.email === email),
-  addUser: (user: User) => {
-    userList.push(user);
-  },
-  updateUser: (id: string, updates: Partial<User>) => {
-    const index = userList.findIndex((u) => u.id === id);
-    if (index !== -1) {
-      userList[index] = { ...userList[index], ...updates };
-      return true;
-    }
-    return false;
-  },
-};
-
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("stage");
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -55,25 +18,37 @@ export default function HomePage() {
 
   // 页面加载时检查是否有登录用户
   useEffect(() => {
-    const token = localStorage.getItem("Token");
-    if (token) {
-      try {
-        const decoded = decodeURIComponent(atob(token));
-        const userData = JSON.parse(decoded);
-
-        // 使用userDatabase获取最新用户信息
-        const user = userDatabase.getUserById(userData.id);
-        if (user) {
-          setCurrentUser({
-            id: user.id,
-            email: user.email,
-            nickname: user.nickname,
-          });
-        }
-      } catch (e) {
-        console.error("解析用户信息失败", e);
+    const fetchUserProfile = async () => {
+      const token = localStorage.getItem("Token");
+      if (!token) {
+        return;
       }
-    }
+
+      try {
+        const response = await fetch('/api/user/profile', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.user) {
+          setCurrentUser({
+            id: data.user.id,
+            email: data.user.email,
+            nickname: data.user.nickname,
+          });
+        } else {
+          // Token无效，清除本地存储
+          localStorage.removeItem("Token");
+        }
+      } catch (error) {
+        console.error("获取用户信息失败", error);
+      }
+    };
+
+    fetchUserProfile();
   }, []);
 
   const handleLogout = () => {
