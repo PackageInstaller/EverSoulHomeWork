@@ -1,29 +1,17 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import { getUserFromToken, generateToken } from '@/lib/jwt';
 
 export const dynamic = 'force-dynamic';
-
-// 辅助函数：从token获取用户ID
-function getUserIdFromToken(token: string | null): string | null {
-  if (!token) return null;
-  
-  try {
-    const decoded = Buffer.from(token, 'base64').toString('utf-8');
-    const userData = JSON.parse(decoded);
-    return userData.id;
-  } catch (error) {
-    return null;
-  }
-}
 
 // GET - 获取用户信息
 export async function GET(request: Request) {
   try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '') || null;
-    const userId = getUserIdFromToken(token);
+    const authHeader = request.headers.get('authorization');
+    const userData = getUserFromToken(authHeader);
 
-    if (!userId) {
+    if (!userData) {
       return NextResponse.json(
         { success: false, message: '未授权访问' },
         { status: 401 }
@@ -31,7 +19,7 @@ export async function GET(request: Request) {
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: userData.id },
       select: {
         id: true,
         email: true,
@@ -65,10 +53,10 @@ export async function GET(request: Request) {
 // PATCH - 更新用户信息
 export async function PATCH(request: Request) {
   try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '') || null;
-    const userId = getUserIdFromToken(token);
+    const authHeader = request.headers.get('authorization');
+    const userData = getUserFromToken(authHeader);
 
-    if (!userId) {
+    if (!userData) {
       return NextResponse.json(
         { success: false, message: '未授权访问' },
         { status: 401 }
@@ -109,7 +97,7 @@ export async function PATCH(request: Request) {
 
     // 获取当前用户
     const currentUser = await prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: userData.id }
     });
 
     if (!currentUser) {
@@ -150,7 +138,7 @@ export async function PATCH(request: Request) {
 
     // 更新用户
     const updatedUser = await prisma.user.update({
-      where: { id: userId },
+      where: { id: userData.id },
       data: updateData,
       select: {
         id: true,
@@ -160,13 +148,12 @@ export async function PATCH(request: Request) {
       }
     });
 
-    // 生成新token
-    const newToken = Buffer.from(JSON.stringify({
+    // 生成新JWT token
+    const newToken = generateToken({
       id: updatedUser.id,
       email: updatedUser.email,
-      nickname: updatedUser.nickname,
-      timestamp: Date.now()
-    })).toString('base64');
+      nickname: updatedUser.nickname
+    });
 
     return NextResponse.json({
       success: true,

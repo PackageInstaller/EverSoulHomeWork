@@ -94,7 +94,13 @@ export default function LoginRegisterPage() {
   return (
     <div
       className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8"
-      style={{ backgroundImage: "url(/images/loginBg.webp)" }}
+      style={{ 
+        backgroundImage: "url(/images/loginBg.webp)",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        backgroundAttachment: "fixed"
+      }}
     >
       <div className="max-w-md w-full space-y-8">
         <div>
@@ -165,9 +171,14 @@ export default function LoginRegisterPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                style={{
+                  WebkitTextFillColor: '#111827',
+                  WebkitBoxShadow: '0 0 0px 1000px white inset'
+                }}
                 disabled={loading}
                 placeholder="请输入邮箱"
+                autoComplete="email"
               />
             </div>
 
@@ -186,9 +197,14 @@ export default function LoginRegisterPage() {
                   required={!isLogin}
                   value={nickname}
                   onChange={(e) => setNickname(e.target.value)}
-                  className="mt-1 block w-full px-3 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                  style={{
+                    WebkitTextFillColor: '#111827',
+                    WebkitBoxShadow: '0 0 0px 1000px white inset'
+                  }}
                   disabled={loading}
                   placeholder="请输入昵称"
+                  autoComplete="nickname"
                 />
               </div>
             )}
@@ -208,9 +224,14 @@ export default function LoginRegisterPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                  style={{
+                    WebkitTextFillColor: '#111827',
+                    WebkitBoxShadow: '0 0 0px 1000px white inset'
+                  }}
                   disabled={loading}
                   placeholder="至少6位字符"
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
@@ -272,9 +293,14 @@ export default function LoginRegisterPage() {
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                    style={{
+                      WebkitTextFillColor: '#111827',
+                      WebkitBoxShadow: '0 0 0px 1000px white inset'
+                    }}
                     disabled={loading}
                     placeholder="再次输入密码"
+                    autoComplete="new-password"
                   />
                   <button
                     type="button"

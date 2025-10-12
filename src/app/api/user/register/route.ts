@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import { generateToken } from '@/lib/jwt';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,13 +80,12 @@ export async function POST(request: Request) {
       }
     });
 
-    // 生成token（简单的base64编码，实际项目中应使用JWT）
-    const token = Buffer.from(JSON.stringify({
+    // 生成JWT token
+    const token = generateToken({
       id: user.id,
       email: user.email,
-      nickname: user.nickname,
-      timestamp: Date.now()
-    })).toString('base64');
+      nickname: user.nickname
+    });
 
     return NextResponse.json({
       success: true,
