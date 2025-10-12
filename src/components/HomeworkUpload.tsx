@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { getTokenPayload } from '@/utils/jwtDecode';
 
 interface HomeworkUploadProps {
   stageId: string;
@@ -21,6 +22,16 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
 
   const minImages = teamCount;
   const maxImages = teamCount * 2;
+
+  // 当弹窗打开时，尝试从token获取用户信息并自动填充昵称
+  useEffect(() => {
+    if (isOpen && !formData.nickname) {
+      const payload = getTokenPayload();
+      if (payload?.nickname) {
+        setFormData(prev => ({ ...prev, nickname: payload.nickname }));
+      }
+    }
+  }, [isOpen]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
