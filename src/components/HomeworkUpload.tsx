@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getTokenPayload } from '@/utils/jwtDecode';
 
 interface HomeworkUploadProps {
   stageId: string;
@@ -24,24 +25,10 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
 
   // 当弹窗打开时，尝试从token获取用户信息并自动填充昵称
   useEffect(() => {
-    if (isOpen) {
-      const token = localStorage.getItem('Token');
-      if (token) {
-        try {
-          // 解析JWT token（简单解析，不验证签名）
-          const base64Url = token.split('.')[1];
-          // 将Base64URL转换为标准Base64
-          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-          // 添加padding
-          const padding = '='.repeat((4 - base64.length % 4) % 4);
-          const payload = JSON.parse(atob(base64 + padding));
-          
-          if (payload.nickname && !formData.nickname) {
-            setFormData(prev => ({ ...prev, nickname: payload.nickname }));
-          }
-        } catch (error) {
-          console.error('解析token失败:', error);
-        }
+    if (isOpen && !formData.nickname) {
+      const payload = getTokenPayload();
+      if (payload?.nickname) {
+        setFormData(prev => ({ ...prev, nickname: payload.nickname }));
       }
     }
   }, [isOpen]);
