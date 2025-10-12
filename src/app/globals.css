@@ -100,4 +100,16 @@ input:-ms-input-placeholder {
 input::-ms-input-placeholder {
   color: #9CA3AF !important;
   opacity: 1 !important;
+}
+
+/* 排行榜渐入动画 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 } 

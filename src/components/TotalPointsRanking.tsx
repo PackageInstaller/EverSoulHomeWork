@@ -94,40 +94,57 @@ export default function TotalPointsRanking() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-4">
       {/* 标题和搜索 */}
-      <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6">
+      <div className="bg-gradient-to-br from-black/30 to-black/20 backdrop-blur-md rounded-2xl border border-white/30 p-6 shadow-2xl">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <h2 className="text-2xl font-bold text-white">📊 总积分排行榜</h2>
-          <div className="w-full md:w-auto">
-            <input
-              type="text"
-              placeholder="搜索用户昵称..."
-              value={searchTerm}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              className="px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full"
-            />
+          <div>
+            <h2 className="text-3xl font-bold text-white flex items-center gap-3">
+              <span className="text-4xl">🏆</span>
+              总积分排行榜
+            </h2>
+            <p className="text-white/60 text-sm mt-2">所有用户累计积分排名</p>
+          </div>
+          <div className="w-full md:w-80">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="🔍 搜索用户昵称..."
+                value={searchTerm}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                className="w-full px-5 py-3.5 bg-white/15 border-2 border-white/30 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-300 hover:bg-white/20"
+              />
+            </div>
           </div>
         </div>
 
         {/* 统计卡片 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-xl p-4 border border-blue-500/30">
-            <div className="text-white/70 text-sm mb-1">参与用户总数</div>
-            <div className="text-2xl font-bold text-blue-300">
-              {rankStats.totalUsers} 人
+          <div className="group bg-gradient-to-br from-blue-500/30 to-purple-500/30 rounded-2xl p-5 border-2 border-blue-400/40 hover:border-blue-400/60 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-blue-500/20">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-white/70 text-sm font-medium">参与用户总数</div>
+              <span className="text-2xl">👥</span>
+            </div>
+            <div className="text-3xl font-bold text-blue-200 group-hover:text-blue-100 transition-colors">
+              {rankStats.totalUsers} <span className="text-lg font-normal text-white/60">人</span>
             </div>
           </div>
-          <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-xl p-4 border border-green-500/30">
-            <div className="text-white/70 text-sm mb-1">总积分最高</div>
-            <div className="text-2xl font-bold text-green-300">
-              {rankStats.highestPoints.toFixed(1)} 分
+          <div className="group bg-gradient-to-br from-green-500/30 to-emerald-500/30 rounded-2xl p-5 border-2 border-green-400/40 hover:border-green-400/60 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-green-500/20">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-white/70 text-sm font-medium">总积分最高</div>
+              <span className="text-2xl">⭐</span>
+            </div>
+            <div className="text-3xl font-bold text-green-200 group-hover:text-green-100 transition-colors">
+              {rankStats.highestPoints.toFixed(1)} <span className="text-lg font-normal text-white/60">分</span>
             </div>
           </div>
-          <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-xl p-4 border border-yellow-500/30">
-            <div className="text-white/70 text-sm mb-1">平均作业数</div>
-            <div className="text-2xl font-bold text-yellow-300">
-              {rankStats.avgHomework} 个
+          <div className="group bg-gradient-to-br from-yellow-500/30 to-orange-500/30 rounded-2xl p-5 border-2 border-yellow-400/40 hover:border-yellow-400/60 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-yellow-500/20">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-white/70 text-sm font-medium">平均作业数</div>
+              <span className="text-2xl">📝</span>
+            </div>
+            <div className="text-3xl font-bold text-yellow-200 group-hover:text-yellow-100 transition-colors">
+              {rankStats.avgHomework} <span className="text-lg font-normal text-white/60">个</span>
             </div>
           </div>
         </div>
@@ -135,68 +152,97 @@ export default function TotalPointsRanking() {
 
       {/* 排行列表 */}
       {rankLoading ? (
-        <div className="text-center py-12 bg-black/20 backdrop-blur-sm rounded-xl border border-white/20">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-white/70">正在加载排行数据...</p>
+        <div className="text-center py-16 bg-gradient-to-br from-black/30 to-black/20 backdrop-blur-md rounded-2xl border border-white/30 shadow-xl">
+          <div className="relative inline-block">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500/30 border-t-blue-500 mx-auto"></div>
+            <div className="absolute inset-0 animate-ping rounded-full h-16 w-16 border-4 border-blue-400/20"></div>
+          </div>
+          <p className="mt-6 text-white/80 text-lg font-medium">正在加载排行数据...</p>
+          <p className="mt-2 text-white/50 text-sm">请稍候</p>
         </div>
       ) : currentRankList.length === 0 ? (
-        <div className="text-center py-12 bg-black/20 backdrop-blur-sm rounded-xl border border-white/20">
-          <div className="text-6xl mb-4">📊</div>
-          <p className="text-white/70 text-lg">暂无排行数据</p>
-          <p className="text-white/50 text-sm mt-2">
+        <div className="text-center py-20 bg-gradient-to-br from-black/30 to-black/20 backdrop-blur-md rounded-2xl border border-white/30 shadow-xl">
+          <div className="inline-block p-6 bg-white/10 rounded-full mb-6">
+            <div className="text-7xl animate-bounce">📊</div>
+          </div>
+          <h3 className="text-white text-2xl font-bold mb-3">暂无排行数据</h3>
+          <p className="text-white/60 text-base mb-4">
             {searchTerm ? '没有找到匹配的用户' : '还没有用户提交作业'}
           </p>
+          {searchTerm && (
+            <button
+              onClick={() => handleSearchChange('')}
+              className="mt-4 px-6 py-2.5 bg-blue-500/80 hover:bg-blue-500 text-white rounded-xl transition-all duration-300 hover:scale-105 shadow-lg"
+            >
+              清除搜索
+            </button>
+          )}
         </div>
       ) : (
         <>
-          <div className="space-y-3">
-            {currentRankList.map((item) => {
-              let rankStyle = 'bg-white/5';
+          <div className="space-y-4">
+            {currentRankList.map((item, index) => {
+              let rankStyle = 'bg-gradient-to-r from-white/10 to-white/5 border-white/20';
               let rankIcon = `#${item.rank}`;
+              let rankBg = 'bg-white/20';
+              let shadowColor = '';
 
               if (item.rank === 1) {
                 rankStyle =
-                  'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-2 border-yellow-500/50';
+                  'bg-gradient-to-r from-yellow-500/30 to-orange-500/30 border-yellow-400/60';
                 rankIcon = '🥇';
+                rankBg = 'bg-gradient-to-br from-yellow-400 to-orange-400';
+                shadowColor = 'shadow-yellow-500/30';
               } else if (item.rank === 2) {
                 rankStyle =
-                  'bg-gradient-to-r from-gray-400/20 to-gray-500/20 border-2 border-gray-400/50';
+                  'bg-gradient-to-r from-gray-300/30 to-gray-400/30 border-gray-300/60';
                 rankIcon = '🥈';
+                rankBg = 'bg-gradient-to-br from-gray-300 to-gray-400';
+                shadowColor = 'shadow-gray-400/30';
               } else if (item.rank === 3) {
                 rankStyle =
-                  'bg-gradient-to-r from-orange-400/20 to-orange-600/20 border-2 border-orange-400/50';
+                  'bg-gradient-to-r from-orange-600/30 to-orange-700/30 border-orange-500/60';
                 rankIcon = '🥉';
+                rankBg = 'bg-gradient-to-br from-orange-500 to-orange-600';
+                shadowColor = 'shadow-orange-500/30';
               }
 
               return (
                 <div
                   key={item.id}
-                  className={`${rankStyle} backdrop-blur-sm rounded-xl p-4 border border-white/10 transition-transform hover:scale-[1.02]`}
+                  className={`${rankStyle} backdrop-blur-md rounded-2xl p-5 border-2 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${shadowColor} group`}
+                  style={{
+                    animation: `fadeIn 0.3s ease-out ${index * 0.05}s both`
+                  }}
                 >
                   <div className="flex items-center justify-between flex-col sm:flex-row gap-4">
                     <div className="flex items-center space-x-4 w-full sm:w-auto">
-                      <div className="text-2xl font-bold text-white/80 w-12 text-center flex-shrink-0">
-                        {rankIcon}
+                      <div className={`${rankBg} text-white w-14 h-14 rounded-xl flex items-center justify-center text-2xl font-bold shadow-lg flex-shrink-0 group-hover:scale-110 transition-transform duration-300`}>
+                        {item.rank <= 3 ? rankIcon : `#${item.rank}`}
                       </div>
                       <div className="flex-1">
-                        <div className="text-lg font-semibold text-white">
+                        <div className="text-xl font-bold text-white group-hover:text-blue-200 transition-colors">
                           {item.nickname}
                         </div>
-                        <div className="text-sm text-white/60">
-                          完成作业 {item.homeworkCount} 个 • 最后更新：
-                          {item.lastUpdated}
+                        <div className="text-sm text-white/60 mt-1 flex items-center gap-2 flex-wrap">
+                          <span className="inline-flex items-center gap-1">
+                            📚 {item.homeworkCount} 个作业
+                          </span>
+                          <span className="text-white/40">•</span>
+                          <span className="inline-flex items-center gap-1">
+                            🕐 {item.lastUpdated}
+                          </span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="text-right w-full sm:w-auto">
-                      <div className="text-xl font-bold text-blue-300">
-                        {item.totalPoints.toFixed(1)} 总积分
+                    <div className="text-right w-full sm:w-auto bg-white/10 rounded-xl p-3 group-hover:bg-white/15 transition-colors">
+                      <div className="text-2xl font-bold text-blue-200 group-hover:text-blue-100 transition-colors">
+                        {item.totalPoints.toFixed(1)}
+                        <span className="text-base font-normal text-white/50 ml-1">总积分</span>
                       </div>
-                      <div className="text-sm text-white/50">
-                        平均每作业{' '}
-                        {(item.totalPoints / item.homeworkCount || 0).toFixed(1)}{' '}
-                        分
+                      <div className="text-sm text-white/50 mt-1">
+                        平均 {(item.totalPoints / item.homeworkCount || 0).toFixed(1)} 分/作业
                       </div>
                     </div>
                   </div>
@@ -207,23 +253,37 @@ export default function TotalPointsRanking() {
 
           {/* 分页控件 */}
           {rankPagination.totalPages > 1 && (
-            <div className="flex justify-center items-center space-x-2 bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-4">
+            <div className="flex justify-center items-center gap-3 bg-gradient-to-br from-black/30 to-black/20 backdrop-blur-md rounded-2xl border border-white/30 p-5 shadow-xl">
               <button
                 onClick={() => handleRankPageChange(rankPagination.page - 1)}
                 disabled={rankPagination.page === 1}
-                className="px-4 py-2 bg-white/10 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-colors"
+                className="group px-5 py-2.5 bg-white/15 hover:bg-white/25 text-white rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300 hover:scale-105 disabled:hover:scale-100 border border-white/20 font-medium"
               >
-                上一页
+                <span className="inline-flex items-center gap-2">
+                  <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  上一页
+                </span>
               </button>
-              <span className="px-4 py-2 text-white">
-                第 {rankPagination.page} 页 / 共 {rankPagination.totalPages} 页
-              </span>
+              
+              <div className="px-6 py-2.5 bg-gradient-to-r from-blue-500/30 to-purple-500/30 text-white rounded-xl border-2 border-blue-400/40 font-semibold min-w-[140px] text-center">
+                <span className="text-blue-200">{rankPagination.page}</span>
+                <span className="text-white/50 mx-2">/</span>
+                <span className="text-white/70">{rankPagination.totalPages}</span>
+              </div>
+              
               <button
                 onClick={() => handleRankPageChange(rankPagination.page + 1)}
                 disabled={rankPagination.page === rankPagination.totalPages}
-                className="px-4 py-2 bg-white/10 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-colors"
+                className="group px-5 py-2.5 bg-white/15 hover:bg-white/25 text-white rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300 hover:scale-105 disabled:hover:scale-100 border border-white/20 font-medium"
               >
-                下一页
+                <span className="inline-flex items-center gap-2">
+                  下一页
+                  <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </span>
               </button>
             </div>
           )}
