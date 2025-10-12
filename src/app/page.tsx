@@ -118,7 +118,7 @@ export default function HomePage() {
       case "totalRank":
         return (
           <div
-            className="min-h-screen"
+            className="min-h-screen relative"
             style={{
               backgroundImage: "url(/images/bg_worldmap.webp)",
               backgroundSize: "cover",
@@ -153,23 +153,12 @@ export default function HomePage() {
   };
 
   return (
-    <div className={`min-h-screen ${activeTab === "totalRank" ? "" : "bg-gray-50"}`}>
+    <div className="min-h-screen bg-gray-50">
       {/* 顶部导航栏 */}
       <div className="bg-white border-b border-gray-200">
         <div className="mx-auto px-4 sm:px-6 p-2">
           <div className="flex items-center justify-between h-14 sm:h-16 flex-col sm:flex-row">
-            <div className="flex items-center gap-4">
-              {activeTab === "totalRank" && (
-                <button
-                  onClick={() => setActiveTab("stage")}
-                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                  <span className="font-medium">返回</span>
-                </button>
-              )}
+            <div className="flex items-center">
               <h1 className="text-base sm:text-xl font-bold text-gray-900">
                 EverSoul 作业站
               </h1>
@@ -244,59 +233,54 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* 总积分排行全屏显示 */}
-      {activeTab === "totalRank" ? (
-        renderContent()
-      ) : (
-        <div className="mx-auto px-4 sm:px-6">
-          <div className="flex flex-col sm:flex-row">
-            {/* 左侧导航 */}
-            <div className="w-full sm:w-64 bg-white border-b sm:border-b-0 sm:border-r border-gray-200 sm:min-h-screen p-4 sm:p-6">
-              <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-4">
-                功能导航
-              </h2>
-              <nav className="space-y-2">
-                {menuItems.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() =>
-                      item.available ? setActiveTab(item.id) : null
-                    }
-                    className={`w-full text-left p-2 sm:p-3 rounded-lg transition-colors ${
-                      activeTab === item.id
-                        ? "bg-blue-100 text-blue-700 border-2 border-blue-200"
-                        : item.available
-                        ? "hover:bg-gray-100 text-gray-700"
-                        : "text-gray-400 cursor-not-allowed"
-                    }`}
-                    disabled={!item.available}
-                  >
-                    <div className="flex items-center space-x-2 sm:space-x-3">
-                      <span className="text-base sm:text-xl">{item.icon}</span>
-                      <div>
-                        <div className="font-medium text-sm sm:text-base">
-                          {item.name}
-                        </div>
-                        <div className="text-xs sm:text-sm text-gray-500">
-                          {item.description}
-                        </div>
+      <div className="mx-auto px-4 sm:px-6">
+        <div className="flex flex-col sm:flex-row">
+          {/* 左侧导航 */}
+          <div className="w-full sm:w-64 bg-white border-b sm:border-b-0 sm:border-r border-gray-200 sm:min-h-screen p-4 sm:p-6">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-4">
+              功能导航
+            </h2>
+            <nav className="space-y-2">
+              {menuItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() =>
+                    item.available ? setActiveTab(item.id) : null
+                  }
+                  className={`w-full text-left p-2 sm:p-3 rounded-lg transition-colors ${
+                    activeTab === item.id
+                      ? "bg-blue-100 text-blue-700 border-2 border-blue-200"
+                      : item.available
+                      ? "hover:bg-gray-100 text-gray-700"
+                      : "text-gray-400 cursor-not-allowed"
+                  }`}
+                  disabled={!item.available}
+                >
+                  <div className="flex items-center space-x-2 sm:space-x-3">
+                    <span className="text-base sm:text-xl">{item.icon}</span>
+                    <div>
+                      <div className="font-medium text-sm sm:text-base">
+                        {item.name}
+                      </div>
+                      <div className="text-xs sm:text-sm text-gray-500">
+                        {item.description}
                       </div>
                     </div>
-                    {!item.available && (
-                      <div className="text-xs text-gray-400 mt-1">先摆烂了</div>
-                    )}
-                  </button>
-                ))}
-              </nav>
-            </div>
+                  </div>
+                  {!item.available && (
+                    <div className="text-xs text-gray-400 mt-1">先摆烂了</div>
+                  )}
+                </button>
+              ))}
+            </nav>
+          </div>
 
-            {/* 右侧内容区域 */}
-            <div className="flex-1 p-4 sm:p-6">
-              {renderContent()}
-            </div>
+          {/* 右侧内容区域 */}
+          <div className={`flex-1 ${activeTab === "totalRank" ? "p-0" : "p-4 sm:p-6"}`}>
+            {renderContent()}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
