@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import TotalPointsRanking from "@/components/TotalPointsRanking";
 
-type ActiveTab = "stage" | "guild" | "arena" | "strategy" | "leaderboard";
+type ActiveTab = "stage" | "guild" | "arena" | "strategy" | "totalRank";
 
 // 定义用户类型
 interface User {
@@ -69,12 +70,12 @@ export default function HomePage() {
       href: "/stage",
     },
     {
-      id: "leaderboard" as ActiveTab,
+      id: "totalRank" as ActiveTab,
       name: "总积分排行",
       icon: "🏆",
-      description: "查看所有玩家的总积分排行榜",
+      description: "查看所有用户的总积分排名",
       available: true,
-      href: "/leaderboard",
+      href: "#totalRank",
     },
   ];
 
@@ -111,6 +112,22 @@ export default function HomePage() {
                 </a>
               </div>
             </div>
+          </div>
+        );
+
+      case "totalRank":
+        return (
+          <div
+            className="min-h-screen py-8"
+            style={{
+              backgroundImage: "url(/images/bg_worldmap.webp)",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              backgroundRepeat: "no-repeat",
+              backgroundAttachment: "fixed",
+            }}
+          >
+            <TotalPointsRanking />
           </div>
         );
 
