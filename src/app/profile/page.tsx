@@ -21,7 +21,6 @@ export default function ProfilePage() {
   const [message, setMessage] = useState<{ type: string; text: string } | null>(
     null
   );
-  const [showPasswordFields, setShowPasswordFields] = useState(false);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -68,10 +67,18 @@ export default function ProfilePage() {
       return;
     }
 
-    // 如果要修改密码
-    if (showPasswordFields) {
+    // 如果要修改密码（填写了任一密码字段）
+    const isChangingPassword = oldPassword || newPassword || confirmPassword;
+    
+    if (isChangingPassword) {
       if (!oldPassword) {
         setMessage({ type: "error", text: "请输入当前密码" });
+        setLoading(false);
+        return;
+      }
+
+      if (!newPassword) {
+        setMessage({ type: "error", text: "请输入新密码" });
         setLoading(false);
         return;
       }
@@ -97,7 +104,7 @@ export default function ProfilePage() {
       }
 
       const requestBody: any = { nickname };
-      if (showPasswordFields && oldPassword && newPassword) {
+      if (isChangingPassword && oldPassword && newPassword) {
         requestBody.oldPassword = oldPassword;
         requestBody.newPassword = newPassword;
       }
@@ -114,20 +121,30 @@ export default function ProfilePage() {
       const data = await response.json();
 
       if (data.success) {
-        // 更新本地token
-        localStorage.setItem("Token", data.token);
-        setMessage({ type: "success", text: "资料更新成功" });
+        // 如果修改了密码，需要强制退出重新登录
+        if (isChangingPassword) {
+          setMessage({ type: "success", text: "密码修改成功，请重新登录" });
+          
+          // 清除token并跳转到登录页
+          setTimeout(() => {
+            localStorage.removeItem("Token");
+            router.push("/loginResignter");
+          }, 1500);
+        } else {
+          // 只修改了昵称，更新本地token
+          localStorage.setItem("Token", data.token);
+          setMessage({ type: "success", text: "资料更新成功" });
+
+          // 延迟跳转
+          setTimeout(() => {
+            router.push("/");
+          }, 1000);
+        }
 
         // 重置密码字段
         setOldPassword("");
         setNewPassword("");
         setConfirmPassword("");
-        setShowPasswordFields(false);
-
-        // 延迟跳转
-        setTimeout(() => {
-          router.push("/");
-        }, 1000);
       } else {
         setMessage({ type: "error", text: data.message || "更新失败" });
       }
@@ -144,7 +161,7 @@ export default function ProfilePage() {
       <div
         className="min-h-screen flex items-center justify-center"
         style={{
-          backgroundImage: "url('/images/bg_worldmap.webp')",
+          backgroundImage: "url(/images/loginBg.webp)",
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
@@ -160,7 +177,7 @@ export default function ProfilePage() {
     <div
       className="min-h-screen py-12 px-4 sm:px-6 lg:px-8"
       style={{
-        backgroundImage: "url('/images/bg_worldmap.webp')",
+        backgroundImage: "url(/images/loginBg.webp)",
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
@@ -236,25 +253,10 @@ export default function ProfilePage() {
               />
             </div>
 
-            <div className="flex items-center">
-              <input
-                id="change-password"
-                name="change-password"
-                type="checkbox"
-                checked={showPasswordFields}
-                onChange={(e) => setShowPasswordFields(e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-white/20 rounded bg-black/30"
-              />
-              <label
-                htmlFor="change-password"
-                className="ml-2 block text-sm text-white/80"
-              >
-                修改密码
-              </label>
-            </div>
-
-            {showPasswordFields && (
-              <>
+            <div className="border-t border-white/20 pt-6 mt-2">
+              <h3 className="text-sm font-medium text-white/80 mb-4">
+                修改密码（可选）
+              </h3>
                 <div>
                   <label
                     htmlFor="old-password"
@@ -323,8 +325,7 @@ export default function ProfilePage() {
                     }}
                   />
                 </div>
-              </>
-            )}
+            </div>
 
             <div className="flex space-x-3">
               <button

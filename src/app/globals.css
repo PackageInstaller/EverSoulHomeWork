@@ -74,4 +74,30 @@ html, body {
 .password-input::-moz-input-placeholder {
   -webkit-text-security: none;
   text-security: none;
+}
+
+/* 确保placeholder显示为浅灰色 */
+input::placeholder {
+  color: #9CA3AF !important;
+  opacity: 1 !important;
+}
+
+input::-webkit-input-placeholder {
+  color: #9CA3AF !important;
+  opacity: 1 !important;
+}
+
+input::-moz-placeholder {
+  color: #9CA3AF !important;
+  opacity: 1 !important;
+}
+
+input:-ms-input-placeholder {
+  color: #9CA3AF !important;
+  opacity: 1 !important;
+}
+
+input::-ms-input-placeholder {
+  color: #9CA3AF !important;
+  opacity: 1 !important;
 } 
