@@ -39,3 +39,7 @@ prisma/migrations/
 
 # Uploads
 public/uploads/
+
+
+# secrets
+admin-secret.json

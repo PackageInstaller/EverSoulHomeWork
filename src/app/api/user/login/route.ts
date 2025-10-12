@@ -25,8 +25,16 @@ export async function POST(request: Request) {
 
     if (!user) {
       return NextResponse.json(
-        { success: false, message: '邮箱或密码错误' },
-        { status: 401 }
+        { success: false, message: '该账号不存在，请先注册' },
+        { status: 404 }
+      );
+    }
+
+    // 验证密码长度（虽然数据库中已加密，但可以先检查）
+    if (password.length < 6) {
+      return NextResponse.json(
+        { success: false, message: '密码长度至少6位' },
+        { status: 400 }
       );
     }
 
@@ -35,7 +43,7 @@ export async function POST(request: Request) {
 
     if (!isPasswordValid) {
       return NextResponse.json(
-        { success: false, message: '邮箱或密码错误' },
+        { success: false, message: '密码错误，请重新输入' },
         { status: 401 }
       );
     }

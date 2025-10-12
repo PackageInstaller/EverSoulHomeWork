@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface HomeworkUploadProps {
   stageId: string;
@@ -21,6 +21,24 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
 
   const minImages = teamCount;
   const maxImages = teamCount * 2;
+
+  // 当弹窗打开时，尝试从token获取用户信息并自动填充昵称
+  useEffect(() => {
+    if (isOpen) {
+      const token = localStorage.getItem('Token');
+      if (token) {
+        try {
+          // 解析JWT token（简单解析，不验证签名）
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          if (payload.nickname && !formData.nickname) {
+            setFormData(prev => ({ ...prev, nickname: payload.nickname }));
+          }
+        } catch (error) {
+          console.error('解析token失败:', error);
+        }
+      }
+    }
+  }, [isOpen]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {

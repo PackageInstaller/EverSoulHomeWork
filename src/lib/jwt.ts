@@ -1,10 +1,13 @@
 import jwt from 'jsonwebtoken';
-
-// JWT密钥（生产环境应该从环境变量读取）
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this-in-production';
+import { getJwtSecret } from './config';
 
 // JWT过期时间（7天）
 const JWT_EXPIRES_IN = '7d';
+
+// 获取JWT密钥（优先使用环境变量，其次使用配置文件）
+function getSecret(): string {
+  return process.env.JWT_SECRET || getJwtSecret();
+}
 
 export interface JWTPayload {
   id: string;
@@ -16,7 +19,7 @@ export interface JWTPayload {
  * 生成JWT token
  */
 export function generateToken(payload: JWTPayload): string {
-  return jwt.sign(payload, JWT_SECRET, {
+  return jwt.sign(payload, getSecret(), {
     expiresIn: JWT_EXPIRES_IN,
   });
 }
@@ -26,7 +29,7 @@ export function generateToken(payload: JWTPayload): string {
  */
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+    const decoded = jwt.verify(token, getSecret()) as JWTPayload;
     return decoded;
   } catch (error) {
     return null;

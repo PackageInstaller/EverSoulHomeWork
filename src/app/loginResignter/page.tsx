@@ -30,6 +30,12 @@ export default function LoginRegisterPage() {
           return;
         }
 
+        if (password.length < 6) {
+          setError("密码长度至少6位");
+          setLoading(false);
+          return;
+        }
+
         const response = await fetch('/api/user/login', {
           method: 'POST',
           headers: {
