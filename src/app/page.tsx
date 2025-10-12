@@ -116,20 +116,7 @@ export default function HomePage() {
         );
 
       case "totalRank":
-        return (
-          <div
-            className="min-h-screen relative"
-            style={{
-              backgroundImage: "url(/images/bg_worldmap.webp)",
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              backgroundRepeat: "no-repeat",
-              backgroundAttachment: "fixed",
-            }}
-          >
-            <TotalPointsRanking />
-          </div>
-        );
+        return <TotalPointsRanking />;
 
       default:
         return (
