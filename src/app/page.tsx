@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 
-type ActiveTab = "stage" | "guild" | "arena" | "strategy";
+type ActiveTab = "stage" | "guild" | "arena" | "strategy" | "leaderboard";
 
 // 定义用户类型
 interface User {
@@ -69,12 +69,12 @@ export default function HomePage() {
       href: "/stage",
     },
     {
-      id: "guild" as ActiveTab,
-      name: "会战攻略",
-      icon: "🏰",
-      description: "会战关卡攻略和推荐阵容",
-      available: false,
-      href: "#",
+      id: "leaderboard" as ActiveTab,
+      name: "总积分排行",
+      icon: "🏆",
+      description: "查看所有玩家的总积分排行榜",
+      available: true,
+      href: "/leaderboard",
     },
   ];
 
@@ -154,7 +154,7 @@ export default function HomePage() {
                 href="/leaderboard"
                 className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm transition-colors font-semibold"
               >
-                🏆 积分榜
+                🏆 月度奖励榜
               </a>
               <a
                 href="/admin"
