@@ -158,46 +158,37 @@ export default function ProfilePage() {
 
   if (!currentUser) {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{
-          backgroundImage: "url(/images/loginBg.webp)",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-          backgroundAttachment: "fixed",
-        }}
-      >
-        <div className="text-white text-lg">加载中...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-gray-700 text-lg">加载中...</div>
       </div>
     );
   }
 
   return (
-    <div
-      className="min-h-screen py-12 px-4 sm:px-6 lg:px-8"
-      style={{
-        backgroundImage: "url(/images/loginBg.webp)",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-        backgroundAttachment: "fixed",
-      }}
-    >
+    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
       <div className="max-w-md w-full mx-auto space-y-8">
-        <div>
-          <h1 className="text-center text-3xl font-extrabold text-white">
+        <div className="text-center">
+          <h1 className="text-3xl font-extrabold text-gray-900">
             编辑个人资料
           </h1>
+          <button
+            onClick={() => router.push('/')}
+            className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 rounded-lg transition-colors shadow-md hover:shadow-lg border border-gray-200"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            返回主页
+          </button>
         </div>
 
-        <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-8">
+        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-8">
           {message && (
             <div
               className={`mb-4 p-3 rounded-md text-center ${
                 message.type === "error"
-                  ? "bg-red-500/20 text-red-300 border border-red-500/50"
-                  : "bg-green-500/20 text-green-300 border border-green-500/50"
+                  ? "bg-red-100 text-red-700 border border-red-300"
+                  : "bg-green-100 text-green-700 border border-green-300"
               }`}
             >
               {message.text}
@@ -208,7 +199,7 @@ export default function ProfilePage() {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-white/80"
+                className="block text-sm font-medium text-gray-700"
               >
                 邮箱地址
               </label>
@@ -219,20 +210,16 @@ export default function ProfilePage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="mt-1 block w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg text-gray-500 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled
-                style={{
-                  WebkitTextFillColor: "rgba(255, 255, 255, 0.5)",
-                  WebkitBoxShadow: "0 0 0px 1000px rgba(0, 0, 0, 0.3) inset",
-                }}
               />
-              <p className="mt-1 text-sm text-white/50">邮箱地址不可更改</p>
+              <p className="mt-1 text-sm text-gray-500">邮箱地址不可更改</p>
             </div>
 
             <div>
               <label
                 htmlFor="nickname"
-                className="block text-sm font-medium text-white/80"
+                className="block text-sm font-medium text-gray-700"
               >
                 昵称
               </label>
@@ -243,24 +230,20 @@ export default function ProfilePage() {
                 required
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
-                className="mt-1 block w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="mt-1 block w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="请输入昵称"
                 autoComplete="nickname"
-                style={{
-                  WebkitTextFillColor: "white",
-                  WebkitBoxShadow: "0 0 0px 1000px rgba(0, 0, 0, 0.3) inset",
-                }}
               />
             </div>
 
-            <div className="border-t border-white/20 pt-6 mt-2">
-              <h3 className="text-sm font-medium text-white/80 mb-4">
+            <div className="border-t border-gray-200 pt-6 mt-2">
+              <h3 className="text-sm font-medium text-gray-700 mb-4">
                 修改密码（可选）
               </h3>
                 <div>
                   <label
                     htmlFor="old-password"
-                    className="block text-sm font-medium text-white/80"
+                    className="block text-sm font-medium text-gray-700"
                   >
                     当前密码
                   </label>
@@ -270,20 +253,16 @@ export default function ProfilePage() {
                     type="password"
                     value={oldPassword}
                     onChange={(e) => setOldPassword(e.target.value)}
-                    className="mt-1 block w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="mt-1 block w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="请输入当前密码"
                     autoComplete="current-password"
-                    style={{
-                      WebkitTextFillColor: "white",
-                      WebkitBoxShadow: "0 0 0px 1000px rgba(0, 0, 0, 0.3) inset",
-                    }}
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="new-password"
-                    className="block text-sm font-medium text-white/80"
+                    className="block text-sm font-medium text-gray-700"
                   >
                     新密码
                   </label>
@@ -293,20 +272,16 @@ export default function ProfilePage() {
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="mt-1 block w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="mt-1 block w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="至少6位字符"
                     autoComplete="new-password"
-                    style={{
-                      WebkitTextFillColor: "white",
-                      WebkitBoxShadow: "0 0 0px 1000px rgba(0, 0, 0, 0.3) inset",
-                    }}
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="confirm-password"
-                    className="block text-sm font-medium text-white/80"
+                    className="block text-sm font-medium text-gray-700"
                   >
                     确认新密码
                   </label>
@@ -316,13 +291,9 @@ export default function ProfilePage() {
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="mt-1 block w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="mt-1 block w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="请再次输入新密码"
                     autoComplete="new-password"
-                    style={{
-                      WebkitTextFillColor: "white",
-                      WebkitBoxShadow: "0 0 0px 1000px rgba(0, 0, 0, 0.3) inset",
-                    }}
                   />
                 </div>
             </div>
@@ -339,7 +310,7 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="flex-1 flex justify-center py-3 px-4 border border-white/20 rounded-lg shadow-sm text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+                className="flex-1 flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
               >
                 返回
               </button>
