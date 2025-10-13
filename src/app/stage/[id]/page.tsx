@@ -6,6 +6,7 @@ import { getStageDetails } from '@/utils/dataUtils';
 import { getConsistentMainStoryBackground, getBackgroundStyle } from '@/utils/backgroundUtils';
 import { StageDetails as StageDetailsType, DataSource } from '@/types';
 import StageDetails from '@/components/StageDetails';
+import StageNavigator from '@/components/StageNavigator';
 
 export default function StageDetailPage() {
   const params = useParams();
@@ -195,6 +196,9 @@ export default function StageDetailPage() {
           <div className="mx-auto p-1 sm:p-6">
             <StageDetails stageDetails={stageDetails} dataSource={dataSource} />
           </div>
+
+          {/* 关卡导航悬浮窗 */}
+          <StageNavigator currentStageId={stageId} dataSource={dataSource} />
         </div>
       </>
     );
