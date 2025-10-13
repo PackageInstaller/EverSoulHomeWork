@@ -16,6 +16,7 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("stage");
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // 页面加载时检查是否有登录用户
   useEffect(() => {
@@ -51,6 +52,36 @@ export default function HomePage() {
 
     fetchUserProfile();
   }, []);
+
+  // 获取未读消息数量
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const fetchUnreadCount = async () => {
+      const token = localStorage.getItem("Token");
+      if (!token) return;
+
+      try {
+        const response = await fetch('/api/messages?type=unread', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          setUnreadCount(data.messages.length);
+        }
+      } catch (error) {
+        console.error("获取未读消息数量失败", error);
+      }
+    };
+
+    fetchUnreadCount();
+    // 每30秒刷新一次未读消息数量
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, [currentUser]);
 
   const handleLogout = () => {
     localStorage.removeItem("Token");
@@ -174,8 +205,11 @@ export default function HomePage() {
                     onMouseEnter={() => setShowUserMenu(true)}
                     className="flex items-center gap-1.5 sm:gap-2 bg-blue-500 hover:bg-blue-600 text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm transition-colors duration-300"
                   >
-                    <div className="w-5 h-5 sm:w-6 sm:h-6 bg-white rounded-full flex items-center justify-center text-blue-500 font-bold text-xs sm:text-sm">
+                    <div className="relative w-5 h-5 sm:w-6 sm:h-6 bg-white rounded-full flex items-center justify-center text-blue-500 font-bold text-xs sm:text-sm">
                       {currentUser.nickname.charAt(0)}
+                      {unreadCount > 0 && (
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-blue-500"></div>
+                      )}
                     </div>
                     <span className="hidden sm:inline truncate max-w-[60px] md:max-w-[100px]">
                       {currentUser.nickname}

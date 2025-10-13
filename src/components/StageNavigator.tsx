@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface StageNavigatorProps {
@@ -12,10 +12,6 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
   const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(false);
   const [position, setPosition] = useState<'left' | 'right'>('right');
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [currentPos, setCurrentPos] = useState({ x: 0, y: 0 });
-  const containerRef = useRef<HTMLDivElement>(null);
 
   // 解析当前关卡，获取章节和关卡号
   const [currentArea, currentStage] = currentStageId.split('-').map(Number);
@@ -30,54 +26,6 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
       isCurrent: stageNum === currentStage,
     };
   });
-
-  useEffect(() => {
-    if (isDragging) {
-      const handleMouseMove = (e: MouseEvent) => {
-        e.preventDefault();
-        const newX = e.clientX - dragOffset.x;
-        const newY = e.clientY - dragOffset.y;
-        setCurrentPos({ x: newX, y: newY });
-      };
-
-      const handleMouseUp = (e: MouseEvent) => {
-        e.preventDefault();
-        setIsDragging(false);
-        // 计算离哪边更近
-        const windowWidth = window.innerWidth;
-        const elementX = e.clientX;
-        
-        if (elementX < windowWidth / 2) {
-          setPosition('left');
-        } else {
-          setPosition('right');
-        }
-        
-        // 重置位置
-        setCurrentPos({ x: 0, y: 0 });
-      };
-
-      document.addEventListener('mousemove', handleMouseMove, { passive: false });
-      document.addEventListener('mouseup', handleMouseUp);
-
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [isDragging, dragOffset]);
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!containerRef.current) return;
-    
-    const rect = containerRef.current.getBoundingClientRect();
-    setDragOffset({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    });
-    setIsDragging(true);
-  };
 
   const handleStageClick = (stageId: string) => {
     router.push(`/stage/${stageId}?source=${dataSource}`);
@@ -114,38 +62,20 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
       {/* 悬浮窗 */}
       {isExpanded && (
         <div
-          ref={containerRef}
           className={`
-            fixed z-50 w-80 max-h-[80vh] bg-white/95 backdrop-blur-md rounded-lg border border-gray-200
-            ${!isDragging && 'transition-all duration-300 ease-out'}
-            ${!isDragging && (position === 'right' ? 'right-2' : 'left-2')}
-            ${!isDragging && 'top-1/2 -translate-y-1/2'}
-            ${isDragging ? 'cursor-grabbing shadow-2xl scale-105' : 'cursor-auto shadow-xl'}
+            fixed z-50 w-80 max-h-[80vh] bg-white/95 backdrop-blur-md rounded-lg shadow-xl border border-gray-200
+            transition-all duration-300 ease-out top-1/2 -translate-y-1/2
+            ${position === 'right' ? 'right-2' : 'left-2'}
           `}
-          style={
-            isDragging
-              ? {
-                  left: `${currentPos.x}px`,
-                  top: `${currentPos.y}px`,
-                  transform: 'none',
-                  transition: 'none',
-                  userSelect: 'none',
-                }
-              : {}
-          }
         >
-          {/* 头部（可拖动区域） */}
-          <div
-            className="flex items-center justify-between p-4 border-b border-gray-200 bg-blue-600 text-white rounded-t-lg cursor-grab active:cursor-grabbing"
-            onMouseDown={handleMouseDown}
-          >
-            <h3 className="font-bold text-lg select-none">第 {currentArea} 章关卡</h3>
+          {/* 头部 */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-blue-600 text-white rounded-t-lg">
+            <h3 className="font-bold text-lg">第 {currentArea} 章关卡</h3>
             <div className="flex items-center gap-2">
               <button
                 onClick={togglePosition}
                 className="p-1 hover:bg-blue-700 rounded transition-colors"
                 title="切换位置"
-                onMouseDown={(e) => e.stopPropagation()}
               >
                 {position === 'right' ? '←' : '→'}
               </button>
@@ -153,7 +83,6 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
                 onClick={() => setIsExpanded(false)}
                 className="p-1 hover:bg-blue-700 rounded transition-colors"
                 title="关闭"
-                onMouseDown={(e) => e.stopPropagation()}
               >
                 ✕
               </button>
@@ -187,8 +116,8 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
 
           {/* 底部说明 */}
           <div className="p-3 border-t border-gray-200 bg-gray-50 rounded-b-lg">
-            <p className="text-xs text-gray-600 text-center select-none">
-              拖动标题栏可移动位置，松手自动靠边
+            <p className="text-xs text-gray-600 text-center">
+              点击关卡编号快速跳转，点击箭头切换位置
             </p>
           </div>
         </div>

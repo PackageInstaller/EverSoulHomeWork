@@ -18,19 +18,18 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const type = searchParams.get('type'); // system, admin, 或不传（全部）
-    const unreadOnly = searchParams.get('unreadOnly') === 'true';
+    const type = searchParams.get('type'); // system, admin, unread, read, 或不传（全部）
 
     const where: any = {
       userId: userData.id,
     };
 
-    if (type) {
-      where.type = type;
-    }
-
-    if (unreadOnly) {
+    if (type === 'unread') {
       where.isRead = false;
+    } else if (type === 'read') {
+      where.isRead = true;
+    } else if (type === 'system' || type === 'admin') {
+      where.type = type;
     }
 
     const messages = await prisma.message.findMany({

@@ -16,7 +16,7 @@ export default function MailboxPage() {
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'system' | 'admin' | 'unread'>('all');
+  const [filter, setFilter] = useState<'all' | 'system' | 'admin' | 'unread' | 'read'>('all');
   const [unreadCount, setUnreadCount] = useState(0);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
 
@@ -38,7 +38,9 @@ export default function MailboxPage() {
       if (filter === 'system' || filter === 'admin') {
         params.append('type', filter);
       } else if (filter === 'unread') {
-        params.append('unreadOnly', 'true');
+        params.append('type', 'unread');
+      } else if (filter === 'read') {
+        params.append('type', 'read');
       }
 
       const response = await fetch(`/api/messages?${params.toString()}`, {
@@ -64,6 +66,12 @@ export default function MailboxPage() {
   };
 
   const handleMessageClick = async (message: Message) => {
+    // 如果点击的是已选中的消息，则收起
+    if (selectedMessage?.id === message.id) {
+      setSelectedMessage(null);
+      return;
+    }
+
     setSelectedMessage(message);
 
     // 如果消息未读，标记为已读
@@ -174,6 +182,16 @@ export default function MailboxPage() {
                     }`}
                   >
                     未读 {unreadCount > 0 && `(${unreadCount})`}
+                  </button>
+                  <button
+                    onClick={() => setFilter('read')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      filter === 'read'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    已读
                   </button>
                   <button
                     onClick={() => setFilter('system')}
