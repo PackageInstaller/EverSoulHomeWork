@@ -24,32 +24,7 @@ export default function MessageSender() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const adminPassword = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('admin_session='))
-        ?.split('=')[1];
-
-      if (!adminPassword) {
-        console.error('管理员会话已过期');
-        setLoading(false);
-        return;
-      }
-
-      let password: string;
-      try {
-        const decoded = atob(decodeURIComponent(adminPassword));
-        password = decoded.split(':')[0];
-      } catch (decodeError) {
-        console.error('解码管理员密码失败:', decodeError);
-        setLoading(false);
-        return;
-      }
-
-      const response = await fetch('/api/admin/users', {
-        headers: {
-          'Authorization': `Bearer ${password}`,
-        },
-      });
+      const response = await fetch('/api/admin/users');
 
       const data = await response.json();
 
@@ -97,33 +72,10 @@ export default function MessageSender() {
 
     try {
       setSending(true);
-      const adminPassword = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('admin_session='))
-        ?.split('=')[1];
-
-      if (!adminPassword) {
-        alert('管理员会话已过期，请重新登录');
-        setSending(false);
-        return;
-      }
-
-      let password: string;
-      try {
-        const decoded = atob(decodeURIComponent(adminPassword));
-        password = decoded.split(':')[0];
-      } catch (decodeError) {
-        console.error('解码管理员密码失败:', decodeError);
-        alert('管理员会话无效，请重新登录');
-        setSending(false);
-        return;
-      }
-
       const response = await fetch('/api/admin/messages/send', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${password}`,
         },
         body: JSON.stringify({
           userIds: Array.from(selectedUsers),
