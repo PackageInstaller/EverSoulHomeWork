@@ -143,46 +143,41 @@ export default function HomePage() {
     <div className="min-h-screen bg-gray-50">
       {/* 顶部导航栏 */}
       <div className="bg-white border-b border-gray-200">
-        <div className="mx-auto px-4 sm:px-6 p-2">
-          <div className="flex items-center justify-between h-14 sm:h-16 flex-col sm:flex-row">
+        <div className="mx-auto px-3 sm:px-6 py-2 sm:py-3">
+          <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <h1 className="text-base sm:text-xl font-bold text-gray-900">
+              <h1 className="text-sm sm:text-base md:text-xl font-bold text-gray-900">
                 EverSoul 作业站
               </h1>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-600">
+            <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
+              <div className="text-xs sm:text-sm text-gray-600 hidden lg:block">
                 作业分享平台，一起逃课吧
               </div>
               <a
                 href="/leaderboard"
-                className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm transition-colors font-semibold"
+                className="bg-yellow-500 hover:bg-yellow-600 text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm transition-colors font-semibold whitespace-nowrap"
               >
-                🏆 月度奖励榜
+                <span className="hidden sm:inline">🏆 月度奖励榜</span>
+                <span className="sm:hidden">🏆</span>
               </a>
               <a
                 href="/admin"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm transition-colors whitespace-nowrap hidden sm:block"
               >
-                🔐 管理后台
+                <span className="hidden md:inline">🔐 管理后台</span>
+                <span className="md:hidden">🔐</span>
               </a>
               {currentUser ? (
                 <div className="relative">
                   <button
                     onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="flex items-center space-x-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-colors duration-300"
+                    className="flex items-center gap-1.5 sm:gap-2 bg-blue-500 hover:bg-blue-600 text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm transition-colors duration-300"
                   >
-                    <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center text-blue-500 font-bold">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 bg-white rounded-full flex items-center justify-center text-blue-500 font-bold text-xs sm:text-sm">
                       {currentUser.nickname.charAt(0)}
                     </div>
-                    <span
-                      style={{
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        maxWidth: "100px",
-                      }}
-                    >
+                    <span className="hidden sm:inline truncate max-w-[60px] md:max-w-[100px]">
                       {currentUser.nickname}
                     </span>
                   </button>
@@ -210,7 +205,7 @@ export default function HomePage() {
               ) : (
                 <a
                   href="/loginResignter"
-                  className="bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2 rounded-lg text-sm transition-colors duration-300"
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-medium px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm transition-colors duration-300 whitespace-nowrap"
                 >
                   登录
                 </a>
