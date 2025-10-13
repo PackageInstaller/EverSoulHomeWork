@@ -150,6 +150,24 @@ export default function TotalPointsRanking() {
             </div>
           </div>
         </div>
+
+        {/* 积分规则说明 */}
+        <div className="mt-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-5 border-2 border-blue-200">
+          <h3 className="text-gray-900 font-bold mb-3 flex items-center gap-2">
+            <span className="text-xl">📋</span>
+            积分规则
+          </h3>
+          <ul className="text-gray-700 text-sm space-y-2">
+            <li className="flex items-start gap-2">
+              <span className="text-blue-500 mt-0.5">•</span>
+              <span>19图起，每个无作业的图：单队0.1分，双队0.5分，三队1分</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-blue-500 mt-0.5">•</span>
+              <span>有作业的图按减半积分计算</span>
+            </li>
+          </ul>
+        </div>
       </div>
 
       {/* 排行列表 */}
