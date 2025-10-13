@@ -23,12 +23,22 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
   const minImages = teamCount;
   const maxImages = teamCount * 2;
 
-  // 当弹窗打开时，尝试从token获取用户信息并自动填充昵称
+  // 当弹窗打开时，检查登录状态并自动填充昵称
   useEffect(() => {
-    if (isOpen && !formData.nickname) {
-      const payload = getTokenPayload();
-      if (payload?.nickname) {
-        setFormData(prev => ({ ...prev, nickname: payload.nickname }));
+    if (isOpen) {
+      const token = localStorage.getItem('Token');
+      if (!token) {
+        alert('请先登录后再上传作业');
+        setIsOpen(false);
+        window.location.href = '/loginResignter';
+        return;
+      }
+
+      if (!formData.nickname) {
+        const payload = getTokenPayload();
+        if (payload?.nickname) {
+          setFormData(prev => ({ ...prev, nickname: payload.nickname }));
+        }
       }
     }
   }, [isOpen]);
