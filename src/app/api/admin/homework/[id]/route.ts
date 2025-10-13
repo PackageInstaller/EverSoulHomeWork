@@ -54,7 +54,7 @@ export async function PATCH(
     }
 
     const { id } = params
-    const { status } = await request.json()
+    const { status, rejectReason } = await request.json()
 
     // 验证状态值
     if (!['pending', 'approved', 'rejected'].includes(status)) {
@@ -87,6 +87,33 @@ export async function PATCH(
         images: true
       }
     })
+
+    // 如果是拒绝操作且提供了拒绝原因，发送邮件通知用户
+    if (status === 'rejected' && rejectReason && rejectReason.trim()) {
+      try {
+        // 通过nickname查找用户
+        const user = await prisma.user.findFirst({
+          where: { nickname: homework.nickname }
+        });
+
+        if (user) {
+          // 创建邮件消息
+          await prisma.message.create({
+            data: {
+              userId: user.id,
+              senderId: null, // 管理员消息
+              type: 'admin',
+              title: `作业被拒绝：关卡 ${homework.stageId}`,
+              content: `您提交的关卡 ${homework.stageId} 作业已被拒绝。\n\n拒绝原因：\n${rejectReason.trim()}`,
+              isRead: false,
+            },
+          });
+        }
+      } catch (error) {
+        console.error('发送拒绝通知失败:', error);
+        // 发送通知失败不影响作业状态更新
+      }
+    }
 
     // 积分变动信息
     let pointsInfo = null

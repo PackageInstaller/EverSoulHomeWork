@@ -54,6 +54,10 @@ export default function AdminHomeworkPage() {
     new Set()
   );
   const [batchLoading, setBatchLoading] = useState(false);
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectHomeworkId, setRejectHomeworkId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [isBatchReject, setIsBatchReject] = useState(false);
 
   // 检查认证状态
   const checkAuth = async () => {
@@ -152,6 +156,13 @@ export default function AdminHomeworkPage() {
   }, [selectedStatus, isAuthenticated]);
 
   const handleStatusChange = async (homeworkId: string, newStatus: string) => {
+    // 如果是拒绝操作，先打开拒绝原因弹窗
+    if (newStatus === "rejected") {
+      setRejectHomeworkId(homeworkId);
+      setRejectModalOpen(true);
+      return;
+    }
+
     try {
       const response = await fetch(`/api/admin/homework/${homeworkId}`, {
         method: "PATCH",
@@ -171,6 +182,86 @@ export default function AdminHomeworkPage() {
       if (result.success) {
         fetchHomeworks(selectedStatus, pagination.page);
         alert(`作业状态已更新为: ${getStatusText(newStatus)}`);
+      } else {
+        alert(result.error || "更新状态失败");
+      }
+    } catch (error) {
+      alert("网络错误");
+    }
+  };
+
+  const handleRejectConfirm = async () => {
+    // 批量拒绝
+    if (isBatchReject) {
+      if (selectedHomeworks.size === 0) return;
+
+      setBatchLoading(true);
+      try {
+        const promises = Array.from(selectedHomeworks).map((homeworkId) =>
+          fetch(`/api/admin/homework/${homeworkId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+              status: "rejected",
+              rejectReason: rejectReason.trim() || undefined
+            }),
+          })
+        );
+
+        const results = await Promise.all(promises);
+        const successCount = results.filter((r) => r.ok).length;
+
+        if (successCount === selectedHomeworks.size) {
+          alert(`成功拒绝 ${successCount} 个作业` + (rejectReason.trim() ? "，已发送拒绝原因通知" : ""));
+        } else {
+          alert(
+            `操作完成：成功 ${successCount} 个，失败 ${
+              selectedHomeworks.size - successCount
+            } 个`
+          );
+        }
+
+        setSelectedHomeworks(new Set());
+        fetchHomeworks(selectedStatus, pagination.page);
+        setRejectModalOpen(false);
+        setRejectReason("");
+        setIsBatchReject(false);
+      } catch (error) {
+        alert("批量拒绝失败");
+      } finally {
+        setBatchLoading(false);
+      }
+      return;
+    }
+
+    // 单个拒绝
+    if (!rejectHomeworkId) return;
+
+    try {
+      const response = await fetch(`/api/admin/homework/${rejectHomeworkId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          status: "rejected",
+          rejectReason: rejectReason.trim() || undefined
+        }),
+      });
+
+      if (response.status === 401) {
+        setIsAuthenticated(false);
+        return;
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        fetchHomeworks(selectedStatus, pagination.page);
+        alert("作业已拒绝" + (rejectReason.trim() ? "，已发送拒绝原因通知" : ""));
+        setRejectModalOpen(false);
+        setRejectHomeworkId(null);
+        setRejectReason("");
       } else {
         alert(result.error || "更新状态失败");
       }
@@ -233,6 +324,13 @@ export default function AdminHomeworkPage() {
   const handleBatchUpdate = async (newStatus: string) => {
     if (selectedHomeworks.size === 0) {
       alert("请先选择要操作的作业");
+      return;
+    }
+
+    // 如果是批量拒绝，打开拒绝原因弹窗
+    if (newStatus === "rejected") {
+      setIsBatchReject(true);
+      setRejectModalOpen(true);
       return;
     }
 
@@ -836,6 +934,66 @@ export default function AdminHomeworkPage() {
             >
               <span className="text-xl font-bold">✕</span>
               </button>
+          </div>
+        )}
+
+        {/* 拒绝原因模态框 */}
+        {rejectModalOpen && (
+          <div className="fixed inset-0 z-[999999] flex items-center justify-center">
+            {/* 背景遮罩 */}
+            <div
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => {
+                setRejectModalOpen(false);
+                setRejectHomeworkId(null);
+                setRejectReason("");
+                setIsBatchReject(false);
+              }}
+            />
+            
+            {/* 模态框内容 */}
+            <div className="relative bg-white rounded-xl shadow-2xl p-6 w-full max-w-md mx-4">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">
+                {isBatchReject ? `批量拒绝作业（${selectedHomeworks.size}个）` : "拒绝作业"}
+              </h3>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  拒绝原因（可选）
+                </label>
+                <textarea
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  placeholder="请输入拒绝原因，如不填写则只拒绝不发送通知"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+                  rows={4}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  填写拒绝原因后，系统将发送邮件通知用户
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setRejectModalOpen(false);
+                    setRejectHomeworkId(null);
+                    setRejectReason("");
+                    setIsBatchReject(false);
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg transition-colors font-medium"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleRejectConfirm}
+                  disabled={batchLoading}
+                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white rounded-lg transition-colors font-medium"
+                >
+                  {batchLoading ? "处理中..." : "确认拒绝"}
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
