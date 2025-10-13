@@ -136,6 +136,9 @@ export async function PATCH(request: Request) {
       updateData.password = await bcrypt.hash(newPassword, 10);
     }
 
+    // 检查昵称是否变更
+    const nicknameChanged = nickname.trim() !== currentUser.nickname;
+    
     // 更新用户
     const updatedUser = await prisma.user.update({
       where: { id: userData.id },
@@ -147,6 +150,27 @@ export async function PATCH(request: Request) {
         updatedAt: true
       }
     });
+
+    // 如果昵称变更了，同步更新所有作业和积分记录中的昵称
+    if (nicknameChanged) {
+      await prisma.$transaction([
+        // 更新作业中的昵称
+        prisma.userHomework.updateMany({
+          where: { nickname: currentUser.nickname },
+          data: { nickname: nickname.trim() }
+        }),
+        // 更新积分记录中的昵称
+        prisma.userPoints.updateMany({
+          where: { nickname: currentUser.nickname },
+          data: { nickname: nickname.trim() }
+        }),
+        // 更新积分历史中的昵称
+        prisma.pointsHistory.updateMany({
+          where: { nickname: currentUser.nickname },
+          data: { nickname: nickname.trim() }
+        })
+      ]);
+    }
 
     // 生成新JWT token
     const newToken = generateToken({

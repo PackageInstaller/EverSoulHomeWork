@@ -169,9 +169,12 @@ export default function HomePage() {
                 <span className="md:hidden">🔐</span>
               </a>
               {currentUser ? (
-                <div className="relative">
+                <div
+                  className="relative"
+                  onMouseEnter={() => setShowUserMenu(true)}
+                  onMouseLeave={() => setShowUserMenu(false)}
+                >
                   <button
-                    onClick={() => setShowUserMenu(!showUserMenu)}
                     className="flex items-center gap-1.5 sm:gap-2 bg-blue-500 hover:bg-blue-600 text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm transition-colors duration-300"
                   >
                     <div className="w-5 h-5 sm:w-6 sm:h-6 bg-white rounded-full flex items-center justify-center text-blue-500 font-bold text-xs sm:text-sm">
@@ -183,21 +186,24 @@ export default function HomePage() {
                   </button>
 
                   {showUserMenu && (
-                    <div
-                      className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200"
-                      onMouseLeave={() => setShowUserMenu(false)}
-                    >
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                      <a
+                        href="/mailbox"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        📬 我的邮箱
+                      </a>
                       <a
                         href="/profile"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
-                        编辑资料
+                        ✏️ 编辑资料
                       </a>
                       <button
                         onClick={handleLogout}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
-                        退出登录
+                        🚪 退出登录
                       </button>
                     </div>
                   )}

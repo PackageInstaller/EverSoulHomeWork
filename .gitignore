@@ -40,6 +40,8 @@ prisma/migrations/
 # Uploads
 public/uploads/
 
+# vscode
+.vscode
 
 # secrets
 admin-secret.json

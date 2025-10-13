@@ -134,6 +134,31 @@ export async function PATCH(
             isHalved,
             message: `获得${points}积分${isHalved ? '（已有作业，减半）' : ''}`
           }
+
+          // 发送系统消息通知用户
+          try {
+            // 通过昵称查找用户ID
+            const user = await prisma.user.findFirst({
+              where: { nickname: homework.nickname },
+              select: { id: true }
+            });
+
+            if (user) {
+              await prisma.message.create({
+                data: {
+                  userId: user.id,
+                  senderId: null,
+                  type: 'system',
+                  title: '✅ 作业已通过审核',
+                  content: `您在关卡 ${homework.stageId} 提交的作业已通过审核，获得 ${points} 积分${isHalved ? '（已有作业，减半）' : ''}！`,
+                  isRead: false
+                }
+              });
+            }
+          } catch (error) {
+            console.error('发送系统消息失败:', error);
+            // 消息发送失败不影响作业审核
+          }
         }
       } catch (error) {
         console.error('计算积分失败:', error)

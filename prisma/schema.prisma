@@ -116,4 +116,19 @@ model SystemConfig {
   updatedAt       DateTime @updatedAt
   
   @@map("system_configs")
+}
+
+// 消息模型
+model Message {
+  id          String   @id @default(cuid())
+  userId      String   // 接收者用户ID
+  senderId    String?  // 发送者用户ID（系统消息时为null）
+  type        String   // 消息类型: system（系统消息）, admin（管理员消息）
+  title       String   // 消息标题
+  content     String   // 消息内容
+  isRead      Boolean  @default(false) // 是否已读
+  createdAt   DateTime @default(now())
+  
+  @@index([userId]) // 为userId创建索引，提高查询效率
+  @@map("messages")
 } 
