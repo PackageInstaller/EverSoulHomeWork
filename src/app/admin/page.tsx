@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import PointsSettlement from "@/components/PointsSettlement";
+import MessageSender from "@/components/MessageSender";
 
 interface HomeworkImage {
   id: string;
@@ -36,7 +37,7 @@ export default function AdminHomeworkPage() {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"homework" | "points">("homework");
+  const [activeTab, setActiveTab] = useState<"homework" | "points" | "messages">("homework");
   
   const [homeworks, setHomeworks] = useState<Homework[]>([]);
   const [loading, setLoading] = useState(true);
@@ -447,6 +448,16 @@ export default function AdminHomeworkPage() {
             >
               💎 积分结算
             </button>
+            <button
+              onClick={() => setActiveTab("messages")}
+              className={`px-6 py-3 rounded-lg transition-colors ${
+                activeTab === "messages"
+                  ? "bg-blue-500 text-white"
+                  : "bg-white/10 text-white/70 hover:bg-white/20"
+              }`}
+            >
+              📬 消息发送
+            </button>
           </div>
           
           {/* 作业管理的状态筛选 */}
@@ -768,8 +779,10 @@ export default function AdminHomeworkPage() {
           </div>
           )}
         </>
-        ) : (
+        ) : activeTab === "points" ? (
           <PointsSettlement />
+        ) : (
+          <MessageSender />
         )}
 
         {/* 图片预览模态框 */}
