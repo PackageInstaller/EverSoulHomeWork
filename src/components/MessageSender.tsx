@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createHash } from 'crypto';
 
 interface User {
   id: string;
@@ -31,11 +30,12 @@ export default function MessageSender() {
         ?.split('=')[1];
 
       if (!adminPassword) {
-        alert('管理员会话已过期');
+        console.error('管理员会话已过期');
+        setLoading(false);
         return;
       }
 
-      const decoded = Buffer.from(adminPassword, 'base64').toString();
+      const decoded = atob(adminPassword);
       const password = decoded.split(':')[0];
 
       const response = await fetch('/api/admin/users', {
@@ -97,10 +97,11 @@ export default function MessageSender() {
 
       if (!adminPassword) {
         alert('管理员会话已过期');
+        setSending(false);
         return;
       }
 
-      const decoded = Buffer.from(adminPassword, 'base64').toString();
+      const decoded = atob(adminPassword);
       const password = decoded.split(':')[0];
 
       const response = await fetch('/api/admin/messages/send', {
