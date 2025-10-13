@@ -34,12 +34,14 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
   useEffect(() => {
     if (isDragging) {
       const handleMouseMove = (e: MouseEvent) => {
+        e.preventDefault();
         const newX = e.clientX - dragOffset.x;
         const newY = e.clientY - dragOffset.y;
         setCurrentPos({ x: newX, y: newY });
       };
 
       const handleMouseUp = (e: MouseEvent) => {
+        e.preventDefault();
         setIsDragging(false);
         // 计算离哪边更近
         const windowWidth = window.innerWidth;
@@ -55,7 +57,7 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
         setCurrentPos({ x: 0, y: 0 });
       };
 
-      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mousemove', handleMouseMove, { passive: false });
       document.addEventListener('mouseup', handleMouseUp);
 
       return () => {
@@ -66,6 +68,7 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
   }, [isDragging, dragOffset]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
     if (!containerRef.current) return;
     
     const rect = containerRef.current.getBoundingClientRect();
@@ -113,18 +116,20 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
         <div
           ref={containerRef}
           className={`
-            fixed z-50 w-80 max-h-[80vh] bg-white/95 backdrop-blur-md rounded-lg shadow-2xl border border-gray-200
-            transition-all
+            fixed z-50 w-80 max-h-[80vh] bg-white/95 backdrop-blur-md rounded-lg border border-gray-200
+            ${!isDragging && 'transition-all duration-300 ease-out'}
             ${!isDragging && (position === 'right' ? 'right-2' : 'left-2')}
             ${!isDragging && 'top-1/2 -translate-y-1/2'}
-            ${isDragging ? 'cursor-grabbing' : 'cursor-auto'}
+            ${isDragging ? 'cursor-grabbing shadow-2xl scale-105' : 'cursor-auto shadow-xl'}
           `}
           style={
             isDragging
               ? {
-                  left: currentPos.x,
-                  top: currentPos.y,
+                  left: `${currentPos.x}px`,
+                  top: `${currentPos.y}px`,
                   transform: 'none',
+                  transition: 'none',
+                  userSelect: 'none',
                 }
               : {}
           }

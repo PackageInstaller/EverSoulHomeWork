@@ -35,8 +35,15 @@ export default function MessageSender() {
         return;
       }
 
-      const decoded = atob(adminPassword);
-      const password = decoded.split(':')[0];
+      let password: string;
+      try {
+        const decoded = atob(decodeURIComponent(adminPassword));
+        password = decoded.split(':')[0];
+      } catch (decodeError) {
+        console.error('解码管理员密码失败:', decodeError);
+        setLoading(false);
+        return;
+      }
 
       const response = await fetch('/api/admin/users', {
         headers: {
@@ -96,13 +103,21 @@ export default function MessageSender() {
         ?.split('=')[1];
 
       if (!adminPassword) {
-        alert('管理员会话已过期');
+        alert('管理员会话已过期，请重新登录');
         setSending(false);
         return;
       }
 
-      const decoded = atob(adminPassword);
-      const password = decoded.split(':')[0];
+      let password: string;
+      try {
+        const decoded = atob(decodeURIComponent(adminPassword));
+        password = decoded.split(':')[0];
+      } catch (decodeError) {
+        console.error('解码管理员密码失败:', decodeError);
+        alert('管理员会话无效，请重新登录');
+        setSending(false);
+        return;
+      }
 
       const response = await fetch('/api/admin/messages/send', {
         method: 'POST',
@@ -131,7 +146,7 @@ export default function MessageSender() {
       }
     } catch (error) {
       console.error('发送消息失败:', error);
-      alert('发送消息失败');
+      alert('发送消息失败: ' + (error instanceof Error ? error.message : '未知错误'));
     } finally {
       setSending(false);
     }
