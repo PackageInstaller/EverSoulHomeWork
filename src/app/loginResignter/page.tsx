@@ -109,15 +109,24 @@ export default function LoginRegisterPage() {
       }}
     >
       <div className="max-w-md w-full space-y-8">
-        <div>
+        <div className="text-center">
           <h1
-            className="text-center text-3xl font-extrabold"
+            className="text-3xl font-extrabold"
             style={{
               textShadow: "0px 7px 10px rgba(114, 118, 255, 1)",
             }}
           >
             EverSoul 作业站
           </h1>
+          <button
+            onClick={() => router.push('/')}
+            className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-white/90 hover:bg-white text-gray-700 rounded-lg transition-colors shadow-md hover:shadow-lg"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            返回主页
+          </button>
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-md max-w-md mx-auto">
@@ -178,10 +187,6 @@ export default function LoginRegisterPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 placeholder-gray-400"
-                style={{
-                  WebkitTextFillColor: '#111827',
-                  WebkitBoxShadow: '0 0 0px 1000px white inset'
-                }}
                 disabled={loading}
                 placeholder="请输入邮箱"
                 autoComplete="email"
@@ -204,10 +209,6 @@ export default function LoginRegisterPage() {
                   value={nickname}
                   onChange={(e) => setNickname(e.target.value)}
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 placeholder-gray-400"
-                  style={{
-                    WebkitTextFillColor: '#111827',
-                    WebkitBoxShadow: '0 0 0px 1000px white inset'
-                  }}
                   disabled={loading}
                   placeholder="请输入昵称"
                   autoComplete="nickname"
@@ -231,10 +232,6 @@ export default function LoginRegisterPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 placeholder-gray-400"
-                  style={{
-                    WebkitTextFillColor: '#111827',
-                    WebkitBoxShadow: '0 0 0px 1000px white inset'
-                  }}
                   disabled={loading}
                   placeholder="至少6位字符"
                   autoComplete="current-password"
@@ -300,10 +297,6 @@ export default function LoginRegisterPage() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 placeholder-gray-400"
-                    style={{
-                      WebkitTextFillColor: '#111827',
-                      WebkitBoxShadow: '0 0 0px 1000px white inset'
-                    }}
                     disabled={loading}
                     placeholder="再次输入密码"
                     autoComplete="new-password"
