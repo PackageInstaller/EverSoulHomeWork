@@ -965,7 +965,7 @@ export default function AdminHomeworkPage() {
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
                   placeholder="请输入拒绝原因，如不填写则只拒绝不发送通知"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 resize-none text-gray-900 placeholder-gray-400"
                   rows={4}
                 />
                 <p className="text-xs text-gray-500 mt-1">
