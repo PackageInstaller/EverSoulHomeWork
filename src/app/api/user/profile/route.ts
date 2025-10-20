@@ -139,38 +139,83 @@ export async function PATCH(request: Request) {
     // 检查昵称是否变更
     const nicknameChanged = nickname.trim() !== currentUser.nickname;
     
-    // 更新用户
-    const updatedUser = await prisma.user.update({
-      where: { id: userData.id },
-      data: updateData,
-      select: {
-        id: true,
-        email: true,
-        nickname: true,
-        updatedAt: true
+    // 如果昵称变更，检查是否会与现有数据冲突
+    if (nicknameChanged) {
+      // 检查新昵称是否已被其他用户在某些月份使用
+      const conflictingUserPoints = await prisma.userPoints.findFirst({
+        where: {
+          nickname: nickname.trim(),
+          // 不是当前用户的记录
+          NOT: {
+            nickname: currentUser.nickname
+          }
+        }
+      });
+
+      if (conflictingUserPoints) {
+        return NextResponse.json(
+          { success: false, message: '该昵称在月度积分榜中已被其他用户使用，无法修改' },
+          { status: 400 }
+        );
       }
+    }
+
+    // 使用事务更新用户和所有相关记录
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. 更新用户
+      const updatedUser = await tx.user.update({
+        where: { id: userData.id },
+        data: updateData,
+        select: {
+          id: true,
+          email: true,
+          nickname: true,
+          updatedAt: true
+        }
+      });
+
+      // 2. 如果昵称变更了，同步更新所有相关记录
+      if (nicknameChanged) {
+        // 更新作业中的昵称
+        await tx.userHomework.updateMany({
+          where: { nickname: currentUser.nickname },
+          data: { nickname: nickname.trim() }
+        });
+
+        // 更新积分历史中的昵称
+        await tx.pointsHistory.updateMany({
+          where: { nickname: currentUser.nickname },
+          data: { nickname: nickname.trim() }
+        });
+
+        // 特殊处理 userPoints：由于有复合唯一索引 [nickname, yearMonth]
+        // 我们需要先查出所有记录，删除后重新创建
+        const oldUserPoints = await tx.userPoints.findMany({
+          where: { nickname: currentUser.nickname }
+        });
+
+        if (oldUserPoints.length > 0) {
+          // 删除旧记录
+          await tx.userPoints.deleteMany({
+            where: { nickname: currentUser.nickname }
+          });
+
+          // 创建新记录（使用新昵称）
+          await tx.userPoints.createMany({
+            data: oldUserPoints.map(point => ({
+              nickname: nickname.trim(),
+              yearMonth: point.yearMonth,
+              points: point.points,
+              homeworkCount: point.homeworkCount
+            }))
+          });
+        }
+      }
+
+      return updatedUser;
     });
 
-    // 如果昵称变更了，同步更新所有作业和积分记录中的昵称
-    if (nicknameChanged) {
-      await prisma.$transaction([
-        // 更新作业中的昵称
-        prisma.userHomework.updateMany({
-          where: { nickname: currentUser.nickname },
-          data: { nickname: nickname.trim() }
-        }),
-        // 更新积分记录中的昵称
-        prisma.userPoints.updateMany({
-          where: { nickname: currentUser.nickname },
-          data: { nickname: nickname.trim() }
-        }),
-        // 更新积分历史中的昵称
-        prisma.pointsHistory.updateMany({
-          where: { nickname: currentUser.nickname },
-          data: { nickname: nickname.trim() }
-        })
-      ]);
-    }
+    const updatedUser = result;
 
     // 生成新JWT token
     const newToken = generateToken({

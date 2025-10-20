@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import StartupMigrationCheck from '@/components/StartupMigrationCheck'
-import CacheRefreshTimer from '@/components/CacheRefreshTimer'
 
 export const metadata: Metadata = {
   title: 'EverSoul 作业站',
@@ -32,7 +31,6 @@ export default function RootLayout({
     <html lang="zh-CN">
       <body className="bg-gray-50">
         <StartupMigrationCheck />
-        <CacheRefreshTimer intervalMinutes={10} enabled={true} />
         {children}
       </body>
     </html>

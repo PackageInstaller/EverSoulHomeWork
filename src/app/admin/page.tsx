@@ -60,6 +60,7 @@ export default function AdminHomeworkPage() {
   const [rejectHomeworkId, setRejectHomeworkId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [isBatchReject, setIsBatchReject] = useState(false);
+  const [cacheRefreshing, setCacheRefreshing] = useState(false);
 
   // 检查认证状态
   const checkAuth = async () => {
@@ -269,6 +270,40 @@ export default function AdminHomeworkPage() {
       }
     } catch (error) {
       alert("网络错误");
+    }
+  };
+
+  // 刷新游戏数据缓存
+  const handleRefreshCache = async () => {
+    if (!confirm("确定要刷新游戏数据缓存吗？\n\n这会清除现有缓存并重新从GitHub下载所有数据，可能需要1-2分钟。")) {
+      return;
+    }
+
+    setCacheRefreshing(true);
+    try {
+      const response = await fetch("/api/cache/cron", {
+        method: "POST",
+      });
+
+      if (response.status === 403) {
+        alert("权限不足，需要管理员权限");
+        return;
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert(`✅ ${result.message}\n耗时: ${result.duration}\n成功: ${result.successes.join(', ')}`);
+      } else if (result.partialSuccess) {
+        alert(`⚠️ ${result.message}\n耗时: ${result.duration}\n成功: ${result.successes.join(', ')}\n失败: ${result.failures.join(', ')}`);
+      } else {
+        alert(`❌ ${result.message || '缓存刷新失败'}\n耗时: ${result.duration}\n失败: ${result.failures.join(', ')}`);
+      }
+    } catch (error) {
+      console.error("刷新缓存失败:", error);
+      alert("刷新缓存失败，请检查网络连接");
+    } finally {
+      setCacheRefreshing(false);
     }
   };
 
@@ -526,37 +561,66 @@ export default function AdminHomeworkPage() {
             </div>
           </div>
           
-          {/* 标签页切换 */}
-          <div className="flex space-x-4 mb-6">
+          {/* 标签页切换和工具按钮 */}
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex space-x-4">
+              <button
+                onClick={() => setActiveTab("homework")}
+                className={`px-6 py-3 rounded-lg transition-colors ${
+                  activeTab === "homework"
+                    ? "bg-blue-500 text-white"
+                    : "bg-white/10 text-white/70 hover:bg-white/20"
+                }`}
+              >
+                📝 作业管理
+              </button>
+              <button
+                onClick={() => setActiveTab("points")}
+                className={`px-6 py-3 rounded-lg transition-colors ${
+                  activeTab === "points"
+                    ? "bg-blue-500 text-white"
+                    : "bg-white/10 text-white/70 hover:bg-white/20"
+                }`}
+              >
+                💎 积分结算
+              </button>
+              <button
+                onClick={() => setActiveTab("messages")}
+                className={`px-6 py-3 rounded-lg transition-colors ${
+                  activeTab === "messages"
+                    ? "bg-blue-500 text-white"
+                    : "bg-white/10 text-white/70 hover:bg-white/20"
+                }`}
+              >
+                📬 消息发送
+              </button>
+            </div>
+
+            {/* 刷新缓存按钮 */}
             <button
-              onClick={() => setActiveTab("homework")}
-              className={`px-6 py-3 rounded-lg transition-colors ${
-                activeTab === "homework"
-                  ? "bg-blue-500 text-white"
-                  : "bg-white/10 text-white/70 hover:bg-white/20"
-              }`}
+              onClick={handleRefreshCache}
+              disabled={cacheRefreshing}
+              className={`px-6 py-3 rounded-lg transition-colors flex items-center gap-2 ${
+                cacheRefreshing
+                  ? "bg-gray-500 cursor-not-allowed"
+                  : "bg-purple-600 hover:bg-purple-700"
+              } text-white font-medium shadow-lg`}
+              title="刷新游戏数据缓存（游戏更新后使用）"
             >
-              📝 作业管理
-            </button>
-            <button
-              onClick={() => setActiveTab("points")}
-              className={`px-6 py-3 rounded-lg transition-colors ${
-                activeTab === "points"
-                  ? "bg-blue-500 text-white"
-                  : "bg-white/10 text-white/70 hover:bg-white/20"
-              }`}
-            >
-              💎 积分结算
-            </button>
-            <button
-              onClick={() => setActiveTab("messages")}
-              className={`px-6 py-3 rounded-lg transition-colors ${
-                activeTab === "messages"
-                  ? "bg-blue-500 text-white"
-                  : "bg-white/10 text-white/70 hover:bg-white/20"
-              }`}
-            >
-              📬 消息发送
+              <svg
+                className={`w-5 h-5 ${cacheRefreshing ? "animate-spin" : ""}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+              <span>{cacheRefreshing ? "刷新中..." : "刷新缓存"}</span>
             </button>
           </div>
           
