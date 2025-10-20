@@ -35,6 +35,14 @@ export async function POST(request: Request) {
       );
     }
 
+    // 验证昵称格式：不允许空格、制表符、换行符等空白字符
+    if (/\s/.test(nickname)) {
+      return NextResponse.json(
+        { success: false, message: '昵称不能包含空格或其他空白字符' },
+        { status: 400 }
+      );
+    }
+
     // 验证昵称长度
     const getByteLength = (str: string) => {
       let byteLength = 0;

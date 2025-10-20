@@ -129,60 +129,6 @@ export default function ImageViewer({
           loading="lazy"
         />
       </div>
-
-      {/* 左右切换按钮 */}
-      {images.length > 1 && (
-        <>
-          {/* 上一张 */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handlePrevious();
-            }}
-            className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-10 bg-black/60 hover:bg-black/80 text-white p-2 md:p-4 rounded-full transition-all hover:scale-110"
-            aria-label="上一张"
-          >
-            <svg
-              className="w-6 h-6 md:w-8 md:h-8"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-          </button>
-
-          {/* 下一张 */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleNext();
-            }}
-            className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-10 bg-black/60 hover:bg-black/80 text-white p-2 md:p-4 rounded-full transition-all hover:scale-110"
-            aria-label="下一张"
-          >
-            <svg
-              className="w-6 h-6 md:w-8 md:h-8"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </button>
-        </>
-      )}
-
       {/* 缩略图导航栏 */}
       {images.length > 1 && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 bg-black/60 p-2 md:p-3 rounded-lg max-w-[90%] overflow-x-auto">
@@ -212,11 +158,6 @@ export default function ImageViewer({
           </div>
         </div>
       )}
-
-      {/* 操作提示 */}
-      <div className="hidden md:block absolute bottom-20 left-1/2 -translate-x-1/2 z-10 bg-black/60 text-white text-xs px-3 py-1 rounded">
-        ← → 切换 | 空格 缩放 | ESC 关闭
-      </div>
     </div>
   );
 }
