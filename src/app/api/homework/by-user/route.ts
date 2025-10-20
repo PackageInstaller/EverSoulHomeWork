@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
         description: hw.description,
         teamCount: hw.teamCount,
         createdAt: hw.createdAt,
-        thumbnail: hw.images[0] ? `/api/uploads/homework/${hw.images[0].filename}?v=${new Date(hw.updatedAt).getTime()}` : null
+        thumbnail: hw.images[0] ? `/api/uploads/homework/${hw.images[0].filename}` : null
       })),
       groupedByArea: Object.keys(groupedByArea).sort((a, b) => parseInt(a) - parseInt(b)).map(area => ({
         area: parseInt(area),
