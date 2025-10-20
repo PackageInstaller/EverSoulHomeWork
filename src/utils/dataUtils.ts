@@ -329,7 +329,7 @@ export async function loadGameData(dataSource: DataSource): Promise<GameData> {
  * 获取字符串数据 - 根据类型和编号（严格按照 Python 实现）
  */
 export function getStringByType(data: GameData, stringType: string, no: number): StringData {
-  const defaultString = { no, zh_tw: "", zh_cn: "", kr: "", en: "", ja: "", ko: "" };
+  const defaultString = { no, zh_tw: "", zh_cn: "", kr: "", en: "", ja: "" };
   
   const jsonKey = `string_${stringType}`;
   
@@ -355,8 +355,7 @@ export function getStringByType(data: GameData, stringType: string, no: number):
     zh_cn: result.zh_cn || "",
     kr: result.kr || "",
     en: result.en || "",
-    ja: result.ja || "",
-    ko: result.ko || ""
+    ja: result.ja || ""
   };
 }
 
@@ -383,8 +382,7 @@ export function getStringItem(data: GameData, itemNo: number): StringData {
               zh_cn: string.zh_cn || "",
               kr: string.kr || "",
               en: string.en || "",
-              ja: string.ja || "",
-              ko: string.ko || ""
+              ja: string.ja || ""
             };
           }
         }
@@ -393,7 +391,7 @@ export function getStringItem(data: GameData, itemNo: number): StringData {
   }
   
   debugLog(`未找到物品: ${itemNo}`);
-  return { no: itemNo, zh_tw: "", zh_cn: "", kr: "", en: "", ja: "", ko: "" };
+  return { no: itemNo, zh_tw: "", zh_cn: "", kr: "", en: "", ja: "" };
 }
 
 /**
@@ -426,13 +424,12 @@ export function getStringCharacter(data: GameData, heroNo: number, special: bool
         kr: char.kr || "",
         en: char.en || "",
         ja: char.ja || "",
-        ko: char.ko || ""
       };
     }
   }
   
   debugLog(`未找到角色: ${heroNo}`);
-  return { no: heroNo, zh_tw: "", zh_cn: "", kr: "", en: "", ja: "", ko: "" };
+  return { no: heroNo, zh_tw: "", zh_cn: "", kr: "", en: "", ja: "" };
 }
 
 /**

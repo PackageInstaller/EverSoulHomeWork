@@ -59,7 +59,6 @@ export interface StringData extends BaseData {
   kr: string;
   en: string;
   ja: string;
-  ko: string;
 }
 
 // 物品数据接口

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
-import { getStageDetails } from '@/utils/dataUtils';
 import { getConsistentMainStoryBackground, getBackgroundStyle } from '@/utils/backgroundUtils';
 import { StageDetails as StageDetailsType, DataSource } from '@/types';
 import StageDetails from '@/components/StageDetails';
@@ -36,12 +35,16 @@ export default function StageDetailPage() {
       setLoading(true);
       setError(null);
       
-      const details = await getStageDetails(dataSource, areaNo, stageNo);
+      // 通过 API 获取关卡详情（使用服务器缓存）
+      const response = await fetch(
+        `/api/stages/details?source=${dataSource}&area=${areaNo}&stage=${stageNo}`
+      );
+      const data = await response.json();
       
-      if (details) {
-        setStageDetails(details);
+      if (data.success && data.details) {
+        setStageDetails(data.details);
       } else {
-        setError('未找到该关卡信息');
+        setError(data.error || '未找到该关卡信息');
       }
     } catch (err) {
       console.error('❌ [StageDetailPage] 加载关卡详情时发生错误:', err);

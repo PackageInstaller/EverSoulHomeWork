@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { getStageList } from '@/utils/dataUtils';
 import { getRandomMainStoryBackground, getBackgroundStyle } from '@/utils/backgroundUtils';
 import { Stage, DataSource } from '@/types';
 
@@ -44,46 +43,49 @@ export default function StageListContent({ initialStages = [] }: StageListConten
     try {
       setLoading(true);
       setError(null);
-      addDebugInfo('开始预加载所有数据源的关卡列表');
+      addDebugInfo('开始从服务器加载关卡列表');
 
-      // 并行加载两个数据源
+      // 并行加载两个数据源（通过 API）
       const [liveData, reviewData] = await Promise.allSettled([
-        getStageList('live'),
-        getStageList('review')
+        fetch('/api/stages/list?source=live').then(res => res.json()),
+        fetch('/api/stages/list?source=review').then(res => res.json())
       ]);
 
       // 处理 live 数据
-      if (liveData.status === 'fulfilled') {
-        setLiveStages(liveData.value);
-        addDebugInfo(`Live数据源加载成功: ${liveData.value.length} 个关卡`);
+      if (liveData.status === 'fulfilled' && liveData.value.success) {
+        setLiveStages(liveData.value.stages);
+        addDebugInfo(`Live数据源加载成功: ${liveData.value.stages.length} 个关卡（服务器缓存）`);
       } else {
-        addDebugInfo(`Live数据源加载失败: ${liveData.reason}`);
-        console.error('Live数据加载失败:', liveData.reason);
+        addDebugInfo(`Live数据源加载失败: ${liveData.status === 'fulfilled' ? liveData.value.error : liveData.reason}`);
+        console.error('Live数据加载失败:', liveData);
       }
 
       // 处理 review 数据
-      if (reviewData.status === 'fulfilled') {
-        setReviewStages(reviewData.value);
-        addDebugInfo(`Review数据源加载成功: ${reviewData.value.length} 个关卡`);
+      if (reviewData.status === 'fulfilled' && reviewData.value.success) {
+        setReviewStages(reviewData.value.stages);
+        addDebugInfo(`Review数据源加载成功: ${reviewData.value.stages.length} 个关卡（服务器缓存）`);
       } else {
-        addDebugInfo(`Review数据源加载失败: ${reviewData.reason}`);
-        console.error('Review数据加载失败:', reviewData.reason);
+        addDebugInfo(`Review数据源加载失败: ${reviewData.status === 'fulfilled' ? reviewData.value.error : reviewData.reason}`);
+        console.error('Review数据加载失败:', reviewData);
       }
 
       // 检查是否至少有一个数据源加载成功
-      if (liveData.status === 'rejected' && reviewData.status === 'rejected') {
+      const liveSuccess = liveData.status === 'fulfilled' && liveData.value.success;
+      const reviewSuccess = reviewData.status === 'fulfilled' && reviewData.value.success;
+      
+      if (!liveSuccess && !reviewSuccess) {
         setError('所有数据源加载失败');
         addDebugInfo('❌ 所有数据源都无法加载');
       } else {
         setPreloadComplete(true);
-        addDebugInfo('✅ 数据预加载完成');
+        addDebugInfo('✅ 数据加载完成（使用服务器缓存）');
       }
 
     } catch (error) {
-      console.error('❌ [StageListPage] 预加载时发生错误:', error);
+      console.error('❌ [StageListPage] 加载时发生错误:', error);
       const errorMessage = error instanceof Error ? error.message : '未知错误';
-      setError(`预加载失败: ${errorMessage}`);
-      addDebugInfo(`预加载失败: ${errorMessage}`);
+      setError(`加载失败: ${errorMessage}`);
+      addDebugInfo(`加载失败: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
