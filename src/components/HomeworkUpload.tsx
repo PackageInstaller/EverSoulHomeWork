@@ -34,7 +34,9 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
       if (!token) {
         alert('请先登录后再上传作业');
         setIsOpen(false);
-        window.location.href = '/loginResignter';
+        // 保存当前页面URL，登录后返回
+        const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = `/loginResignter?returnUrl=${returnUrl}`;
         return;
       }
 

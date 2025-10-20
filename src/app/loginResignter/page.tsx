@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function LoginRegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,6 +16,15 @@ export default function LoginRegisterPage() {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [returnUrl, setReturnUrl] = useState<string | null>(null);
+
+  // 获取返回URL参数
+  useEffect(() => {
+    const url = searchParams.get('returnUrl');
+    if (url) {
+      setReturnUrl(decodeURIComponent(url));
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +60,8 @@ export default function LoginRegisterPage() {
           localStorage.setItem("Token", data.token);
           setSuccess(true);
           setTimeout(() => {
-            router.push("/");
+            // 如果有返回URL，跳转回去；否则跳转到主页
+            router.push(returnUrl || "/");
           }, 500);
         } else {
           setError(data.message || "登录失败");
@@ -83,7 +94,8 @@ export default function LoginRegisterPage() {
           localStorage.setItem("Token", data.token);
           setSuccess(true);
           setTimeout(() => {
-            router.push("/");
+            // 如果有返回URL，跳转回去；否则跳转到主页
+            router.push(returnUrl || "/");
           }, 500);
         } else {
           setError(data.message || "注册失败");
