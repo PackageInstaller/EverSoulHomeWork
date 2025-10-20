@@ -49,9 +49,9 @@ export default function AdminHomeworkPage() {
     total: 0,
     totalPages: 0,
   });
-  const [imageViewerOpen, setImageViewerOpen] = useState(false);
-  const [currentImages, setCurrentImages] = useState<string[]>([]);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [currentHomeworkImages, setCurrentHomeworkImages] = useState<HomeworkImage[]>([]);
   const [selectedHomeworks, setSelectedHomeworks] = useState<Set<string>>(
     new Set()
   );
@@ -798,9 +798,9 @@ export default function AdminHomeworkPage() {
                             alt={`图片${index + 1}`}
                             className="w-full h-20 object-cover rounded-lg cursor-pointer transition-transform hover:scale-105"
                             onClick={() => {
-                              setCurrentImages(homework.images.map((img) => img.url));
+                              setCurrentHomeworkImages(homework.images);
                               setCurrentImageIndex(index);
-                              setImageViewerOpen(true);
+                              setSelectedImage(image.url);
                             }}
                           />
                           <div className="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-1 rounded">
@@ -889,30 +889,84 @@ export default function AdminHomeworkPage() {
           <MessageSender />
         )}
 
-        {/* 简单图片预览 */}
-        {imageViewerOpen && currentImages.length > 0 && (
-          <div
-            className="fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center p-4"
-            onClick={() => setImageViewerOpen(false)}
+        {/* 图片预览模态框 */}
+        {selectedImage && (
+          <div 
+            className="fixed inset-0 bg-black/90 z-[999999] flex items-center justify-center p-4"
+            onClick={() => setSelectedImage(null)}
           >
-            {/* 关闭按钮 */}
-            <button
-              onClick={() => setImageViewerOpen(false)}
-              className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10"
-              aria-label="关闭"
-            >
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            <div className="relative" onClick={(e) => e.stopPropagation()}>
+              {/* 关闭按钮 */}
+              <button
+                onClick={() => setSelectedImage(null)}
+                className="absolute bg-black/80 hover:bg-black/90 text-white rounded-full w-12 h-12 flex items-center justify-center transition-all duration-200 shadow-lg z-10"
+                style={{
+                  top: '-60px',
+                  right: '0px'
+                }}
+              >
+                <span className="text-xl font-bold">✕</span>
+              </button>
 
-            {/* 图片 */}
-            <img
-              src={currentImages[currentImageIndex]}
-              alt={`图片 ${currentImageIndex + 1}`}
-              className="max-w-full max-h-full object-contain rounded-lg"
-              onClick={(e) => e.stopPropagation()}
-            />
+              {/* 大图 */}
+              <img
+                src={selectedImage}
+                alt="作业预览"
+                className="rounded-xl shadow-2xl"
+                style={{
+                  maxWidth: '90vw',
+                  maxHeight: '80vh',
+                  display: 'block',
+                }}
+              />
+
+              {/* 图片计数器 */}
+              {currentHomeworkImages.length > 1 && (
+                <div 
+                  className="absolute bg-black/80 text-white px-4 py-2 rounded-lg text-sm shadow-lg"
+                  style={{
+                    top: '-60px',
+                    left: '0px'
+                  }}
+                >
+                  {currentImageIndex + 1} / {currentHomeworkImages.length}
+                </div>
+              )}
+
+              {/* 缩略图导航 */}
+              {currentHomeworkImages.length > 1 && (
+                <div 
+                  className="absolute flex space-x-2 bg-black/80 rounded-lg p-3 shadow-lg max-w-[90vw] overflow-x-auto"
+                  style={{
+                    bottom: '-80px',
+                    left: '50%',
+                    transform: 'translateX(-50%)'
+                  }}
+                >
+                  {currentHomeworkImages.map((image, index) => (
+                    <button
+                      key={image.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCurrentImageIndex(index);
+                        setSelectedImage(image.url);
+                      }}
+                      className={`flex-shrink-0 w-14 h-14 rounded-md overflow-hidden border-2 transition-all duration-200 ${
+                        index === currentImageIndex 
+                          ? 'border-white scale-110' 
+                          : 'border-transparent hover:border-white/50'
+                      }`}
+                    >
+                      <img
+                        src={image.url}
+                        alt={`缩略图 ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
