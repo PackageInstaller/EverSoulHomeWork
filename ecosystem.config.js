@@ -17,8 +17,7 @@ module.exports = {
       error_file: './logs/err.log',
       out_file: './logs/out.log',
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
-      merge_logs: true,
-      post_start: 'node scripts/preload-cache.js &'
+      merge_logs: true
     }
   ]
 };
