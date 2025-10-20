@@ -31,10 +31,13 @@ export default function ProfilePage() {
       }
 
       try {
-        const response = await fetch('/api/user/profile', {
+        // 添加时间戳防止 CDN 缓存
+        const timestamp = Date.now();
+        const response = await fetch(`/api/user/profile?_t=${timestamp}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
+          cache: 'no-store',
         });
 
         const data = await response.json();

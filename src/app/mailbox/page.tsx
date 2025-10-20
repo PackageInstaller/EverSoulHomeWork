@@ -42,11 +42,15 @@ export default function MailboxPage() {
       } else if (filter === 'read') {
         params.append('type', 'read');
       }
+      
+      // 添加时间戳防止 CDN 缓存
+      params.append('_t', Date.now().toString());
 
       const response = await fetch(`/api/messages?${params.toString()}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
+        cache: 'no-store',
       });
 
       const data = await response.json();
