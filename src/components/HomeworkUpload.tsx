@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { getTokenPayload } from '@/utils/jwtDecode';
+import { compressImages, formatFileSize } from '@/utils/imageCompression';
+import { smartUpload } from '@/utils/uploadWithRetry';
 
 interface HomeworkUploadProps {
   stageId: string;
@@ -19,6 +21,8 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
     images: [] as File[]
   });
   const [error, setError] = useState('');
+  const [compressionStatus, setCompressionStatus] = useState('');
+  const [retryStatus, setRetryStatus] = useState('');
 
   const minImages = teamCount;
   const maxImages = teamCount * 2;
@@ -75,66 +79,86 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
     setIsUploading(true);
     setUploadProgress(0);
     setError('');
+    setCompressionStatus('');
+    setRetryStatus('');
 
     try {
+      // 步骤1：图片压缩（无损压缩）
+      setCompressionStatus('正在压缩图片...');
+      console.log('开始压缩图片...');
+      
+      const compressionResults = await compressImages(
+        formData.images,
+        {
+          maxWidth: 1920,
+          maxHeight: 1920,
+          quality: 0.95,      // 95%质量，接近无损
+          targetSizeKB: 1024, // 超过1MB才压缩
+          maxSizeKB: 3072,    // 最大3MB
+        },
+        (current, total, fileName) => {
+          setCompressionStatus(`正在压缩图片 ${current}/${total}: ${fileName}`);
+        }
+      );
+
+      // 计算压缩统计
+      const totalOriginal = compressionResults.reduce((sum, r) => sum + r.originalSize, 0);
+      const totalCompressed = compressionResults.reduce((sum, r) => sum + r.compressedSize, 0);
+      const savedSize = totalOriginal - totalCompressed;
+      const savedPercent = ((savedSize / totalOriginal) * 100).toFixed(1);
+      
+      console.log(`压缩完成: 节省 ${formatFileSize(savedSize)} (${savedPercent}%)`);
+      setCompressionStatus(`压缩完成：节省 ${formatFileSize(savedSize)}`);
+
+      // 步骤2：准备上传数据
       const data = new FormData();
       data.append('stageId', stageId);
       data.append('nickname', formData.nickname.trim());
       data.append('description', formData.description.trim());
       data.append('teamCount', teamCount.toString());
       
-      formData.images.forEach((image, index) => {
-        data.append('images', image);
+      // 使用压缩后的图片
+      compressionResults.forEach((result) => {
+        data.append('images', result.file);
       });
 
-      // 使用XMLHttpRequest以支持进度监听
-      await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-
-        // 监听上传进度
-        xhr.upload.addEventListener('progress', (e) => {
-          if (e.lengthComputable) {
-            const percentComplete = Math.round((e.loaded / e.total) * 100);
-            setUploadProgress(percentComplete);
-          }
-        });
-
-        xhr.addEventListener('load', () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve(JSON.parse(xhr.responseText));
-          } else {
-            reject(new Error(`HTTP Error: ${xhr.status}`));
-          }
-        });
-
-        xhr.addEventListener('error', () => {
-          reject(new Error('Network Error'));
-        });
-
-        xhr.addEventListener('abort', () => {
-          reject(new Error('Upload Aborted'));
-        });
-
-        xhr.open('POST', '/api/homework/upload');
-        xhr.send(data);
-      }).then((result: any) => {
-        if (result.success) {
-          setIsOpen(false);
-          setFormData({ nickname: '', description: '', images: [] });
-          setUploadProgress(0);
-          onUploadSuccess();
-          alert('作业上传成功！等待管理员审核后将显示在页面中。');
-        } else {
-          setError(result.error || '上传失败');
-        }
+      // 步骤3：上传（带自动重试）
+      setCompressionStatus('');
+      const uploadResult = await smartUpload({
+        url: '/api/homework/upload',
+        data,
+        maxRetries: 3,
+        retryDelay: 2000,
+        timeout: 60000,
+        onProgress: (percent) => {
+          setUploadProgress(percent);
+        },
+        onRetry: (attempt, maxRetries, error) => {
+          console.log(`重试 ${attempt}/${maxRetries - 1}: ${error}`);
+          setRetryStatus(`网络不稳定，正在重试 (${attempt}/${maxRetries})...`);
+        },
       });
 
-    } catch (error) {
-      setError('网络错误，请稍后重试');
+      if (uploadResult.success && uploadResult.data?.success) {
+        setIsOpen(false);
+        setFormData({ nickname: '', description: '', images: [] });
+        setUploadProgress(0);
+        setCompressionStatus('');
+        setRetryStatus('');
+        onUploadSuccess();
+        alert('作业上传成功！等待管理员审核后将显示在页面中。');
+      } else {
+        setError(uploadResult.error || uploadResult.data?.error || '上传失败');
+      }
+
+    } catch (error: any) {
+      setError(error.message || '上传失败，请稍后重试');
       console.error('上传失败:', error);
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
+      setCompressionStatus('');
+      setRetryStatus('');
     }
   };
 
@@ -227,8 +251,34 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
                 </div>
               )}
 
+              {/* 压缩状态 */}
+              {compressionStatus && (
+                <div className="bg-blue-500/20 border border-blue-500/50 rounded-lg p-3">
+                  <div className="flex items-center space-x-2">
+                    <svg className="animate-spin h-4 w-4 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span className="text-blue-300 text-sm">{compressionStatus}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* 重试状态 */}
+              {retryStatus && (
+                <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-3">
+                  <div className="flex items-center space-x-2">
+                    <svg className="animate-spin h-4 w-4 text-yellow-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span className="text-yellow-300 text-sm">{retryStatus}</span>
+                  </div>
+                </div>
+              )}
+
               {/* 上传进度条 */}
-              {isUploading && (
+              {isUploading && !compressionStatus && (
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm text-white/70">
                     <span>上传进度</span>
@@ -241,7 +291,7 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
                     />
                   </div>
                   <p className="text-white/60 text-xs text-center">
-                    正在上传，请勿关闭页面...
+                    {retryStatus || '正在上传，请勿关闭页面...'}
                   </p>
                 </div>
               )}

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import PointsSettlement from "@/components/PointsSettlement";
 import MessageSender from "@/components/MessageSender";
+import ImageViewer from "@/components/ImageViewer";
 
 interface HomeworkImage {
   id: string;
@@ -50,6 +51,9 @@ export default function AdminHomeworkPage() {
     totalPages: 0,
   });
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [imageViewerOpen, setImageViewerOpen] = useState(false);
+  const [currentImages, setCurrentImages] = useState<string[]>([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [selectedHomeworks, setSelectedHomeworks] = useState<Set<string>>(
     new Set()
   );
@@ -795,7 +799,11 @@ export default function AdminHomeworkPage() {
                             src={image.url}
                             alt={`图片${index + 1}`}
                             className="w-full h-20 object-cover rounded-lg cursor-pointer transition-transform hover:scale-105"
-                            onClick={() => setSelectedImage(image.url)}
+                            onClick={() => {
+                              setCurrentImages(homework.images.map((img) => img.url));
+                              setCurrentImageIndex(index);
+                              setImageViewerOpen(true);
+                            }}
                           />
                           <div className="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-1 rounded">
                             {formatFileSize(image.fileSize)}
@@ -883,59 +891,13 @@ export default function AdminHomeworkPage() {
           <MessageSender />
         )}
 
-        {/* 图片预览模态框 */}
-        {selectedImage && (
-          <div
-            className="fixed z-[999999]"
-            style={{
-              position: "fixed",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              zIndex: 999999,
-              pointerEvents: "auto",
-            }}
-          >
-            {/* 背景遮罩 */}
-            <div
-              className="fixed inset-0"
-              style={{
-                position: "fixed",
-                top: "-50vh",
-                left: "-50vw",
-                width: "200vw",
-                height: "200vh",
-                backgroundColor: "rgba(0, 0, 0, 0.8)",
-                backdropFilter: "blur(4px)",
-                zIndex: -1,
-              }}
-              onClick={() => setSelectedImage(null)}
-            />
-
-              <img
-                src={selectedImage}
-                alt="作业预览"
-              className="rounded-xl shadow-2xl"
-              style={{
-                maxWidth: "90vw",
-                maxHeight: "90vh",
-                display: "block",
-              }}
-              onClick={(e) => e.stopPropagation()}
-            />
-
-              <button
-                onClick={() => setSelectedImage(null)}
-              className="absolute bg-black/80 hover:bg-black/90 text-white rounded-full w-12 h-12 flex items-center justify-center transition-all duration-200 shadow-lg"
-              style={{
-                top: "-20px",
-                right: "-20px",
-              }}
-            >
-              <span className="text-xl font-bold">✕</span>
-              </button>
-          </div>
-        )}
+        {/* 图片查看器 */}
+        <ImageViewer
+          images={currentImages}
+          initialIndex={currentImageIndex}
+          isOpen={imageViewerOpen}
+          onClose={() => setImageViewerOpen(false)}
+        />
 
         {/* 拒绝原因模态框 */}
         {rejectModalOpen && (
