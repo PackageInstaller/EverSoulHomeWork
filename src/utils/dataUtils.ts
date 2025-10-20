@@ -16,6 +16,7 @@ const GITHUB_BASE_URL = 'https://gh-proxy.com/raw.githubusercontent.com/PackageI
 declare global {
   var __appCache: {
     dataCache: Map<string, any>;
+    loadGameDataPromises: Map<string, Promise<GameData>>;
     cacheHitCount: number;
     cacheMissCount: number;
   } | undefined;
@@ -25,12 +26,14 @@ declare global {
 if (!global.__appCache) {
   global.__appCache = {
     dataCache: new Map<string, any>(),
+    loadGameDataPromises: new Map<string, Promise<GameData>>(),
     cacheHitCount: 0,
     cacheMissCount: 0
   };
 }
 
 const dataCache = global.__appCache.dataCache;
+const loadGameDataPromises = global.__appCache.loadGameDataPromises;
 let cacheHitCount = global.__appCache.cacheHitCount;
 let cacheMissCount = global.__appCache.cacheMissCount;
 
@@ -95,14 +98,17 @@ export function getCacheStats(): CacheStats {
  */
 export function clearCache(): void {
   const currentCache = global.__appCache?.dataCache || new Map();
+  const promiseCache = global.__appCache?.loadGameDataPromises || new Map();
+  
   currentCache.clear();
+  promiseCache.clear();
   
   if (global.__appCache) {
     global.__appCache.cacheHitCount = 0;
     global.__appCache.cacheMissCount = 0;
   }
   
-  debugLog('缓存已清除');
+  debugLog('缓存已清除（包括数据缓存和 Promise 缓存）');
 }
 
 /**
@@ -230,71 +236,93 @@ export async function fetchJsonFromGitHub(dataSource: DataSource, fileName: stri
 }
 
 /**
- * 加载完整的游戏数据
+ * 加载完整的游戏数据（带 Promise 缓存防止重复请求）
  */
 export async function loadGameData(dataSource: DataSource): Promise<GameData> {
+  const cacheKey = `gamedata-${dataSource}`;
+  
+  // 检查是否有正在进行的加载 Promise
+  if (loadGameDataPromises.has(cacheKey)) {
+    debugLog(`检测到正在进行的加载请求，等待完成: ${dataSource}`);
+    return loadGameDataPromises.get(cacheKey)!;
+  }
+  
   debugLog(`开始加载完整游戏数据，数据源: ${dataSource}`);
   
-  const dataFiles = [
-    'Stage',
-    'StageBattle', 
-    'StringSystem',
-    'StringItem',
-    'StringCharacter',
-    'StringCashshop',
-    'StringUI',
-    'Item',
-    'ItemDropGroup',
-    'Hero',
-    'Formation',
-    'CashShopItem',
-    'KeyValues',
-    'HeroGrade',
-    'HeroLevelGrade'
-  ];
+  // 创建加载 Promise 并缓存
+  const loadPromise = (async () => {
+    const dataFiles = [
+      'Stage',
+      'StageBattle', 
+      'StringSystem',
+      'StringItem',
+      'StringCharacter',
+      'StringCashshop',
+      'StringUI',
+      'Item',
+      'ItemDropGroup',
+      'Hero',
+      'Formation',
+      'CashShopItem',
+      'KeyValues',
+      'HeroGrade',
+      'HeroLevelGrade'
+    ];
 
-  debugLog(`需要加载 ${dataFiles.length} 个数据文件`, dataFiles);
+    debugLog(`需要加载 ${dataFiles.length} 个数据文件`, dataFiles);
 
-  try {
-    const promises = dataFiles.map(file => fetchJsonFromGitHub(dataSource, file));
-    const results = await Promise.all(promises);
-    
-    debugLog(`所有数据文件加载完成`);
-    
-    // 验证每个结果
-    results.forEach((result, index) => {
-      const fileName = dataFiles[index];
-      if (Array.isArray(result)) {
-        debugLog(`${fileName}: 数组，包含 ${result.length} 项`);
-      } else {
-        debugLog(`${fileName}: ${typeof result}`, result);
-      }
-    });
+    try {
+      const promises = dataFiles.map(file => fetchJsonFromGitHub(dataSource, file));
+      const results = await Promise.all(promises);
+      
+      debugLog(`所有数据文件加载完成`);
+      
+      // 验证每个结果
+      results.forEach((result, index) => {
+        const fileName = dataFiles[index];
+        if (Array.isArray(result)) {
+          debugLog(`${fileName}: 数组，包含 ${result.length} 项`);
+        } else {
+          debugLog(`${fileName}: ${typeof result}`, result);
+        }
+      });
 
-    const gameData = {
-      stage: { json: results[0] },
-      stage_battle: { json: results[1] },
-      string_system: { json: results[2] },
-      string_item: { json: results[3] },
-      string_character: { json: results[4] },
-      string_cashshop: { json: results[5] },
-      string_ui: { json: results[6] },
-      item: { json: results[7] },
-      item_drop_group: { json: results[8] },
-      hero: { json: results[9] },
-      formation: { json: results[10] },
-      cash_shop_item: { json: results[11] },
-      key_values: { json: results[12] },
-      hero_grade: { json: results[13] },
-      hero_level_grade: { json: results[14] }
-    };
-    
-    debugLog(`游戏数据结构构建完成`);
-    return gameData;
-  } catch (error) {
-    debugLog(`加载游戏数据失败`, error);
-    throw error;
-  }
+      const gameData = {
+        stage: { json: results[0] },
+        stage_battle: { json: results[1] },
+        string_system: { json: results[2] },
+        string_item: { json: results[3] },
+        string_character: { json: results[4] },
+        string_cashshop: { json: results[5] },
+        string_ui: { json: results[6] },
+        item: { json: results[7] },
+        item_drop_group: { json: results[8] },
+        hero: { json: results[9] },
+        formation: { json: results[10] },
+        cash_shop_item: { json: results[11] },
+        key_values: { json: results[12] },
+        hero_grade: { json: results[13] },
+        hero_level_grade: { json: results[14] }
+      };
+      
+      debugLog(`游戏数据结构构建完成`);
+      
+      // 加载完成后，从 Promise 缓存中移除（但数据仍在 dataCache 中）
+      loadGameDataPromises.delete(cacheKey);
+      
+      return gameData;
+    } catch (error) {
+      debugLog(`加载游戏数据失败`, error);
+      // 失败时也要从缓存中移除，以便重试
+      loadGameDataPromises.delete(cacheKey);
+      throw error;
+    }
+  })();
+  
+  // 缓存这个 Promise
+  loadGameDataPromises.set(cacheKey, loadPromise);
+  
+  return loadPromise;
 }
 
 /**
