@@ -216,11 +216,30 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="请描述您的通关策略、队伍配置等"
+                  placeholder="请描述您的通关策略、队伍配置、角色站位等信息"
                   className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   rows={3}
                   maxLength={500}
                 />
+              </div>
+
+              {/* 友好提示 */}
+              <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30 rounded-xl p-4">
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0 mt-0.5">
+                    <svg className="w-5 h-5 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-white font-medium text-sm mb-1.5">💡 温馨提示</h4>
+                    <div className="text-white/80 text-xs space-y-1">
+                      <p>• 作业需要包含<span className="text-yellow-300 font-medium">胜利截图</span></p>
+                      <p>• 建议提供<span className="text-green-300 font-medium">角色站位截图/说明</span>，帮助其他玩家更好地参考</p>
+                      <p className="text-white/60">（站位信息不是必须的，但会让你的作业更有价值哦~）</p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* 图片上传 */}
@@ -230,6 +249,7 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
                 </label>
                 <div className="text-white/70 text-xs mb-2">
                   需要上传 {minImages} 到 {maxImages} 张图片，每张不超过3MB
+                  <span className="text-blue-300 ml-2">（建议包含：胜利截图 + 站位截图）</span>
                 </div>
                 <input
                   type="file"
