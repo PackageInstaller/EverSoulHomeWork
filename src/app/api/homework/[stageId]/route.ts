@@ -38,7 +38,7 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      homeworks: homeworks.map((homework: { id: any; nickname: any; description: any; teamCount: any; createdAt: any; images: any[]; }) => ({
+      homeworks: homeworks.map((homework: { id: any; nickname: any; description: any; teamCount: any; createdAt: any; updatedAt: any; images: any[]; }) => ({
         id: homework.id,
         nickname: homework.nickname,
         description: homework.description,
@@ -49,7 +49,7 @@ export async function GET(
           filename: img.filename,
           originalName: img.originalName,
           order: img.order,
-          url: `/uploads/homework/${img.filename}`
+          url: `/uploads/homework/${img.filename}?v=${new Date(homework.updatedAt).getTime()}`
         }))
       }))
     })
