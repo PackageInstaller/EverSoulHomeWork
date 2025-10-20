@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
           originalName: img.originalName,
           order: img.order,
           fileSize: img.fileSize,
-          url: `/uploads/homework/${img.filename}?t=${Date.now()}`
+          url: `/api/uploads/homework/${img.filename}?t=${Date.now()}`
         }))
       })),
       pagination: {
