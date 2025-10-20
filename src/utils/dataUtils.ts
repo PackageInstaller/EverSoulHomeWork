@@ -134,7 +134,7 @@ function debugLog(message: string, data?: any) {
 }
 
 /**
- * 从 GitHub 获取 JSON 数据
+ * 从 GitHub 获取 JSON 数据（带重试机制）
  */
 export async function fetchJsonFromGitHub(dataSource: DataSource, fileName: string): Promise<any> {
   const cacheKey = `${dataSource}-${fileName}`;
@@ -151,54 +151,82 @@ export async function fetchJsonFromGitHub(dataSource: DataSource, fileName: stri
   global.__appCache!.cacheMissCount++;
   cacheMissCount = global.__appCache!.cacheMissCount;
 
-  try {
-    const url = `${GITHUB_BASE_URL}/${dataSource}/${fileName}.json`;
-    debugLog(`发起请求: ${url}`);
-    
-    const response = await fetch(url, {
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'EverSoul-Strategy-Web/1.0'
-      }
-    });
-    
-    debugLog(`响应状态: ${response.status} ${response.statusText}`);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText} - URL: ${url}`);
-    }
-    
-    const text = await response.text();
-    debugLog(`响应文本长度: ${text.length} 字符`);
-    
-    let data;
+  const url = `${GITHUB_BASE_URL}/${dataSource}/${fileName}.json`;
+  const maxRetries = 3;
+  let lastError: any;
+
+  // 重试逻辑：处理网络不稳定
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      data = JSON.parse(text);
-      debugLog(`JSON 解析成功，数据类型: ${Array.isArray(data) ? `数组 (${data.length} 项)` : typeof data}`);
+      debugLog(`发起请求 (尝试 ${attempt}/${maxRetries}): ${url}`);
       
-      // 检查数据结构
-      if (data && typeof data === 'object' && data.json && Array.isArray(data.json)) {
-        debugLog(`检测到包装格式，提取 json 数组: ${data.json.length} 项`);
-        data = data.json; // 提取实际的数据数组
-      } else if (Array.isArray(data)) {
-        debugLog(`直接数组格式: ${data.length} 项`);
-      } else {
-        debugLog(`其他数据格式`, { keys: Object.keys(data || {}), type: typeof data });
+      const response = await fetch(url, {
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'EverSoul-Strategy-Web/1.0'
+        },
+        cache: 'no-store',  // 禁用Next.js内置缓存（大文件会超过2MB限制）
+        signal: AbortSignal.timeout(30000)  // 30秒超时
+      });
+      
+      debugLog(`响应状态: ${response.status} ${response.statusText}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText} - URL: ${url}`);
       }
       
-    } catch (parseError) {
-      debugLog(`JSON 解析失败: ${parseError}`, text.substring(0, 200));
-      throw new Error(`JSON 解析失败: ${parseError}`);
+      const text = await response.text();
+      debugLog(`响应文本长度: ${text.length} 字符`);
+      
+      let data;
+      try {
+        data = JSON.parse(text);
+        debugLog(`JSON 解析成功，数据类型: ${Array.isArray(data) ? `数组 (${data.length} 项)` : typeof data}`);
+        
+        // 检查数据结构
+        if (data && typeof data === 'object' && data.json && Array.isArray(data.json)) {
+          debugLog(`检测到包装格式，提取 json 数组: ${data.json.length} 项`);
+          data = data.json; // 提取实际的数据数组
+        } else if (Array.isArray(data)) {
+          debugLog(`直接数组格式: ${data.length} 项`);
+        } else {
+          debugLog(`其他数据格式`, { keys: Object.keys(data || {}), type: typeof data });
+        }
+        
+      } catch (parseError) {
+        debugLog(`JSON 解析失败: ${parseError}`, text.substring(0, 200));
+        throw new Error(`JSON 解析失败: ${parseError}`);
+      }
+      
+      dataCache.set(cacheKey, data);
+      debugLog(`数据已缓存: ${fileName}, 最终数据类型: ${Array.isArray(data) ? `数组 (${data.length} 项)` : typeof data}`);
+      return data;
+
+    } catch (error: any) {
+      lastError = error;
+      
+      // 判断是否应该重试
+      const isNetworkError = error.name === 'TypeError' || 
+                            error.code === 'ECONNRESET' || 
+                            error.code === 'ETIMEDOUT' ||
+                            error.name === 'AbortError';
+      
+      if (isNetworkError && attempt < maxRetries) {
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // 指数退避，最大5秒
+        console.warn(`⚠️ 网络错误，${delay}ms 后重试 (${attempt}/${maxRetries}): ${fileName}`, error.message);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      
+      // 不重试或已达最大重试次数
+      break;
     }
-    
-    dataCache.set(cacheKey, data);
-    debugLog(`数据已缓存: ${fileName}, 最终数据类型: ${Array.isArray(data) ? `数组 (${data.length} 项)` : typeof data}`);
-    return data;
-  } catch (error) {
-    debugLog(`获取数据失败: ${fileName}`, error);
-    console.error(`Error fetching ${fileName} from ${dataSource}:`, error);
-    throw error;
   }
+
+  // 所有重试都失败了
+  debugLog(`获取数据失败: ${fileName}`, lastError);
+  console.error(`❌ Error fetching ${fileName} from ${dataSource} (所有重试失败):`, lastError);
+  throw lastError;
 }
 
 /**

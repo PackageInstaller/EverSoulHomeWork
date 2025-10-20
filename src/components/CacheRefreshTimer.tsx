@@ -52,12 +52,19 @@ export default function CacheRefreshTimer({
         const data = await response.json();
         
         if (data.success) {
-          console.log(`✅ [缓存定时器] 检查完成 - ${data.duration}`);
+          console.log(`✅ [缓存定时器] 所有数据源刷新成功 - ${data.duration}`);
+        } else if (data.partialSuccess) {
+          console.warn(`⚠️ [缓存定时器] 部分成功 - ${data.duration}`, {
+            成功: data.successes,
+            失败: data.failures
+          });
         } else {
-          console.warn('⚠️ [缓存定时器] 检查失败:', data.error);
+          console.error(`❌ [缓存定时器] 所有数据源刷新失败 - ${data.duration}`, {
+            失败: data.failures
+          });
         }
       } catch (error) {
-        console.error('❌ [缓存定时器] 检查出错:', error);
+        console.error('❌ [缓存定时器] 请求失败:', error);
       }
     };
 
