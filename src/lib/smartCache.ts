@@ -4,7 +4,7 @@
 
 import { DataSource } from '@/types';
 
-const GITHUB_BASE_URL = 'https://edgeone.gh-proxy.com/raw.githubusercontent.com/PackageInstaller/DataTable/master/EverSoul/MasterData/Global';
+const GITHUB_BASE_URL = 'https://gh-proxy.com/raw.githubusercontent.com/PackageInstaller/DataTable/master/EverSoul/MasterData/Global';
 
 // 缓存项接口
 interface CacheItem {
