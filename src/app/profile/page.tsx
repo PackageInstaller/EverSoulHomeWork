@@ -131,13 +131,24 @@ export default function ProfilePage() {
             router.push("/loginResignter");
           }, 1500);
         } else {
-          // 只修改了昵称，更新本地token
+          // 只修改了昵称，更新本地token和用户信息
           localStorage.setItem("Token", data.token);
-          setMessage({ type: "success", text: "资料更新成功" });
-
-          // 延迟跳转
+          
+          // 更新 localStorage 中的用户信息（如果存在）
+          try {
+            const userInfo = JSON.parse(atob(data.token.split('.')[1]));
+            localStorage.setItem("UserInfo", JSON.stringify({
+              id: userInfo.id,
+              email: userInfo.email,
+              nickname: userInfo.nickname
+            }));
+          } catch (e) {
+            console.error('解析用户信息失败', e);
+          }
+          
+          setMessage({ type: "success", text: "资料更新成功，即将刷新页面..." });
           setTimeout(() => {
-            router.push("/");
+            window.location.href = "/";
           }, 1000);
         }
 
