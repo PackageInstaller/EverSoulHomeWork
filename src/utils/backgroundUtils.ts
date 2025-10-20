@@ -1,6 +1,6 @@
 // 主线剧情背景图片列表
 const MAIN_STORY_BACKGROUNDS = [
-  'MS06_ApollyonClose.webp'
+  'mainBg.webp'
 ];
 
 /**
@@ -10,7 +10,7 @@ const MAIN_STORY_BACKGROUNDS = [
 export function getRandomMainStoryBackground(): string {
   const randomIndex = Math.floor(Math.random() * MAIN_STORY_BACKGROUNDS.length);
   const selectedBackground = MAIN_STORY_BACKGROUNDS[randomIndex];
-  return `/images/main_story/${selectedBackground}`;
+  return `/images/${selectedBackground}`;
 }
 
 /**
@@ -29,7 +29,7 @@ export function getConsistentMainStoryBackground(stageId: string): string {
   
   const index = Math.abs(hash) % MAIN_STORY_BACKGROUNDS.length;
   const selectedBackground = MAIN_STORY_BACKGROUNDS[index];
-  return `/images/main_story/${selectedBackground}`;
+  return `/images/${selectedBackground}`;
 }
 
 /**

@@ -11,7 +11,6 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3000,
-        // 禁用实验性 API 警告
         NODE_OPTIONS: '--no-warnings --no-experimental-fetch-warning'
       },
       error_file: './logs/err.log',

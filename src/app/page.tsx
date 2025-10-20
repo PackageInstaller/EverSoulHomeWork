@@ -124,7 +124,7 @@ export default function HomePage() {
             <div
               className="bg-gradient-to-r from-blue-900/90 to-purple-900/90 rounded-lg p-6 sm:p-8 text-white relative overflow-hidden"
               style={{
-                backgroundImage: "url(/images/bg_worldmap.webp)",
+                backgroundImage: "url(/images/stageBg.webp)",
                 backgroundSize: "cover",
                 backgroundPosition: "center",
                 backgroundRepeat: "no-repeat",
