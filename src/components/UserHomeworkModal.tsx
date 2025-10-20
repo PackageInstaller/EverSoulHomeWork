@@ -30,6 +30,7 @@ export default function UserHomeworkModal({ nickname, onClose }: UserHomeworkMod
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [selectedArea, setSelectedArea] = useState<number | null>(null); // null表示显示全部
 
   useEffect(() => {
     fetchHomeworks();
@@ -66,6 +67,22 @@ export default function UserHomeworkModal({ nickname, onClose }: UserHomeworkMod
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
   }, [onClose]);
+
+  // 过滤作业：根据选中的区域
+  const filteredHomeworks = selectedArea === null
+    ? homeworks
+    : homeworks.filter(hw => {
+        const area = parseInt(hw.stageId.split('-')[0]);
+        return area === selectedArea;
+      });
+
+  // 统计每个区域的作业数
+  const getAreaHomeworkCount = (area: number) => {
+    return homeworks.filter(hw => {
+      const hwArea = parseInt(hw.stageId.split('-')[0]);
+      return hwArea === area;
+    }).length;
+  };
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
@@ -111,29 +128,67 @@ export default function UserHomeworkModal({ nickname, onClose }: UserHomeworkMod
             </div>
           ) : (
             <div className="space-y-6">
-              {/* 区域统计 */}
+              {/* 区域筛选 */}
               <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                <h3 className="text-white font-semibold mb-3">📊 区域分布</h3>
+                <h3 className="text-white font-semibold mb-3">📊 章节筛选（点击查看）</h3>
                 <div className="flex flex-wrap gap-2">
-                  {groupedByArea.map(group => (
-                    <div
-                      key={group.area}
-                      className="bg-blue-500/20 border border-blue-500/30 rounded-lg px-3 py-2"
-                    >
-                      <span className="text-white font-medium">{group.area}图</span>
-                      <span className="text-white/70 text-sm ml-2">
-                        ({group.stages.length}关)
-                      </span>
-                    </div>
-                  ))}
+                  {/* 全部按钮 */}
+                  <button
+                    onClick={() => setSelectedArea(null)}
+                    className={`rounded-lg px-4 py-2 transition-all ${
+                      selectedArea === null
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-500 border border-blue-400 shadow-lg scale-105'
+                        : 'bg-white/10 border border-white/20 hover:bg-white/20 hover:scale-105'
+                    }`}
+                  >
+                    <span className="text-white font-medium">全部</span>
+                    <span className="text-white/70 text-sm ml-2">
+                      ({homeworks.length}个)
+                    </span>
+                  </button>
+
+                  {/* 各区域按钮 */}
+                  {groupedByArea.map(group => {
+                    const count = getAreaHomeworkCount(group.area);
+                    const isSelected = selectedArea === group.area;
+                    
+                    return (
+                      <button
+                        key={group.area}
+                        onClick={() => setSelectedArea(group.area)}
+                        className={`rounded-lg px-4 py-2 transition-all ${
+                          isSelected
+                            ? 'bg-gradient-to-r from-blue-500 to-purple-500 border border-blue-400 shadow-lg scale-105'
+                            : 'bg-blue-500/20 border border-blue-500/30 hover:bg-blue-500/30 hover:scale-105'
+                        }`}
+                      >
+                        <span className="text-white font-medium">{group.area}图</span>
+                        <span className="text-white/70 text-sm ml-2">
+                          ({count}个)
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               {/* 作业列表 */}
               <div>
-                <h3 className="text-white font-semibold mb-3">📝 作业列表</h3>
+                <h3 className="text-white font-semibold mb-3">
+                  📝 作业列表
+                  {selectedArea !== null && (
+                    <span className="text-white/60 text-sm ml-2">
+                      - 第{selectedArea}图
+                    </span>
+                  )}
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {homeworks.map(homework => (
+                  {filteredHomeworks.length === 0 ? (
+                    <div className="col-span-full text-center py-12">
+                      <p className="text-white/50">该区域暂无作业</p>
+                    </div>
+                  ) : (
+                    filteredHomeworks.map(homework => (
                     <Link
                       key={homework.id}
                       href={`/stage/${homework.stageId}?source=live&returnSource=live`}
@@ -180,7 +235,8 @@ export default function UserHomeworkModal({ nickname, onClose }: UserHomeworkMod
                         </div>
                       </div>
                     </Link>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
 
