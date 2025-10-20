@@ -141,11 +141,27 @@ export async function PATCH(request: Request) {
     
     // 如果昵称变更，检查是否会与现有数据冲突
     if (nicknameChanged) {
-      // 检查新昵称是否已被其他用户在某些月份使用
+      // 1. 检查新昵称是否已被其他用户使用
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          nickname: nickname.trim(),
+          NOT: {
+            id: userData.id // 排除当前用户
+          }
+        }
+      });
+
+      if (existingUser) {
+        return NextResponse.json(
+          { success: false, message: '该昵称已被其他用户使用，请选择其他昵称' },
+          { status: 400 }
+        );
+      }
+
+      // 2. 检查新昵称是否已被其他用户在月度积分榜中使用
       const conflictingUserPoints = await prisma.userPoints.findFirst({
         where: {
           nickname: nickname.trim(),
-          // 不是当前用户的记录
           NOT: {
             nickname: currentUser.nickname
           }

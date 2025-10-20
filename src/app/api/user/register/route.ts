@@ -57,13 +57,25 @@ export async function POST(request: Request) {
     }
 
     // 检查邮箱是否已存在
-    const existingUser = await prisma.user.findUnique({
+    const existingUserByEmail = await prisma.user.findUnique({
       where: { email }
     });
 
-    if (existingUser) {
+    if (existingUserByEmail) {
       return NextResponse.json(
         { success: false, message: '该邮箱已被注册' },
+        { status: 400 }
+      );
+    }
+
+    // 检查昵称是否已被使用
+    const existingUserByNickname = await prisma.user.findFirst({
+      where: { nickname: nickname.trim() }
+    });
+
+    if (existingUserByNickname) {
+      return NextResponse.json(
+        { success: false, message: '该昵称已被使用，请选择其他昵称' },
         { status: 400 }
       );
     }
@@ -76,7 +88,7 @@ export async function POST(request: Request) {
       data: {
         email,
         password: hashedPassword,
-        nickname
+        nickname: nickname.trim()
       }
     });
 
