@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { preloadGameData, clearCache } from '@/utils/dataUtils';
-import { validateAdminSession } from '@/lib/migration';
+import { validateAdminSession } from '@/lib/adminAuth';
 
 export const dynamic = 'force-dynamic';
 
