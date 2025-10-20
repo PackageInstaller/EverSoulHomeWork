@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import PointsSettlement from "@/components/PointsSettlement";
 import MessageSender from "@/components/MessageSender";
-import ImageViewer from "@/components/ImageViewer";
 
 interface HomeworkImage {
   id: string;
@@ -50,7 +49,6 @@ export default function AdminHomeworkPage() {
     total: 0,
     totalPages: 0,
   });
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const [currentImages, setCurrentImages] = useState<string[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -891,13 +889,32 @@ export default function AdminHomeworkPage() {
           <MessageSender />
         )}
 
-        {/* 图片查看器 */}
-        <ImageViewer
-          images={currentImages}
-          initialIndex={currentImageIndex}
-          isOpen={imageViewerOpen}
-          onClose={() => setImageViewerOpen(false)}
-        />
+        {/* 简单图片预览 */}
+        {imageViewerOpen && currentImages.length > 0 && (
+          <div
+            className="fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center p-4"
+            onClick={() => setImageViewerOpen(false)}
+          >
+            {/* 关闭按钮 */}
+            <button
+              onClick={() => setImageViewerOpen(false)}
+              className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10"
+              aria-label="关闭"
+            >
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* 图片 */}
+            <img
+              src={currentImages[currentImageIndex]}
+              alt={`图片 ${currentImageIndex + 1}`}
+              className="max-w-full max-h-full object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        )}
 
         {/* 拒绝原因模态框 */}
         {rejectModalOpen && (
