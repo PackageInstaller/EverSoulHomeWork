@@ -81,6 +81,12 @@ export async function GET(request: NextRequest) {
           thumbnail: hw.images[0] ? `/api/uploads/homework/${hw.images[0].filename}?t=${new Date(hw.updatedAt).getTime()}` : null
         }))
       }))
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     })
 
   } catch (error) {

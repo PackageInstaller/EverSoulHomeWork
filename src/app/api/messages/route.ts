@@ -51,6 +51,12 @@ export async function GET(request: Request) {
       success: true,
       messages,
       unreadCount,
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     });
   } catch (error) {
     console.error('获取消息列表失败:', error);

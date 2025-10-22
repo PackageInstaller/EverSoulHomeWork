@@ -63,6 +63,12 @@ export async function GET(request: Request) {
         total,
         totalPages,
       },
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     });
   } catch (error) {
     console.error('获取总积分排行失败:', error);

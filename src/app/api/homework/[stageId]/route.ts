@@ -52,6 +52,12 @@ export async function GET(
           url: `/api/uploads/homework/${img.filename}?t=${new Date(homework.updatedAt).getTime()}`
         }))
       }))
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     })
 
   } catch (error) {
