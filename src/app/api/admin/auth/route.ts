@@ -24,6 +24,12 @@ export async function POST(request: NextRequest) {
       const response = NextResponse.json({
         success: true,
         message: '登录成功'
+      }, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, private, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
       });
 
       // 设置cookie (有效期1小时)
@@ -83,6 +89,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         success: true,
         message: '会话有效'
+      }, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, private, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
       });
     } catch {
       return NextResponse.json(
@@ -104,6 +116,12 @@ export async function DELETE(request: NextRequest) {
   const response = NextResponse.json({
     success: true,
     message: '已登出'
+  }, {
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, private, max-age=0',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
   });
 
   // 清除cookie

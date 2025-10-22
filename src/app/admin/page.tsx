@@ -124,8 +124,17 @@ export default function AdminHomeworkPage() {
   const fetchHomeworks = async (status = selectedStatus, page = 1) => {
     try {
       setLoading(true);
+      // 添加时间戳防止CDN缓存
+      const timestamp = Date.now();
       const response = await fetch(
-        `/api/admin/homework?status=${status}&page=${page}&limit=10`
+        `/api/admin/homework?status=${status}&page=${page}&limit=10&_t=${timestamp}`,
+        {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        }
       );
       
       if (response.status === 401) {

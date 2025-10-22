@@ -204,6 +204,12 @@ export async function PATCH(
         updatedAt: homework.updatedAt
       },
       points: pointsInfo
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     })
 
   } catch (error) {
@@ -279,6 +285,12 @@ export async function DELETE(
     return NextResponse.json({
       success: true,
       message: '作业删除成功'
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     })
 
   } catch (error) {

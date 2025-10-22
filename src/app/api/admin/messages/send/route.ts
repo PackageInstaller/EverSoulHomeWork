@@ -91,6 +91,12 @@ export async function POST(request: NextRequest) {
       success: true,
       message: `成功发送消息给 ${targetUserIds.length} 位用户`,
       count: targetUserIds.length,
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     });
   } catch (error) {
     console.error('发送消息失败:', error);

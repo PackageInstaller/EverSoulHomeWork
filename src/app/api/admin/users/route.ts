@@ -59,6 +59,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       users,
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     });
   } catch (error) {
     console.error('获取用户列表失败:', error);
