@@ -196,13 +196,16 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
               <div>
                 <label className="block text-white text-sm font-medium mb-2">
                   昵称 <span className="text-red-400">*</span>
+                  {formData.nickname && (
+                    <span className="text-white/50 text-xs ml-2">（自动填充，不可修改）</span>
+                  )}
                 </label>
                 <input
                   type="text"
                   value={formData.nickname}
-                  onChange={(e) => setFormData(prev => ({ ...prev, nickname: e.target.value }))}
+                  readOnly
                   placeholder="请输入您的昵称"
-                  className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full bg-white/5 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50 cursor-not-allowed"
                   maxLength={20}
                   required
                 />
