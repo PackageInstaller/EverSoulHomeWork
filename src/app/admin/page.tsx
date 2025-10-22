@@ -166,6 +166,16 @@ export default function AdminHomeworkPage() {
       return;
     }
 
+    // 乐观更新：如果状态变化会导致作业从当前列表移除，先从UI中移除
+    const shouldRemoveFromList = 
+      (selectedStatus === 'pending' && newStatus !== 'pending') ||
+      (selectedStatus === 'approved' && newStatus !== 'approved') ||
+      (selectedStatus === 'rejected' && newStatus !== 'rejected');
+
+    if (shouldRemoveFromList) {
+      setHomeworks(prev => prev.filter(hw => hw.id !== homeworkId));
+    }
+
     try {
       const response = await fetch(`/api/admin/homework/${homeworkId}`, {
         method: "PATCH",
@@ -183,12 +193,17 @@ export default function AdminHomeworkPage() {
       const result = await response.json();
 
       if (result.success) {
+        // 刷新列表以确保数据同步
         fetchHomeworks(selectedStatus, pagination.page);
         alert(`作业状态已更新为: ${getStatusText(newStatus)}`);
       } else {
+        // 失败时恢复列表
+        fetchHomeworks(selectedStatus, pagination.page);
         alert(result.error || "更新状态失败");
       }
     } catch (error) {
+      // 失败时恢复列表
+      fetchHomeworks(selectedStatus, pagination.page);
       alert("网络错误");
     }
   };
@@ -197,6 +212,11 @@ export default function AdminHomeworkPage() {
     // 批量拒绝
     if (isBatchReject) {
       if (selectedHomeworks.size === 0) return;
+
+      // 乐观更新：如果当前不是查看"rejected"列表，先从UI中移除
+      if (selectedStatus !== 'rejected') {
+        setHomeworks(prev => prev.filter(hw => !selectedHomeworks.has(hw.id)));
+      }
 
       setBatchLoading(true);
       try {
@@ -231,6 +251,8 @@ export default function AdminHomeworkPage() {
         setIsBatchReject(false);
       } catch (error) {
         alert("批量拒绝失败");
+        // 失败时恢复列表
+        fetchHomeworks(selectedStatus, pagination.page);
       } finally {
         setBatchLoading(false);
       }
@@ -239,6 +261,11 @@ export default function AdminHomeworkPage() {
 
     // 单个拒绝
     if (!rejectHomeworkId) return;
+
+    // 乐观更新：如果当前不是查看"rejected"列表，先从UI中移除
+    if (selectedStatus !== 'rejected') {
+      setHomeworks(prev => prev.filter(hw => hw.id !== rejectHomeworkId));
+    }
 
     try {
       const response = await fetch(`/api/admin/homework/${rejectHomeworkId}`, {
@@ -266,9 +293,13 @@ export default function AdminHomeworkPage() {
         setRejectHomeworkId(null);
         setRejectReason("");
       } else {
+        // 失败时恢复列表
+        fetchHomeworks(selectedStatus, pagination.page);
         alert(result.error || "更新状态失败");
       }
     } catch (error) {
+      // 失败时恢复列表
+      fetchHomeworks(selectedStatus, pagination.page);
       alert("网络错误");
     }
   };
@@ -312,6 +343,9 @@ export default function AdminHomeworkPage() {
       return;
     }
 
+    // 乐观更新：立即从UI中移除
+    setHomeworks(prev => prev.filter(hw => hw.id !== homeworkId));
+
     try {
       const response = await fetch(`/api/admin/homework/${homeworkId}`, {
         method: "DELETE",
@@ -325,12 +359,17 @@ export default function AdminHomeworkPage() {
       const result = await response.json();
 
       if (result.success) {
+        // 刷新列表以确保数据同步和分页准确
         fetchHomeworks(selectedStatus, pagination.page);
         alert("作业删除成功");
       } else {
+        // 失败时恢复列表
+        fetchHomeworks(selectedStatus, pagination.page);
         alert(result.error || "删除失败");
       }
     } catch (error) {
+      // 失败时恢复列表
+      fetchHomeworks(selectedStatus, pagination.page);
       alert("网络错误");
     }
   };
@@ -381,6 +420,16 @@ export default function AdminHomeworkPage() {
       return;
     }
 
+    // 乐观更新：如果状态变化会导致作业从当前列表移除，先从UI中移除
+    const shouldRemoveFromList = 
+      (selectedStatus === 'pending' && newStatus !== 'pending') ||
+      (selectedStatus === 'approved' && newStatus !== 'approved') ||
+      (selectedStatus === 'rejected' && newStatus !== 'rejected');
+
+    if (shouldRemoveFromList) {
+      setHomeworks(prev => prev.filter(hw => !selectedHomeworks.has(hw.id)));
+    }
+
     setBatchLoading(true);
     try {
       const promises = Array.from(selectedHomeworks).map((homeworkId) =>
@@ -408,6 +457,8 @@ export default function AdminHomeworkPage() {
       fetchHomeworks(selectedStatus, pagination.page);
     } catch (error) {
       alert("批量操作失败");
+      // 失败时恢复列表
+      fetchHomeworks(selectedStatus, pagination.page);
     } finally {
       setBatchLoading(false);
     }
@@ -427,6 +478,9 @@ export default function AdminHomeworkPage() {
     ) {
       return;
     }
+
+    // 乐观更新：立即从UI中移除
+    setHomeworks(prev => prev.filter(hw => !selectedHomeworks.has(hw.id)));
 
     setBatchLoading(true);
     try {
@@ -453,6 +507,8 @@ export default function AdminHomeworkPage() {
       fetchHomeworks(selectedStatus, pagination.page);
     } catch (error) {
       alert("批量删除失败");
+      // 失败时恢复列表
+      fetchHomeworks(selectedStatus, pagination.page);
     } finally {
       setBatchLoading(false);
     }
