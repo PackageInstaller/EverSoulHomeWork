@@ -49,7 +49,7 @@ export async function GET(
           filename: img.filename,
           originalName: img.originalName,
           order: img.order,
-          url: `/api/uploads/homework/${img.filename}`
+          url: `/api/uploads/homework/${img.filename}?t=${new Date(homework.updatedAt).getTime()}`
         }))
       }))
     })
