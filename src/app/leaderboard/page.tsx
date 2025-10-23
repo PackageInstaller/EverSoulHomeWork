@@ -11,7 +11,7 @@ export default function LeaderboardPage() {
     <main 
       className="min-h-screen relative"
       style={{
-        backgroundImage: 'url(/images/prizeBg.webp)',
+        backgroundImage: 'url(/background/prizeBg.webp)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed',

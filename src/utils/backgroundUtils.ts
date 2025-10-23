@@ -10,7 +10,7 @@ const MAIN_STORY_BACKGROUNDS = [
 export function getRandomMainStoryBackground(): string {
   const randomIndex = Math.floor(Math.random() * MAIN_STORY_BACKGROUNDS.length);
   const selectedBackground = MAIN_STORY_BACKGROUNDS[randomIndex];
-  return `/images/${selectedBackground}`;
+  return `/background/${selectedBackground}`;
 }
 
 /**
@@ -29,7 +29,7 @@ export function getConsistentMainStoryBackground(stageId: string): string {
   
   const index = Math.abs(hash) % MAIN_STORY_BACKGROUNDS.length;
   const selectedBackground = MAIN_STORY_BACKGROUNDS[index];
-  return `/images/${selectedBackground}`;
+  return `/background/${selectedBackground}`;
 }
 
 /**

@@ -94,13 +94,19 @@ export default function UserHomeworkModal({ nickname, onClose }: UserHomeworkMod
         {/* 头部 */}
         <div className="sticky top-0 z-10 bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4 border-b border-white/20">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-white">
-                👤 {nickname} 的作业
-              </h2>
-              <p className="text-white/80 text-sm mt-1">
-                共 {total} 个已审核通过的作业
-              </p>
+            <div className="flex items-center space-x-4">
+              {/* 头像 */}
+              <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center text-blue-600 font-bold text-2xl shadow-lg flex-shrink-0">
+                {nickname.charAt(0)}
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-white">
+                  {nickname} 的作业
+                </h2>
+                <p className="text-white/80 text-sm mt-1">
+                  共 {total} 个已审核通过的作业
+                </p>
+              </div>
             </div>
             <button
               onClick={onClose}

@@ -122,30 +122,56 @@ export default function TotalPointsRanking() {
 
         {/* 统计卡片 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-          <div className="group bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl md:rounded-2xl p-4 md:p-5 border-2 border-blue-200 hover:border-blue-300 transition-all duration-300 md:hover:scale-105 hover:shadow-xl hover:shadow-blue-500/20">
+          {/* 参与用户总数 - 堆叠头像显示 */}
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl md:rounded-2xl p-4 md:p-5 border-2 border-blue-200">
             <div className="flex items-center justify-between mb-2">
               <div className="text-gray-600 text-xs md:text-sm font-medium">参与用户总数</div>
-              <span className="text-xl md:text-2xl">👥</span>
+              {/* 堆叠头像 - 显示前5名用户 */}
+              <div className="flex items-center -space-x-2">
+                {currentRankList.slice(0, Math.min(5, currentRankList.length)).map((user, index) => (
+                  <div
+                    key={user.id}
+                    className="w-7 h-7 md:w-8 md:h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xs border-2 border-white shadow-md"
+                    style={{ zIndex: 5 - index }}
+                    title={user.nickname}
+                  >
+                    {user.nickname.charAt(0)}
+                  </div>
+                ))}
+                {rankStats.totalUsers > 5 && (
+                  <div 
+                    className="w-7 h-7 md:w-8 md:h-8 bg-gray-400 rounded-full flex items-center justify-center text-white font-bold text-xs border-2 border-white shadow-md"
+                    style={{ zIndex: 0 }}
+                    title={`还有${rankStats.totalUsers - 5}位用户`}
+                  >
+                    +{rankStats.totalUsers - 5}
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="text-2xl md:text-3xl font-bold text-blue-600 group-hover:text-blue-700 transition-colors">
+            <div className="text-2xl md:text-3xl font-bold text-blue-600">
               {rankStats.totalUsers} <span className="text-base md:text-lg font-normal text-gray-500">人</span>
             </div>
           </div>
-          <div className="group bg-gradient-to-br from-green-50 to-emerald-100 rounded-xl md:rounded-2xl p-4 md:p-5 border-2 border-green-200 hover:border-green-300 transition-all duration-300 md:hover:scale-105 hover:shadow-xl hover:shadow-green-500/20">
+
+          {/* 总积分最高 */}
+          <div className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-xl md:rounded-2xl p-4 md:p-5 border-2 border-green-200">
             <div className="flex items-center justify-between mb-2">
               <div className="text-gray-600 text-xs md:text-sm font-medium">总积分最高</div>
               <span className="text-xl md:text-2xl">⭐</span>
             </div>
-            <div className="text-2xl md:text-3xl font-bold text-green-600 group-hover:text-green-700 transition-colors">
+            <div className="text-2xl md:text-3xl font-bold text-green-600">
               {rankStats.highestPoints.toFixed(1)} <span className="text-base md:text-lg font-normal text-gray-500">分</span>
             </div>
           </div>
-          <div className="group bg-gradient-to-br from-yellow-50 to-orange-100 rounded-xl md:rounded-2xl p-4 md:p-5 border-2 border-yellow-200 hover:border-yellow-300 transition-all duration-300 md:hover:scale-105 hover:shadow-xl hover:shadow-yellow-500/20">
+
+          {/* 平均作业数 */}
+          <div className="bg-gradient-to-br from-yellow-50 to-orange-100 rounded-xl md:rounded-2xl p-4 md:p-5 border-2 border-yellow-200">
             <div className="flex items-center justify-between mb-2">
               <div className="text-gray-600 text-xs md:text-sm font-medium">平均作业数</div>
               <span className="text-xl md:text-2xl">📝</span>
             </div>
-            <div className="text-2xl md:text-3xl font-bold text-yellow-600 group-hover:text-yellow-700 transition-colors">
+            <div className="text-2xl md:text-3xl font-bold text-yellow-600">
               {rankStats.avgHomework} <span className="text-base md:text-lg font-normal text-gray-500">个</span>
             </div>
           </div>
@@ -192,7 +218,7 @@ export default function TotalPointsRanking() {
           {searchTerm && (
             <button
               onClick={() => handleSearchChange('')}
-              className="mt-4 px-6 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-all duration-300 hover:scale-105 shadow-lg"
+              className="mt-4 px-6 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-colors shadow-lg"
             >
               清除搜索
             </button>
@@ -203,68 +229,91 @@ export default function TotalPointsRanking() {
           <div className="space-y-4">
             {currentRankList.map((item, index) => {
               let rankStyle = 'bg-white border-gray-200';
-              let rankIcon = `#${item.rank}`;
-              let rankBg = 'bg-gray-200';
+              let rankIconType: 'image' | 'text' = 'text';
+              let rankIconSrc = '';
+              let rankText = `#${item.rank}`;
               let shadowColor = 'shadow-lg';
 
+              // 根据排名设置不同的图标
               if (item.rank === 1) {
-                rankStyle =
-                  'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-300';
-                rankIcon = '🥇';
-                rankBg = 'bg-gradient-to-br from-yellow-400 to-orange-400';
+                rankStyle = 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-300';
+                rankIconType = 'image';
+                rankIconSrc = '/rank/sticker_WorldRaid_Kayrin_01.png';
                 shadowColor = 'shadow-xl shadow-yellow-500/20';
               } else if (item.rank === 2) {
-                rankStyle =
-                  'bg-gradient-to-r from-gray-50 to-slate-50 border-gray-300';
-                rankIcon = '🥈';
-                rankBg = 'bg-gradient-to-br from-gray-300 to-gray-400';
+                rankStyle = 'bg-gradient-to-r from-gray-50 to-slate-50 border-gray-300';
+                rankIconType = 'image';
+                rankIconSrc = '/rank/sticker_WorldRaid_Kayrin_02.png';
                 shadowColor = 'shadow-xl shadow-gray-400/20';
               } else if (item.rank === 3) {
-                rankStyle =
-                  'bg-gradient-to-r from-orange-50 to-amber-50 border-orange-300';
-                rankIcon = '🥉';
-                rankBg = 'bg-gradient-to-br from-orange-500 to-orange-600';
+                rankStyle = 'bg-gradient-to-r from-orange-50 to-amber-50 border-orange-300';
+                rankIconType = 'image';
+                rankIconSrc = '/rank/sticker_WorldRaid_Kayrin_03.png';
                 shadowColor = 'shadow-xl shadow-orange-500/20';
+              } else if (item.rank >= 4 && item.rank <= 100) {
+                rankIconType = 'image';
+                rankIconSrc = '/rank/sticker_WorldRaid_Kayrin_04.png';
+              } else {
+                // 100名以外
+                rankIconType = 'image';
+                rankIconSrc = '/rank/sticker_WorldRaid_Kayrin_05.png';
               }
 
               return (
                 <div
                   key={item.id}
-                  className={`${rankStyle} rounded-xl md:rounded-2xl p-4 md:p-5 border-2 transition-all duration-300 md:hover:scale-[1.02] hover:shadow-2xl ${shadowColor} group`}
+                  className={`${rankStyle} rounded-xl md:rounded-2xl p-4 md:p-5 border-2 ${shadowColor}`}
                   style={{
                     animation: `fadeIn 0.3s ease-out ${index * 0.05}s both`
                   }}
                 >
                   <div className="flex items-center justify-between flex-col sm:flex-row gap-3 md:gap-4">
                     <div className="flex items-center space-x-3 md:space-x-4 w-full sm:w-auto">
-                      <div className={`${rankBg} text-white w-12 h-12 md:w-14 md:h-14 rounded-lg md:rounded-xl flex items-center justify-center text-xl md:text-2xl font-bold shadow-lg flex-shrink-0 group-hover:scale-110 transition-transform duration-300`}>
-                        {item.rank <= 3 ? rankIcon : `#${item.rank}`}
+                      {/* 排名图标 */}
+                      <div className="w-12 h-12 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0">
+                        {rankIconType === 'image' ? (
+                          <img 
+                            src={rankIconSrc} 
+                            alt={`排名${item.rank}`}
+                            className="w-full h-full object-contain"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-200 rounded-lg md:rounded-xl flex items-center justify-center text-xl md:text-2xl font-bold text-gray-600 shadow-lg">
+                            {rankText}
+                          </div>
+                        )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <button
-                          onClick={() => setSelectedUser(item.nickname)}
-                          className="text-lg md:text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors cursor-pointer text-left group/name w-full"
-                        >
-                          <span className="group-hover/name:underline truncate block">{item.nickname}</span>
-                          <span className="ml-2 text-xs md:text-sm text-blue-500 opacity-0 group-hover/name:opacity-100 transition-opacity inline-block">
-                            查看作业 →
-                          </span>
-                        </button>
-                        <div className="text-xs md:text-sm text-gray-600 mt-1 flex items-center gap-1.5 md:gap-2 flex-wrap">
-                          <span className="inline-flex items-center gap-1">
-                            📚 {item.homeworkCount} 个作业
-                          </span>
-                          <span className="text-gray-400 hidden sm:inline">•</span>
-                          <span className="inline-flex items-center gap-1 text-xs md:text-sm">
-                            🕐 <span className="hidden sm:inline">{item.lastUpdated}</span>
-                            <span className="sm:hidden">{item.lastUpdated.split(' ')[0]}</span>
-                          </span>
+                      <div className="flex items-center space-x-2 md:space-x-3 flex-1 min-w-0">
+                        {/* 头像 */}
+                        <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-base md:text-lg shadow-lg flex-shrink-0">
+                          {item.nickname.charAt(0)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <button
+                            onClick={() => setSelectedUser(item.nickname)}
+                            className="text-lg md:text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors cursor-pointer text-left group/name w-full"
+                          >
+                            <span className="group-hover/name:underline truncate block">{item.nickname}</span>
+                            <span className="ml-2 text-xs md:text-sm text-blue-500 opacity-0 group-hover/name:opacity-100 transition-opacity inline-block">
+                              查看作业 →
+                            </span>
+                          </button>
+                          <div className="text-xs md:text-sm text-gray-600 mt-1 flex items-center gap-1.5 md:gap-2 flex-wrap">
+                            <span className="inline-flex items-center gap-1">
+                              📚 {item.homeworkCount} 个作业
+                            </span>
+                            <span className="text-gray-400 hidden sm:inline">•</span>
+                            <span className="inline-flex items-center gap-1 text-xs md:text-sm">
+                              🕐 <span className="hidden sm:inline">{item.lastUpdated}</span>
+                              <span className="sm:hidden">{item.lastUpdated.split(' ')[0]}</span>
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    <div className="text-center sm:text-right w-full sm:w-auto bg-gray-50 rounded-lg md:rounded-xl p-2.5 md:p-3 group-hover:bg-gray-100 transition-colors">
-                      <div className="text-xl md:text-2xl font-bold text-blue-600 group-hover:text-blue-700 transition-colors">
+                    <div className="text-center sm:text-right w-full sm:w-auto bg-gray-50 rounded-lg md:rounded-xl p-2.5 md:p-3">
+                      <div className="text-xl md:text-2xl font-bold text-blue-600">
                         {item.totalPoints.toFixed(1)}
                         <span className="text-sm md:text-base font-normal text-gray-500 ml-1">总积分</span>
                       </div>
@@ -284,10 +333,10 @@ export default function TotalPointsRanking() {
               <button
                 onClick={() => handleRankPageChange(rankPagination.page - 1)}
                 disabled={rankPagination.page === 1}
-                className="group px-3 md:px-5 py-2 md:py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg md:rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300 md:hover:scale-105 disabled:hover:scale-100 border border-gray-300 font-medium text-sm md:text-base"
+                className="px-3 md:px-5 py-2 md:py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg md:rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-colors border border-gray-300 font-medium text-sm md:text-base"
               >
                 <span className="inline-flex items-center gap-1 md:gap-2">
-                  <svg className="w-3 h-3 md:w-4 md:h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                   <span className="hidden sm:inline">上一页</span>
@@ -304,12 +353,12 @@ export default function TotalPointsRanking() {
               <button
                 onClick={() => handleRankPageChange(rankPagination.page + 1)}
                 disabled={rankPagination.page === rankPagination.totalPages}
-                className="group px-3 md:px-5 py-2 md:py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg md:rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300 md:hover:scale-105 disabled:hover:scale-100 border border-gray-300 font-medium text-sm md:text-base"
+                className="px-3 md:px-5 py-2 md:py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg md:rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-colors border border-gray-300 font-medium text-sm md:text-base"
               >
                 <span className="inline-flex items-center gap-1 md:gap-2">
                   <span className="hidden sm:inline">下一页</span>
                   <span className="sm:hidden">下页</span>
-                  <svg className="w-3 h-3 md:w-4 md:h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </span>

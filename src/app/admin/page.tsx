@@ -61,6 +61,7 @@ export default function AdminHomeworkPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [isBatchReject, setIsBatchReject] = useState(false);
   const [cacheRefreshing, setCacheRefreshing] = useState(false);
+  const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
 
   // 检查认证状态
   const checkAuth = async () => {
@@ -553,6 +554,42 @@ export default function AdminHomeworkPage() {
     return (bytes / 1024 / 1024).toFixed(2) + "MB";
   };
 
+  // 按用户分组作业
+  const groupHomeworksByUser = () => {
+    const grouped = new Map<string, Homework[]>();
+    homeworks.forEach(homework => {
+      const nickname = homework.nickname;
+      if (!grouped.has(nickname)) {
+        grouped.set(nickname, []);
+      }
+      grouped.get(nickname)!.push(homework);
+    });
+    return grouped;
+  };
+
+  // 切换用户展开状态
+  const toggleUserExpanded = (nickname: string) => {
+    setExpandedUsers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(nickname)) {
+        newSet.delete(nickname);
+      } else {
+        newSet.add(nickname);
+      }
+      return newSet;
+    });
+  };
+
+  // 全部展开/收起
+  const toggleExpandAll = () => {
+    const groupedHomeworks = groupHomeworksByUser();
+    if (expandedUsers.size === groupedHomeworks.size) {
+      setExpandedUsers(new Set());
+    } else {
+      setExpandedUsers(new Set(groupedHomeworks.keys()));
+    }
+  };
+
   // 未认证时显示登录表单
   if (!isAuthenticated) {
     return (
@@ -837,151 +874,224 @@ export default function AdminHomeworkPage() {
                 <p className="mt-4 text-white/70">正在加载...</p>
               </div>
             ) : (
-              /* 作业列表 */
+              /* 作业列表 - 按用户分组 */
               <div className="space-y-4">
             {homeworks.length === 0 ? (
               <div className="text-center py-12 bg-black/20 backdrop-blur-sm rounded-xl border border-white/20">
                 <p className="text-white/70">暂无作业数据</p>
               </div>
             ) : (
-                  homeworks.map((homework) => (
+              <>
+                {/* 全部展开/收起按钮 */}
+                <div className="flex justify-end mb-2">
+                  <button
+                    onClick={toggleExpandAll}
+                    className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition-colors"
+                  >
+                    {expandedUsers.size === groupHomeworksByUser().size ? "全部收起" : "全部展开"}
+                  </button>
+                </div>
+
+                {/* 按用户分组显示 */}
+                {Array.from(groupHomeworksByUser().entries()).map(([nickname, userHomeworks]) => {
+                  const isExpanded = expandedUsers.has(nickname);
+                  const userHomeworkIds = userHomeworks.map(hw => hw.id);
+                  const allUserHomeworksSelected = userHomeworkIds.every(id => selectedHomeworks.has(id));
+                  const someUserHomeworksSelected = userHomeworkIds.some(id => selectedHomeworks.has(id));
+
+                  return (
                     <div
-                      key={homework.id}
-                      className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6"
+                      key={nickname}
+                      className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 overflow-hidden"
                     >
-                      {/* 复选框 */}
-                      <div className="flex items-start justify-between mb-4">
-                        <label className="flex items-center space-x-2 cursor-pointer group">
-                          <input
-                            type="checkbox"
-                            checked={selectedHomeworks.has(homework.id)}
-                            onChange={() =>
-                              toggleHomeworkSelection(homework.id)
-                            }
-                            className="w-5 h-5 rounded border-2 border-white/30 bg-white/10 checked:bg-blue-500 checked:border-blue-500 cursor-pointer transition-colors"
-                          />
-                          <span className="text-white/70 group-hover:text-white text-sm">
-                            选择此作业
-                          </span>
-                        </label>
-                      </div>
-
-                  {/* 作业基本信息 */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                    <div>
-                      <label className="text-white/60 text-sm">关卡</label>
-                          <p className="text-white font-medium">
-                            {homework.stageId}
-                          </p>
-                    </div>
-                    <div>
-                      <label className="text-white/60 text-sm">昵称</label>
-                          <p className="text-white font-medium">
-                            {homework.nickname}
-                          </p>
-                    </div>
-                    <div>
-                      <label className="text-white/60 text-sm">状态</label>
-                          <p
-                            className={`inline-block px-2 py-1 rounded text-xs border ${getStatusColor(
-                              homework.status
-                            )}`}
-                          >
-                        {getStatusText(homework.status)}
-                      </p>
-                    </div>
-                    <div>
-                          <label className="text-white/60 text-sm">
-                            提交时间
-                          </label>
-                          <p className="text-white/80 text-sm">
-                            {new Date(homework.createdAt).toLocaleString(
-                              "zh-CN"
-                            )}
-                          </p>
-                    </div>
-                  </div>
-
-                  {/* 作业描述 */}
-                  {homework.description && (
-                    <div className="mb-4">
-                          <label className="text-white/60 text-sm">
-                            作业说明
-                          </label>
-                          <p className="text-white/80 text-sm mt-1 leading-relaxed">
-                            {homework.description}
-                          </p>
-                    </div>
-                  )}
-
-                  {/* 图片列表 */}
-                  <div className="mb-4">
-                        <label className="text-white/60 text-sm mb-2 block">
-                          作业图片 ({homework.images.length}张)
-                        </label>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                      {homework.images.map((image, index) => (
-                        <div key={image.id} className="relative group">
-                          <img
-                            src={image.url}
-                            alt={`图片${index + 1}`}
-                            className="w-full h-20 object-cover rounded-lg cursor-pointer transition-transform hover:scale-105"
-                            onClick={() => {
-                              setCurrentHomeworkImages(homework.images);
-                              setCurrentImageIndex(index);
-                              setSelectedImage(image.url);
-                            }}
-                          />
-                          <div className="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-1 rounded">
-                            {formatFileSize(image.fileSize)}
+                      {/* 用户头部 - 可点击展开/收起 */}
+                      <div 
+                        className="p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors"
+                        onClick={() => toggleUserExpanded(nickname)}
+                      >
+                        <div className="flex items-center space-x-4">
+                          {/* 展开/收起图标 */}
+                          <div className="text-white text-xl transition-transform duration-200" style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+                            ▶
+                          </div>
+                          
+                          {/* 头像 */}
+                          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg flex-shrink-0">
+                            {nickname.charAt(0)}
+                          </div>
+                          
+                          {/* 用户信息 */}
+                          <div>
+                            <h3 className="text-white font-bold text-lg">{nickname}</h3>
+                            <p className="text-white/60 text-sm">
+                              共提交 {userHomeworks.length} 个作业
+                              {userHomeworks.filter(hw => hw.status === 'pending').length > 0 && (
+                                <span className="ml-2 text-yellow-300">
+                                  • {userHomeworks.filter(hw => hw.status === 'pending').length} 个待审核
+                                </span>
+                              )}
+                            </p>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
 
-                  {/* 操作按钮 */}
-                  <div className="flex space-x-3">
-                        {homework.status === "pending" && (
-                      <>
-                        <button
-                              onClick={() =>
-                                handleStatusChange(homework.id, "approved")
-                              }
-                          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-                        >
-                          ✓ 通过
-                        </button>
-                        <button
-                              onClick={() =>
-                                handleStatusChange(homework.id, "rejected")
-                              }
-                          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-                        >
-                          ✗ 拒绝
-                        </button>
-                      </>
-                    )}
-                        {homework.status !== "pending" && (
-                      <button
-                            onClick={() =>
-                              handleStatusChange(homework.id, "pending")
-                            }
-                        className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-                      >
-                        恢复待审核
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleDelete(homework.id)}
-                      className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-                    >
-                      🗑️ 删除
-                    </button>
-                  </div>
-                </div>
-                ))
-              )}
+                        {/* 用户级别的选择框和快捷操作 */}
+                        <div className="flex items-center space-x-3" onClick={(e) => e.stopPropagation()}>
+                          <label className="flex items-center space-x-2 cursor-pointer group">
+                            <input
+                              type="checkbox"
+                              checked={allUserHomeworksSelected}
+                              ref={input => {
+                                if (input) {
+                                  input.indeterminate = someUserHomeworksSelected && !allUserHomeworksSelected;
+                                }
+                              }}
+                              onChange={() => {
+                                if (allUserHomeworksSelected) {
+                                  setSelectedHomeworks(prev => {
+                                    const newSet = new Set(prev);
+                                    userHomeworkIds.forEach(id => newSet.delete(id));
+                                    return newSet;
+                                  });
+                                } else {
+                                  setSelectedHomeworks(prev => {
+                                    const newSet = new Set(prev);
+                                    userHomeworkIds.forEach(id => newSet.add(id));
+                                    return newSet;
+                                  });
+                                }
+                              }}
+                              className="w-5 h-5 rounded border-2 border-white/30 bg-white/10 checked:bg-blue-500 checked:border-blue-500 cursor-pointer transition-colors"
+                            />
+                            <span className="text-white/70 group-hover:text-white text-sm">
+                              选择全部
+                            </span>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* 展开的作业列表 */}
+                      {isExpanded && (
+                        <div className="border-t border-white/10">
+                          {userHomeworks.map((homework, index) => (
+                            <div
+                              key={homework.id}
+                              className={`p-6 ${index > 0 ? 'border-t border-white/10' : ''}`}
+                            >
+                              {/* 复选框和作业编号 */}
+                              <div className="flex items-start justify-between mb-4">
+                                <div className="flex items-center space-x-3">
+                                  <label className="flex items-center space-x-2 cursor-pointer group">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedHomeworks.has(homework.id)}
+                                      onChange={() => toggleHomeworkSelection(homework.id)}
+                                      className="w-5 h-5 rounded border-2 border-white/30 bg-white/10 checked:bg-blue-500 checked:border-blue-500 cursor-pointer transition-colors"
+                                    />
+                                    <span className="text-white/70 group-hover:text-white text-sm">
+                                      作业 #{index + 1}
+                                    </span>
+                                  </label>
+                                </div>
+                              </div>
+
+                              {/* 作业基本信息 */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                                <div>
+                                  <label className="text-white/60 text-sm">关卡</label>
+                                  <p className="text-white font-medium">{homework.stageId}</p>
+                                </div>
+                                <div>
+                                  <label className="text-white/60 text-sm">状态</label>
+                                  <p className={`inline-block px-2 py-1 rounded text-xs border ${getStatusColor(homework.status)}`}>
+                                    {getStatusText(homework.status)}
+                                  </p>
+                                </div>
+                                <div>
+                                  <label className="text-white/60 text-sm">提交时间</label>
+                                  <p className="text-white/80 text-sm">
+                                    {new Date(homework.createdAt).toLocaleString("zh-CN")}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* 作业描述 */}
+                              {homework.description && (
+                                <div className="mb-4">
+                                  <label className="text-white/60 text-sm">作业说明</label>
+                                  <p className="text-white/80 text-sm mt-1 leading-relaxed">
+                                    {homework.description}
+                                  </p>
+                                </div>
+                              )}
+
+                              {/* 图片列表 */}
+                              <div className="mb-4">
+                                <label className="text-white/60 text-sm mb-2 block">
+                                  作业图片 ({homework.images.length}张)
+                                </label>
+                                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                                  {homework.images.map((image, imgIndex) => (
+                                    <div key={image.id} className="relative group">
+                                      <img
+                                        src={image.url}
+                                        alt={`图片${imgIndex + 1}`}
+                                        className="w-full h-20 object-cover rounded-lg cursor-pointer transition-transform hover:scale-105"
+                                        onClick={() => {
+                                          setCurrentHomeworkImages(homework.images);
+                                          setCurrentImageIndex(imgIndex);
+                                          setSelectedImage(image.url);
+                                        }}
+                                      />
+                                      <div className="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-1 rounded">
+                                        {formatFileSize(image.fileSize)}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* 操作按钮 */}
+                              <div className="flex space-x-3">
+                                {homework.status === "pending" && (
+                                  <>
+                                    <button
+                                      onClick={() => handleStatusChange(homework.id, "approved")}
+                                      className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                                    >
+                                      ✓ 通过
+                                    </button>
+                                    <button
+                                      onClick={() => handleStatusChange(homework.id, "rejected")}
+                                      className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                                    >
+                                      ✗ 拒绝
+                                    </button>
+                                  </>
+                                )}
+                                {homework.status !== "pending" && (
+                                  <button
+                                    onClick={() => handleStatusChange(homework.id, "pending")}
+                                    className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                                  >
+                                    恢复待审核
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => handleDelete(homework.id)}
+                                  className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                                >
+                                  🗑️ 删除
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </>
+            )}
             </div>
           )}
 

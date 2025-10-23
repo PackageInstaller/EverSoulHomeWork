@@ -1,14 +1,16 @@
 /**
  * 客户端图片压缩工具
- * 采用无损压缩策略，在不损失画质的前提下减小文件体积
+ * 支持WebP格式转换和高压缩比，大幅节省流量和存储空间
  */
 
 interface CompressionOptions {
   maxWidth?: number;        // 最大宽度（默认1920px）
   maxHeight?: number;       // 最大高度（默认1920px）
-  quality?: number;         // 质量（0.9 = 90%，默认0.95，接近无损）
-  targetSizeKB?: number;    // 目标大小KB（默认1024KB，超过则压缩）
+  quality?: number;         // 质量（0.75 = 75%，默认0.75，高压缩）
+  targetSizeKB?: number;    // 目标大小KB（默认500KB，超过则压缩）
   maxSizeKB?: number;       // 最大允许大小KB（默认3072KB）
+  convertToWebP?: boolean;  // 是否转换为WebP格式（默认true）
+  webpQuality?: number;     // WebP质量（默认0.75，高压缩）
 }
 
 interface CompressionResult {
@@ -17,6 +19,19 @@ interface CompressionResult {
   compressedSize: number;
   compressionRatio: number;
   wasCompressed: boolean;
+  format: string;  // 输出格式（webp/jpeg/png）
+}
+
+/**
+ * 检查浏览器是否支持WebP
+ */
+function checkWebPSupport(): boolean {
+  try {
+    const canvas = document.createElement('canvas');
+    return canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+  } catch (e) {
+    return false;
+  }
 }
 
 /**
@@ -29,32 +44,24 @@ export async function compressImage(
   const {
     maxWidth = 1920,
     maxHeight = 1920,
-    quality = 0.95,      // 95%质量，接近无损
-    targetSizeKB = 1024, // 超过1MB才压缩
-    maxSizeKB = 3072,    // 最大3MB
+    quality = 0.75,        // 75%质量，高压缩
+    targetSizeKB = 500,    // 超过500KB才压缩
+    maxSizeKB = 3072,      // 最大3MB
+    convertToWebP = true,  // 默认转换为WebP
+    webpQuality = 0.75,    // WebP质量75%
   } = options;
 
   const originalSize = file.size;
   const originalSizeKB = originalSize / 1024;
-
-  // 如果文件小于目标大小，直接返回
-  if (originalSizeKB <= targetSizeKB) {
-    console.log(`图片 ${file.name} (${originalSizeKB.toFixed(2)}KB) 无需压缩`);
-    return {
-      file,
-      originalSize,
-      compressedSize: originalSize,
-      compressionRatio: 100,
-      wasCompressed: false,
-    };
-  }
+  const supportsWebP = checkWebPSupport();
 
   // 如果超过最大限制，提示错误
   if (originalSizeKB > maxSizeKB) {
     throw new Error(`图片 ${file.name} 大小为 ${originalSizeKB.toFixed(2)}KB，超过 ${maxSizeKB}KB 限制`);
   }
 
-  console.log(`开始压缩图片 ${file.name} (${originalSizeKB.toFixed(2)}KB)...`);
+  console.log(`开始处理图片 ${file.name} (${originalSizeKB.toFixed(2)}KB)...`);
+  console.log(`WebP支持: ${supportsWebP}, 转换WebP: ${convertToWebP}`);
 
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -103,7 +110,30 @@ export async function compressImage(
           // 绘制图片
           ctx.drawImage(img, 0, 0, width, height);
 
-          // 转换为Blob（使用高质量）
+          // 确定输出格式和质量
+          let outputFormat: string;
+          let outputQuality: number;
+          let fileExtension: string;
+          
+          if (convertToWebP && supportsWebP) {
+            // 转换为WebP（最优压缩）
+            outputFormat = 'image/webp';
+            outputQuality = webpQuality;
+            fileExtension = '.webp';
+            console.log(`转换为WebP格式，质量: ${(webpQuality * 100).toFixed(0)}%`);
+          } else if (file.type.startsWith('image/png')) {
+            // PNG保持PNG（支持透明度）
+            outputFormat = 'image/png';
+            outputQuality = quality;
+            fileExtension = '.png';
+          } else {
+            // 其他格式转为JPEG
+            outputFormat = 'image/jpeg';
+            outputQuality = quality;
+            fileExtension = '.jpg';
+          }
+
+          // 转换为Blob
           canvas.toBlob(
             (blob) => {
               if (!blob) {
@@ -114,27 +144,35 @@ export async function compressImage(
               const compressedSize = blob.size;
               const compressedSizeKB = compressedSize / 1024;
               const compressionRatio = (compressedSize / originalSize) * 100;
+              const savedSize = originalSize - compressedSize;
+              const savedPercent = ((savedSize / originalSize) * 100).toFixed(1);
 
-              console.log(`压缩完成: ${originalSizeKB.toFixed(2)}KB → ${compressedSizeKB.toFixed(2)}KB (${compressionRatio.toFixed(1)}%)`);
+              console.log(`处理完成: ${originalSizeKB.toFixed(2)}KB → ${compressedSizeKB.toFixed(2)}KB (节省${savedPercent}%)`);
 
               // 如果压缩后反而更大，使用原图
               if (compressedSize >= originalSize) {
-                console.log('压缩后体积更大，使用原图');
+                console.log('处理后体积更大，使用原图');
                 resolve({
                   file,
                   originalSize,
                   compressedSize: originalSize,
                   compressionRatio: 100,
                   wasCompressed: false,
+                  format: file.type.split('/')[1] || 'unknown',
                 });
                 return;
               }
 
+              // 生成新的文件名（保留原文件名，替换扩展名）
+              const originalName = file.name;
+              const nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.')) || originalName;
+              const newFileName = nameWithoutExt + fileExtension;
+
               // 创建新的File对象
               const compressedFile = new File(
                 [blob],
-                file.name,
-                { type: blob.type, lastModified: Date.now() }
+                newFileName,
+                { type: outputFormat, lastModified: Date.now() }
               );
 
               resolve({
@@ -143,10 +181,11 @@ export async function compressImage(
                 compressedSize,
                 compressionRatio,
                 wasCompressed: true,
+                format: outputFormat.split('/')[1] || 'unknown',
               });
             },
-            file.type.startsWith('image/png') ? 'image/png' : 'image/jpeg',
-            quality
+            outputFormat,
+            outputQuality
           );
         } catch (error) {
           reject(error);
@@ -189,9 +228,12 @@ export async function compressImages(
   // 计算总体压缩统计
   const totalOriginal = results.reduce((sum, r) => sum + r.originalSize, 0);
   const totalCompressed = results.reduce((sum, r) => sum + r.compressedSize, 0);
-  const totalRatio = (totalCompressed / totalOriginal) * 100;
+  const savedSize = totalOriginal - totalCompressed;
+  const savedPercent = ((savedSize / totalOriginal) * 100).toFixed(1);
+  const webpCount = results.filter(r => r.format === 'webp').length;
   
-  console.log(`批量压缩完成: ${(totalOriginal / 1024).toFixed(2)}KB → ${(totalCompressed / 1024).toFixed(2)}KB (${totalRatio.toFixed(1)}%)`);
+  console.log(`批量处理完成: ${(totalOriginal / 1024).toFixed(2)}KB → ${(totalCompressed / 1024).toFixed(2)}KB (节省${savedPercent}%)`);
+  console.log(`格式分布: ${webpCount}个WebP, ${results.length - webpCount}个其他格式`);
 
   return results;
 }

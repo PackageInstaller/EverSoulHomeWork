@@ -245,7 +245,7 @@ export default function MailboxPage() {
                           <span className="text-red-500 text-xs font-bold">未读</span>
                         )}
                       </div>
-                      <h3 className={`text-sm font-medium ${!message.isRead ? 'font-bold' : ''}`}>
+                      <h3 className={`text-sm font-medium text-gray-900 ${!message.isRead ? 'font-bold' : ''}`}>
                         {message.title}
                       </h3>
                       <p className="text-xs text-gray-500 mt-1">

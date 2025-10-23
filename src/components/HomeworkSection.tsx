@@ -139,15 +139,21 @@ export default function HomeworkSection({ stageId, teamCount }: HomeworkSectionP
               {/* 作业信息 */}
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-lg font-semibold text-white">
-                    👤 {homework.nickname}
-                  </h3>
+                  <div className="flex items-center space-x-3">
+                    {/* 头像 */}
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg flex-shrink-0">
+                      {homework.nickname.charAt(0)}
+                    </div>
+                    <h3 className="text-lg font-semibold text-white">
+                      {homework.nickname}
+                    </h3>
+                  </div>
                   <span className="text-white/50 text-sm">
                     {new Date(homework.createdAt).toLocaleDateString('zh-CN')}
                   </span>
                 </div>
                 {homework.description && (
-                  <p className="text-white/80 text-sm leading-relaxed">
+                  <p className="text-white/80 text-sm leading-relaxed ml-13">
                     {homework.description}
                   </p>
                 )}

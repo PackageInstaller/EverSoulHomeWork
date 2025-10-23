@@ -85,21 +85,23 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
     setRetryStatus('');
 
     try {
-      // 步骤1：图片压缩（无损压缩）
-      setCompressionStatus('正在压缩图片...');
-      console.log('开始压缩图片...');
+      // 步骤1：图片压缩和WebP转换（高压缩）
+      setCompressionStatus('正在压缩图片并转换为WebP格式...');
+      console.log('开始处理图片（WebP高压缩模式）...');
       
       const compressionResults = await compressImages(
         formData.images,
         {
           maxWidth: 1920,
           maxHeight: 1920,
-          quality: 0.95,      // 95%质量，接近无损
-          targetSizeKB: 1024, // 超过1MB才压缩
-          maxSizeKB: 3072,    // 最大3MB
+          quality: 0.75,        // 75%质量，高压缩
+          targetSizeKB: 500,    // 超过500KB就压缩
+          maxSizeKB: 3072,      // 最大3MB
+          convertToWebP: true,  // 转换为WebP格式
+          webpQuality: 0.75,    // WebP质量75%
         },
         (current, total, fileName) => {
-          setCompressionStatus(`正在压缩图片 ${current}/${total}: ${fileName}`);
+          setCompressionStatus(`正在处理图片 ${current}/${total}: ${fileName}`);
         }
       );
 
@@ -108,9 +110,16 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
       const totalCompressed = compressionResults.reduce((sum, r) => sum + r.compressedSize, 0);
       const savedSize = totalOriginal - totalCompressed;
       const savedPercent = ((savedSize / totalOriginal) * 100).toFixed(1);
+      const webpCount = compressionResults.filter(r => r.format === 'webp').length;
       
-      console.log(`压缩完成: 节省 ${formatFileSize(savedSize)} (${savedPercent}%)`);
-      setCompressionStatus(`压缩完成：节省 ${formatFileSize(savedSize)}`);
+      console.log(`处理完成: 节省 ${formatFileSize(savedSize)} (${savedPercent}%)`);
+      console.log(`格式: ${webpCount}个WebP, ${compressionResults.length - webpCount}个其他格式`);
+      
+      let statusMessage = `处理完成：节省 ${formatFileSize(savedSize)} (${savedPercent}%)`;
+      if (webpCount > 0) {
+        statusMessage += ` - ${webpCount}张转为WebP`;
+      }
+      setCompressionStatus(statusMessage);
 
       // 步骤2：准备上传数据
       const data = new FormData();
@@ -253,6 +262,9 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
                 <div className="text-white/70 text-xs mb-2">
                   需要上传 {minImages} 到 {maxImages} 张图片，每张不超过3MB
                   <span className="text-blue-300 ml-2">（建议包含：胜利截图 + 站位截图）</span>
+                </div>
+                <div className="text-green-300 text-xs mb-2">
+                  ✨ 图片将自动转换为WebP格式并压缩，大幅节省流量
                 </div>
                 <input
                   type="file"

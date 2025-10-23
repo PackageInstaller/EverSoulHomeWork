@@ -222,43 +222,72 @@ export default function PointsLeaderboard({ initialYearMonth }: PointsLeaderboar
         ) : (
           <div className="space-y-3">
             {leaderboard.map((entry) => {
-              // 特殊样式：前三名
+              // 根据排名设置不同的样式和图标
               let rankStyle = 'bg-white/5';
-              let rankIcon = '👤';
+              let rankIconType: 'image' | 'text' = 'text';
+              let rankIconSrc = '';
+              let rankText = `#${entry.rank}`;
               
               if (entry.rank === 1) {
                 rankStyle = 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-2 border-yellow-500/50';
-                rankIcon = '🥇';
+                rankIconType = 'image';
+                rankIconSrc = '/rank/sticker_WorldRaid_Behemoth_01.png';
               } else if (entry.rank === 2) {
                 rankStyle = 'bg-gradient-to-r from-gray-400/20 to-gray-500/20 border-2 border-gray-400/50';
-                rankIcon = '🥈';
+                rankIconType = 'image';
+                rankIconSrc = '/rank/sticker_WorldRaid_Behemoth_02.png';
               } else if (entry.rank === 3) {
                 rankStyle = 'bg-gradient-to-r from-orange-400/20 to-orange-600/20 border-2 border-orange-400/50';
-                rankIcon = '🥉';
+                rankIconType = 'image';
+                rankIconSrc = '/rank/sticker_WorldRaid_Behemoth_03.png';
+              } else if (entry.rank >= 4 && entry.rank <= 100) {
+                rankIconType = 'image';
+                rankIconSrc = '/rank/sticker_WorldRaid_Behemoth_04.png';
+              } else {
+                // 100名以外
+                rankIconType = 'image';
+                rankIconSrc = '/rank/sticker_WorldRaid_Behemoth_05.png';
               }
 
               return (
                 <div
                   key={entry.nickname}
-                  className={`${rankStyle} backdrop-blur-sm rounded-xl p-4 border border-white/10 transition-transform hover:scale-[1.02]`}
+                  className={`${rankStyle} backdrop-blur-sm rounded-xl p-4 border border-white/10`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
-                      <div className="text-2xl font-bold text-white/80 w-12 text-center">
-                        {entry.rank <= 3 ? rankIcon : `#${entry.rank}`}
+                      {/* 排名图标 */}
+                      <div className="w-12 h-12 flex items-center justify-center flex-shrink-0">
+                        {rankIconType === 'image' ? (
+                          <img 
+                            src={rankIconSrc} 
+                            alt={`排名${entry.rank}`}
+                            className="w-full h-full object-contain"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-white/80">
+                            {rankText}
+                          </div>
+                        )}
                       </div>
-                      <div>
-                        <button
-                          onClick={() => setSelectedUser(entry.nickname)}
-                          className="text-lg font-semibold text-white hover:text-blue-300 transition-colors cursor-pointer text-left group"
-                        >
-                          <span className="group-hover:underline">{entry.nickname}</span>
-                          <span className="ml-2 text-sm text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                            查看作业 →
-                          </span>
-                        </button>
-                        <div className="text-sm text-white/60">
-                          共 {entry.homeworkCount} 个作业
+                      <div className="flex items-center space-x-3">
+                        {/* 头像 */}
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg flex-shrink-0">
+                          {entry.nickname.charAt(0)}
+                        </div>
+                        <div>
+                          <button
+                            onClick={() => setSelectedUser(entry.nickname)}
+                            className="text-lg font-semibold text-white hover:text-blue-300 transition-colors cursor-pointer text-left group"
+                          >
+                            <span className="group-hover:underline">{entry.nickname}</span>
+                            <span className="ml-2 text-sm text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                              查看作业 →
+                            </span>
+                          </button>
+                          <div className="text-sm text-white/60">
+                            共 {entry.homeworkCount} 个作业
+                          </div>
                         </div>
                       </div>
                     </div>
