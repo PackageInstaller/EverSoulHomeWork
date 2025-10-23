@@ -33,16 +33,15 @@ export default function StageDetails({ stageDetails, dataSource }: StageDetailsP
             关卡 {area_no}-{stage_no}
           </h1>
           <div className="flex items-center space-x-2">
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              dataSource === 'live' 
-                ? 'bg-green-100 text-green-800' 
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${dataSource === 'live'
+                ? 'bg-green-100 text-green-800'
                 : 'bg-blue-100 text-blue-800'
-            }`}>
+              }`}>
               {dataSource === 'live' ? '正式服' : '测试服'}
             </span>
           </div>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex items-center space-x-2">
             <span className="text-white/70">关卡类型：</span>
@@ -89,7 +88,13 @@ export default function StageDetails({ stageDetails, dataSource }: StageDetailsP
         </div>
       )}
 
-            {/* 掉落物品概率 */}
+      {/* 玩家作业分享 */}
+      <HomeworkSection
+        stageId={`${area_no}-${stage_no}`}
+        teamCount={battle_teams.length}
+      />
+
+      {/* 掉落物品概率 */}
       {drop_items.length > 0 && (
         <div className="stage-card">
           <h2 className="text-xl font-bold text-white mb-4">掉落物品概率分析</h2>
@@ -109,11 +114,7 @@ export default function StageDetails({ stageDetails, dataSource }: StageDetailsP
         </div>
       )}
 
-      {/* 玩家作业分享 */}
-      <HomeworkSection 
-        stageId={`${area_no}-${stage_no}`} 
-        teamCount={battle_teams.length}
-      />
+
     </div>
   );
 }
@@ -132,9 +133,9 @@ function BattleTeamCard({ team }: { team: BattleTeamInfo }) {
           </div>
         )}
       </div>
-      
+
       <div className="mb-3">
-                    <span className="text-sm text-white/70">阵型：</span>
+        <span className="text-sm text-white/70">阵型：</span>
         <span className="text-sm font-medium">{team.formation_type}</span>
       </div>
 
@@ -142,8 +143,8 @@ function BattleTeamCard({ team }: { team: BattleTeamInfo }) {
         {team.heroes.map((hero) => (
           <div key={hero.position} className="flex items-center text-sm">
             <div className="hero-position">{hero.position}</div>
-                          <span className="font-medium text-white">{hero.name}</span>
-              <span className="ml-2 text-white/70">{hero.grade}</span>
+            <span className="font-medium text-white">{hero.name}</span>
+            <span className="ml-2 text-white/70">{hero.grade}</span>
             <span className="ml-2 text-blue-600 font-medium">{hero.level}级</span>
           </div>
         ))}
@@ -152,4 +153,3 @@ function BattleTeamCard({ team }: { team: BattleTeamInfo }) {
   );
 }
 
- 
