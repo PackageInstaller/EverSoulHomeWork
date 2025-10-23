@@ -188,9 +188,6 @@ export default function HomePage() {
               </h1>
             </div>
             <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
-              <div className="text-xs sm:text-sm text-gray-600 hidden lg:block">
-                作业分享平台，一起逃课吧
-              </div>
               <a
                 href="/leaderboard"
                 className="bg-yellow-500 hover:bg-yellow-600 text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm transition-colors font-semibold whitespace-nowrap"
