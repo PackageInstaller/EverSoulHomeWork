@@ -289,15 +289,17 @@ export default function TotalPointsRanking() {
                           {item.nickname.charAt(0)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <button
-                            onClick={() => setSelectedUser(item.nickname)}
-                            className="text-lg md:text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors cursor-pointer text-left group/name w-full"
-                          >
-                            <span className="group-hover/name:underline truncate block">{item.nickname}</span>
-                            <span className="ml-2 text-xs md:text-sm text-blue-500 opacity-0 group-hover/name:opacity-100 transition-opacity inline-block">
-                              查看作业 →
-                            </span>
-                          </button>
+                          <div className="flex items-center">
+                            <button
+                              onClick={() => setSelectedUser(item.nickname)}
+                              className="text-lg md:text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors cursor-pointer text-left group/name"
+                            >
+                              <span className="group-hover/name:underline">{item.nickname}</span>
+                              <span className="ml-2 text-xs md:text-sm text-blue-500 opacity-0 group-hover/name:opacity-100 transition-opacity">
+                                查看作业 →
+                              </span>
+                            </button>
+                          </div>
                           <div className="text-xs md:text-sm text-gray-600 mt-1 flex items-center gap-1.5 md:gap-2 flex-wrap">
                             <span className="inline-flex items-center gap-1">
                               📚 {item.homeworkCount} 个作业
