@@ -68,6 +68,68 @@ export default function AdminHomeworkPage() {
     logs: string[];
   } | null>(null);
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
+  const [progressIntervalRef, setProgressIntervalRef] = useState<NodeJS.Timeout | null>(null);
+
+  // 检查并恢复刷新进度
+  const checkAndRestoreProgress = async () => {
+    try {
+      const progressRes = await fetch("/api/cache/cron", {
+        method: "GET",
+        cache: "no-store",
+      });
+      if (progressRes.ok) {
+        const progress = await progressRes.json();
+        
+        // 如果后端正在刷新，恢复前端状态
+        if (progress.isRefreshing) {
+          console.log('[恢复进度] 检测到正在进行的刷新任务，恢复进度显示');
+          setCacheRefreshing(true);
+          setRefreshProgress(progress);
+          
+          // 启动进度轮询（如果还没有启动）
+          if (!progressIntervalRef) {
+            const interval = setInterval(async () => {
+              try {
+                const res = await fetch("/api/cache/cron", {
+                  method: "GET",
+                  cache: "no-store",
+                });
+                if (res.ok) {
+                  const prog = await res.json();
+                  console.log('[进度更新]', prog);
+                  setRefreshProgress(prog);
+                  
+                  // 如果刷新完成，停止轮询
+                  if (!prog.isRefreshing) {
+                    clearInterval(interval);
+                    setProgressIntervalRef(null);
+                    setCacheRefreshing(false);
+                    setRefreshProgress(null);
+                    console.log('[恢复进度] 刷新任务已完成');
+                  }
+                }
+              } catch (error) {
+                console.error("获取进度失败:", error);
+              }
+            }, 800);
+            setProgressIntervalRef(interval);
+          }
+        } else {
+          // 没有正在进行的任务，清理状态
+          if (cacheRefreshing) {
+            setCacheRefreshing(false);
+            setRefreshProgress(null);
+            if (progressIntervalRef) {
+              clearInterval(progressIntervalRef);
+              setProgressIntervalRef(null);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("检查进度失败:", error);
+    }
+  };
 
   // 检查认证状态
   const checkAuth = async () => {
@@ -173,6 +235,41 @@ export default function AdminHomeworkPage() {
       fetchHomeworks();
     }
   }, [selectedStatus, isAuthenticated]);
+
+  // 检查并恢复刷新进度（页面加载时）
+  useEffect(() => {
+    if (isAuthenticated) {
+      checkAndRestoreProgress();
+    }
+  }, [isAuthenticated]);
+
+  // 监听页面可见性变化
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[页面可见性] 页面重新可见，检查刷新状态');
+        checkAndRestoreProgress();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isAuthenticated]);
+
+  // 清理定时器（组件卸载时）
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef) {
+        console.log('[清理] 组件卸载，清理进度轮询');
+        clearInterval(progressIntervalRef);
+      }
+    };
+  }, [progressIntervalRef]);
 
   const handleStatusChange = async (homeworkId: string, newStatus: string) => {
     // 如果是拒绝操作，先打开拒绝原因弹窗
@@ -326,14 +423,17 @@ export default function AdminHomeworkPage() {
       return;
     }
 
+    // 清理之前的轮询（如果有）
+    if (progressIntervalRef) {
+      clearInterval(progressIntervalRef);
+      setProgressIntervalRef(null);
+    }
+
     setCacheRefreshing(true);
     setRefreshProgress({ current: 0, total: 2, currentSource: '准备开始...', logs: ['⏳ 正在启动刷新任务...'] });
     
-    let progressInterval: NodeJS.Timeout | null = null;
-    let isRequestComplete = false;
-    
     // 启动进度轮询
-    progressInterval = setInterval(async () => {
+    const interval = setInterval(async () => {
       try {
         const progressRes = await fetch("/api/cache/cron", {
           method: "GET",
@@ -348,6 +448,8 @@ export default function AdminHomeworkPage() {
         console.error("获取进度失败:", error);
       }
     }, 800); // 每0.8秒更新一次进度
+    
+    setProgressIntervalRef(interval);
 
     try {
       // 使用 AbortController 设置超时（5分钟）
@@ -360,14 +462,13 @@ export default function AdminHomeworkPage() {
       });
 
       clearTimeout(timeoutId);
-      isRequestComplete = true;
 
       // 等待一小段时间确保最后的进度更新
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      if (progressInterval) {
-        clearInterval(progressInterval);
-        progressInterval = null;
+      if (progressIntervalRef) {
+        clearInterval(progressIntervalRef);
+        setProgressIntervalRef(null);
       }
 
       if (response.status === 403) {
@@ -405,8 +506,9 @@ export default function AdminHomeworkPage() {
         alert(`❌ 刷新失败\n\n${detailInfo}`);
       }
     } catch (error: any) {
-      if (progressInterval) {
-        clearInterval(progressInterval);
+      if (progressIntervalRef) {
+        clearInterval(progressIntervalRef);
+        setProgressIntervalRef(null);
       }
       setRefreshProgress(null);
       
@@ -419,8 +521,9 @@ export default function AdminHomeworkPage() {
       }
     } finally {
       setCacheRefreshing(false);
-      if (progressInterval) {
-        clearInterval(progressInterval);
+      if (progressIntervalRef) {
+        clearInterval(progressIntervalRef);
+        setProgressIntervalRef(null);
       }
     }
   };
