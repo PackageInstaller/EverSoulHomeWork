@@ -7,8 +7,8 @@ import sharp from 'sharp'
 
 export const dynamic = 'force-dynamic'
 
-// 配置文件大小限制 (3MB)
-const MAX_FILE_SIZE = 3 * 1024 * 1024
+// 配置文件大小限制 (5MB)
+const MAX_FILE_SIZE = 5 * 1024 * 1024
 const UPLOAD_DIR = path.join(process.cwd(), 'public/uploads/homework')
 
 // 验证和清理昵称
@@ -71,9 +71,9 @@ export async function POST(request: NextRequest) {
     const images = formData.getAll('images') as File[]
     
     // 验证图片数量
-    if (images.length < teamCount || images.length > teamCount * 2) {
+    if (images.length < teamCount || images.length > (teamCount * 2) + 5) {
       return NextResponse.json(
-        { error: `图片数量必须在 ${teamCount} 到 ${teamCount * 2} 张之间` },
+        { error: `图片数量必须在 ${teamCount} 到 ${teamCount * 2 + 5} 张之间` },
         { status: 400 }
       )
     }
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
 
       if (image.size > MAX_FILE_SIZE) {
         return NextResponse.json(
-          { error: `图片 ${image.name} 超过3MB限制` },
+          { error: `图片 ${image.name} 超过5MB限制` },
           { status: 400 }
         )
       }
