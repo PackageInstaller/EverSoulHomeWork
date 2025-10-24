@@ -327,45 +327,68 @@ export default function AdminHomeworkPage() {
     }
 
     setCacheRefreshing(true);
-    setRefreshProgress({ current: 0, total: 2, currentSource: '初始化...', logs: [] });
+    setRefreshProgress({ current: 0, total: 2, currentSource: '准备开始...', logs: ['⏳ 正在启动刷新任务...'] });
+    
+    let progressInterval: NodeJS.Timeout | null = null;
+    let isRequestComplete = false;
     
     // 启动进度轮询
-    const progressInterval = setInterval(async () => {
+    progressInterval = setInterval(async () => {
       try {
         const progressRes = await fetch("/api/cache/cron", {
           method: "GET",
+          cache: "no-store",
         });
         if (progressRes.ok) {
           const progress = await progressRes.json();
+          console.log('[进度更新]', progress);
           setRefreshProgress(progress);
         }
       } catch (error) {
         console.error("获取进度失败:", error);
       }
-    }, 1000); // 每秒更新一次进度
+    }, 800); // 每0.8秒更新一次进度
 
     try {
+      // 使用 AbortController 设置超时（5分钟）
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000);
+
       const response = await fetch("/api/cache/cron", {
         method: "POST",
+        signal: controller.signal,
       });
 
-      const result = await response.json();
+      clearTimeout(timeoutId);
+      isRequestComplete = true;
 
-      clearInterval(progressInterval);
-      setRefreshProgress(null);
+      // 等待一小段时间确保最后的进度更新
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+      }
 
       if (response.status === 403) {
+        setRefreshProgress(null);
         alert("❌ 权限不足，需要管理员权限");
         return;
       }
 
       if (response.status === 409) {
+        setRefreshProgress(null);
+        const result = await response.json();
         alert("⚠️ " + (result.error || '缓存刷新正在进行中'));
         return;
       }
 
+      const result = await response.json();
+      console.log('[刷新结果]', result);
+      
+      setRefreshProgress(null);
+
       // 显示详细结果
-      const logText = result.logs?.join('\n') || '';
       const detailInfo = [
         result.message,
         `⏱️ 耗时: ${result.durationSeconds}秒 (${result.duration})`,
@@ -381,13 +404,24 @@ export default function AdminHomeworkPage() {
       } else {
         alert(`❌ 刷新失败\n\n${detailInfo}`);
       }
-    } catch (error) {
-      clearInterval(progressInterval);
+    } catch (error: any) {
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
       setRefreshProgress(null);
+      
       console.error("刷新缓存失败:", error);
-      alert("❌ 刷新缓存失败，请检查网络连接");
+      
+      if (error.name === 'AbortError') {
+        alert("❌ 刷新超时（超过5分钟），请检查网络连接或联系管理员");
+      } else {
+        alert(`❌ 刷新缓存失败\n\n错误信息: ${error.message || '网络错误'}`);
+      }
     } finally {
       setCacheRefreshing(false);
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
     }
   };
 
@@ -771,29 +805,47 @@ export default function AdminHomeworkPage() {
 
           {/* 刷新进度显示 */}
           {refreshProgress && (
-            <div className="mb-6 bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-white font-medium">
-                  📦 正在刷新: {refreshProgress.currentSource}
-                </span>
-                <span className="text-white/70 text-sm">
+            <div className="mb-6 bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-sm rounded-lg p-5 border-2 border-blue-400/50 shadow-lg">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <span className="text-white font-bold text-lg">
+                    📦 {refreshProgress.currentSource}
+                  </span>
+                </div>
+                <span className="text-white bg-blue-600 px-3 py-1 rounded-full text-sm font-bold">
                   {refreshProgress.current}/{refreshProgress.total}
                 </span>
               </div>
               
               {/* 进度条 */}
-              <div className="w-full bg-white/20 rounded-full h-2 mb-3 overflow-hidden">
+              <div className="w-full bg-white/20 rounded-full h-3 mb-4 overflow-hidden shadow-inner">
                 <div
-                  className="bg-gradient-to-r from-blue-500 to-purple-500 h-full transition-all duration-300"
-                  style={{ width: `${(refreshProgress.current / refreshProgress.total) * 100}%` }}
-                />
+                  className="bg-gradient-to-r from-blue-500 to-purple-500 h-full transition-all duration-500 ease-out shadow-lg"
+                  style={{ 
+                    width: `${(refreshProgress.current / refreshProgress.total) * 100}%`,
+                  }}
+                >
+                  <div className="w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"></div>
+                </div>
+              </div>
+
+              {/* 百分比显示 */}
+              <div className="text-center mb-3">
+                <span className="text-white font-bold text-2xl">
+                  {Math.round((refreshProgress.current / refreshProgress.total) * 100)}%
+                </span>
               </div>
 
               {/* 日志信息 */}
               {refreshProgress.logs.length > 0 && (
-                <div className="mt-3 bg-black/30 rounded p-3 max-h-32 overflow-y-auto">
+                <div className="mt-3 bg-black/40 rounded-lg p-4 max-h-40 overflow-y-auto border border-white/10">
+                  <div className="text-xs text-white/60 mb-2 font-bold">实时日志：</div>
                   {refreshProgress.logs.map((log, idx) => (
-                    <div key={idx} className="text-sm text-white/80 font-mono mb-1">
+                    <div 
+                      key={idx} 
+                      className="text-sm text-white/90 font-mono mb-1.5 leading-relaxed animate-fadeIn"
+                    >
                       {log}
                     </div>
                   ))}
