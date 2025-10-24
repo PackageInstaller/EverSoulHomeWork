@@ -349,12 +349,6 @@ export default function AdminHomeworkPage() {
         return;
       }
 
-      if (response.status === 409) {
-        const result = await response.json();
-        alert("⚠️ " + (result.error || '缓存刷新正在进行中'));
-        return;
-      }
-
       const result = await response.json();
 
       // 显示结果
