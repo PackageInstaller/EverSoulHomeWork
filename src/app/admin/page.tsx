@@ -61,6 +61,12 @@ export default function AdminHomeworkPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [isBatchReject, setIsBatchReject] = useState(false);
   const [cacheRefreshing, setCacheRefreshing] = useState(false);
+  const [refreshProgress, setRefreshProgress] = useState<{
+    current: number;
+    total: number;
+    currentSource: string;
+    logs: string[];
+  } | null>(null);
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
 
   // 检查认证状态
@@ -316,33 +322,70 @@ export default function AdminHomeworkPage() {
 
   // 刷新游戏数据缓存
   const handleRefreshCache = async () => {
-    if (!confirm("确定要刷新游戏数据缓存吗？\n\n这会清除现有缓存并重新从GitHub下载所有数据，可能需要1-2分钟。")) {
+    if (!confirm("确定要刷新游戏数据缓存吗？\n\n这会从GitHub重新下载所有数据（不会先清除旧缓存），可能需要1-2分钟。")) {
       return;
     }
 
     setCacheRefreshing(true);
+    setRefreshProgress({ current: 0, total: 2, currentSource: '初始化...', logs: [] });
+    
+    // 启动进度轮询
+    const progressInterval = setInterval(async () => {
+      try {
+        const progressRes = await fetch("/api/cache/cron", {
+          method: "GET",
+        });
+        if (progressRes.ok) {
+          const progress = await progressRes.json();
+          setRefreshProgress(progress);
+        }
+      } catch (error) {
+        console.error("获取进度失败:", error);
+      }
+    }, 1000); // 每秒更新一次进度
+
     try {
       const response = await fetch("/api/cache/cron", {
         method: "POST",
       });
 
+      const result = await response.json();
+
+      clearInterval(progressInterval);
+      setRefreshProgress(null);
+
       if (response.status === 403) {
-        alert("权限不足，需要管理员权限");
+        alert("❌ 权限不足，需要管理员权限");
         return;
       }
 
-      const result = await response.json();
+      if (response.status === 409) {
+        alert("⚠️ " + (result.error || '缓存刷新正在进行中'));
+        return;
+      }
+
+      // 显示详细结果
+      const logText = result.logs?.join('\n') || '';
+      const detailInfo = [
+        result.message,
+        `⏱️ 耗时: ${result.durationSeconds}秒 (${result.duration})`,
+        result.successes?.length > 0 ? `✅ 成功: ${result.successes.join(', ')}` : '',
+        result.failures?.length > 0 ? `❌ 失败: ${result.failures.join(', ')}` : '',
+        result.errors?.length > 0 ? `\n错误详情:\n${result.errors.join('\n')}` : '',
+      ].filter(Boolean).join('\n');
 
       if (result.success) {
-        alert(`✅ ${result.message}\n耗时: ${result.duration}\n成功: ${result.successes.join(', ')}`);
+        alert(`✅ 刷新成功！\n\n${detailInfo}`);
       } else if (result.partialSuccess) {
-        alert(`⚠️ ${result.message}\n耗时: ${result.duration}\n成功: ${result.successes.join(', ')}\n失败: ${result.failures.join(', ')}`);
+        alert(`⚠️ 部分成功\n\n${detailInfo}`);
       } else {
-        alert(`❌ ${result.message || '缓存刷新失败'}\n耗时: ${result.duration}\n失败: ${result.failures.join(', ')}`);
+        alert(`❌ 刷新失败\n\n${detailInfo}`);
       }
     } catch (error) {
+      clearInterval(progressInterval);
+      setRefreshProgress(null);
       console.error("刷新缓存失败:", error);
-      alert("刷新缓存失败，请检查网络连接");
+      alert("❌ 刷新缓存失败，请检查网络连接");
     } finally {
       setCacheRefreshing(false);
     }
@@ -725,6 +768,39 @@ export default function AdminHomeworkPage() {
               <span>{cacheRefreshing ? "刷新中..." : "刷新缓存"}</span>
             </button>
           </div>
+
+          {/* 刷新进度显示 */}
+          {refreshProgress && (
+            <div className="mb-6 bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-white font-medium">
+                  📦 正在刷新: {refreshProgress.currentSource}
+                </span>
+                <span className="text-white/70 text-sm">
+                  {refreshProgress.current}/{refreshProgress.total}
+                </span>
+              </div>
+              
+              {/* 进度条 */}
+              <div className="w-full bg-white/20 rounded-full h-2 mb-3 overflow-hidden">
+                <div
+                  className="bg-gradient-to-r from-blue-500 to-purple-500 h-full transition-all duration-300"
+                  style={{ width: `${(refreshProgress.current / refreshProgress.total) * 100}%` }}
+                />
+              </div>
+
+              {/* 日志信息 */}
+              {refreshProgress.logs.length > 0 && (
+                <div className="mt-3 bg-black/30 rounded p-3 max-h-32 overflow-y-auto">
+                  {refreshProgress.logs.map((log, idx) => (
+                    <div key={idx} className="text-sm text-white/80 font-mono mb-1">
+                      {log}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           
           {/* 作业管理的状态筛选 */}
           {activeTab === "homework" && (
