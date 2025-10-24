@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     console.log(`🗑️ [取消结算] 已删除旧的用户积分记录`)
     
     // 4. 重新创建UserPoints记录（包括结算后提交的作业）
-    for (const [nickname, data] of userPointsMap.entries()) {
+    for (const [nickname, data] of Array.from(userPointsMap.entries())) {
       await prisma.userPoints.create({
         data: {
           nickname,
