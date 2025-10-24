@@ -323,9 +323,16 @@ export default function AdminHomeworkPage() {
     setCacheRefreshing(true);
 
     try {
+      // 设置 3 分钟超时，避免请求过早中断
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3 * 60 * 1000);
+
       const response = await fetch("/api/cache/cron", {
         method: "POST",
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (response.status === 403) {
         setCacheRefreshing(false);
@@ -348,7 +355,12 @@ export default function AdminHomeworkPage() {
     } catch (error: any) {
       console.error("刷新缓存失败:", error);
       setCacheRefreshing(false);
-      alert(`❌ 刷新缓存失败\n\n错误信息: ${error.message || '网络错误'}`);
+      
+      if (error.name === 'AbortError') {
+        alert("❌ 刷新超时（超过10分钟）\n\n可能是网络问题或GitHub访问受限，请稍后重试");
+      } else {
+        alert(`❌ 刷新缓存失败\n\n错误信息: ${error.message || '网络错误'}`);
+      }
     }
   };
 
