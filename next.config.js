@@ -71,6 +71,8 @@ const nextConfig = {
   experimental: {
     // 优化包导入
     optimizePackageImports: ['@prisma/client'],
+    // 启用 instrumentation hook（服务器启动时执行）
+    instrumentationHook: true,
   },
 }
 

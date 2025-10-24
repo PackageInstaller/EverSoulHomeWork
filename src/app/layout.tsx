@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import './globals.css'
-import StartupMigrationCheck from '@/components/StartupMigrationCheck'
 
 export const metadata: Metadata = {
   title: 'EverSoul 作业站',
@@ -30,7 +29,6 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <body className="bg-gray-50">
-        <StartupMigrationCheck />
         {children}
       </body>
     </html>
