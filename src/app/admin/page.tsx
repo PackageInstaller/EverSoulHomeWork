@@ -357,7 +357,7 @@ export default function AdminHomeworkPage() {
       setCacheRefreshing(false);
       
       if (error.name === 'AbortError') {
-        alert("❌ 刷新超时（超过10分钟）\n\n可能是网络问题或GitHub访问受限，请稍后重试");
+        alert("❌ 请求超时\n\n前端请求已超时，但服务器可能还在继续处理。\n\n建议：\n1. 等待 1-2 分钟后重试\n2. 如果持续失败，可能是 GitHub 访问受限");
       } else {
         alert(`❌ 刷新缓存失败\n\n错误信息: ${error.message || '网络错误'}`);
       }

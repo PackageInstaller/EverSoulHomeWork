@@ -27,7 +27,7 @@ export async function register() {
       console.warn('⚠️  应用将继续启动，建议手动检查数据库状态');
     }
     try {
-      console.log('\n🎮 [服务器启动] 开始预加载游戏数据...');
+      console.log('🎮 [服务器启动] 开始预加载游戏数据...');
       const startTime = Date.now();
       let successCount = 0;
       let failureCount = 0;

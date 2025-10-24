@@ -6,6 +6,8 @@ export const dynamic = 'force-dynamic';
 
 // 用于防止并发刷新
 let isRefreshing = false;
+let refreshStartTime = 0;
+const REFRESH_TIMEOUT = 5 * 60 * 1000; // 5分钟超时，超过这个时间认为上次刷新已失败
 
 /**
  * 手动刷新游戏数据缓存
@@ -23,16 +25,28 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 防止并发刷新
+  // 防止并发刷新（带超时保护）
+  const now = Date.now();
   if (isRefreshing) {
-    return NextResponse.json({
-      success: false,
-      error: '缓存刷新正在进行中，请稍候...',
-    }, { status: 409 });
+    const elapsed = now - refreshStartTime;
+    if (elapsed < REFRESH_TIMEOUT) {
+      // 还在超时时间内，拒绝新请求
+      const remainingTime = Math.ceil((REFRESH_TIMEOUT - elapsed) / 1000);
+      console.log(`⚠️ [手动刷新缓存] 刷新正在进行中，已耗时 ${Math.ceil(elapsed / 1000)}秒，请等待 ${remainingTime}秒`);
+      return NextResponse.json({
+        success: false,
+        error: `缓存刷新正在进行中，请等待约 ${remainingTime} 秒...`,
+      }, { status: 409 });
+    } else {
+      // 超过超时时间，强制允许新的刷新
+      console.log(`⚠️ [手动刷新缓存] 上次刷新超时（${Math.ceil(elapsed / 1000)}秒），强制允许新的刷新`);
+      isRefreshing = false;
+    }
   }
 
   isRefreshing = true;
-  const startTime = Date.now();
+  refreshStartTime = now;
+  const startTime = now;
   
   try {
     console.log('🔄 [手动刷新缓存] 开始强制刷新（清除旧缓存）...');
@@ -124,6 +138,7 @@ export async function POST(request: NextRequest) {
   } finally {
     // 无论如何都要重置标志
     isRefreshing = false;
+    refreshStartTime = 0;
     console.log('🔓 [手动刷新缓存] isRefreshing 标志已重置');
   }
 }
