@@ -76,6 +76,7 @@ export async function calculateHomeworkPoints(
 
 /**
  * 为用户添加积分
+ * 如果当月已结算，积分只计入总榜（PointsHistory），不计入月度奖池（UserPoints）
  */
 export async function addPointsToUser(
   nickname: string,
@@ -88,31 +89,39 @@ export async function addPointsToUser(
 ) {
   const ym = yearMonth || getCurrentYearMonth()
 
-  // 更新或创建用户积分记录
-  await prisma.userPoints.upsert({
-    where: {
-      nickname_yearMonth: {
-        nickname,
-        yearMonth: ym
-      }
-    },
-    update: {
-      points: {
-        increment: points
-      },
-      homeworkCount: {
-        increment: 1
-      }
-    },
-    create: {
-      nickname,
-      yearMonth: ym,
-      points,
-      homeworkCount: 1
-    }
-  })
+  // 检查当月是否已结算
+  const settled = await isMonthSettled(ym)
 
-  // 添加积分历史记录
+  if (!settled) {
+    // 未结算：积分计入月度奖池
+    await prisma.userPoints.upsert({
+      where: {
+        nickname_yearMonth: {
+          nickname,
+          yearMonth: ym
+        }
+      },
+      update: {
+        points: {
+          increment: points
+        },
+        homeworkCount: {
+          increment: 1
+        }
+      },
+      create: {
+        nickname,
+        yearMonth: ym,
+        points,
+        homeworkCount: 1
+      }
+    })
+    console.log(`✅ [积分] ${nickname} 在 ${ym} 获得 ${points} 积分（计入月度奖池）`)
+  } else {
+    console.log(`⚠️ [积分] ${nickname} 在 ${ym} 获得 ${points} 积分（当月已结算，仅计入总榜）`)
+  }
+
+  // 始终添加积分历史记录（用于总榜统计）
   await prisma.pointsHistory.create({
     data: {
       nickname,
@@ -138,6 +147,21 @@ async function getBasePoolAmount(): Promise<number> {
   } catch (error) {
     console.error('获取基础奖池配置失败，使用默认值200:', error)
     return 200
+  }
+}
+
+/**
+ * 检查指定年月是否已结算
+ */
+async function isMonthSettled(yearMonth: string): Promise<boolean> {
+  try {
+    const pool = await prisma.monthlyPrizePool.findUnique({
+      where: { yearMonth }
+    })
+    return pool?.isSettled || false
+  } catch (error) {
+    console.error('检查月度结算状态失败:', error)
+    return false
   }
 }
 
@@ -258,6 +282,22 @@ export async function getOrCreateMonthlyPrizePool(yearMonth: string) {
         totalPool: basePool + carryOver
       }
     })
+  } else if (!pool.isSettled) {
+    // 如果奖池存在且未结算，检查是否需要更新基础奖池金额
+    const currentBasePool = await getBasePoolAmount()
+    
+    if (pool.basePool !== currentBasePool) {
+      console.log(`📊 [月度奖池] ${yearMonth} 基础奖池从 ¥${pool.basePool} 更新为 ¥${currentBasePool}`)
+      
+      // 更新基础奖池和总奖池
+      pool = await prisma.monthlyPrizePool.update({
+        where: { yearMonth },
+        data: {
+          basePool: currentBasePool,
+          totalPool: currentBasePool + pool.carryOver
+        }
+      })
+    }
   }
 
   return pool
@@ -303,11 +343,11 @@ export async function settleMonthlyPrizePool(yearMonth: string) {
     distributed = totalPoints
     nextCarryOver = totalPool - totalPoints
   } else if (totalPoints >= 200 && totalPoints < totalPool) {
-    // 总积分高于200但小于总累加奖励，按1:1发放
+    // 总积分高于200但小于总奖池，按1:1发放，剩余也累加到下个月
     distributed = totalPoints
-    nextCarryOver = 0
+    nextCarryOver = totalPool - totalPoints  // 修复：剩余也应该累加
   } else {
-    // 总积分大于总奖池，按比例分配
+    // 总积分大于等于总奖池，按比例分配
     distributed = totalPool
     nextCarryOver = 0
   }

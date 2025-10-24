@@ -18,8 +18,6 @@ interface SettlementResult {
 export default function PointsSettlement() {
   const [yearMonth, setYearMonth] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [result, setResult] = useState<SettlementResult | null>(null);
   const [availableMonths, setAvailableMonths] = useState<Array<{
     yearMonth: string;
@@ -29,6 +27,10 @@ export default function PointsSettlement() {
   // 基础奖池配置
   const [basePool, setBasePool] = useState(200);
   const [basePoolLoading, setBasePoolLoading] = useState(false);
+  
+  // 自动结算配置
+  const [autoSettleHour, setAutoSettleHour] = useState(23); // 默认23点
+  const [autoSettleLoading, setAutoSettleLoading] = useState(false);
 
   useEffect(() => {
     // 初始化为当前年月
@@ -40,6 +42,8 @@ export default function PointsSettlement() {
     fetchMonths();
     // 获取基础奖池配置
     fetchBasePool();
+    // 获取自动结算配置
+    fetchAutoSettleConfig();
   }, []);
 
   const fetchMonths = async () => {
@@ -66,15 +70,25 @@ export default function PointsSettlement() {
     }
   };
 
+  const fetchAutoSettleConfig = async () => {
+    try {
+      const response = await fetch('/api/admin/auto-settle/config');
+      const data = await response.json();
+      if (data.success) {
+        setAutoSettleHour(data.config.autoSettleHour);
+      }
+    } catch (error) {
+      console.error('获取自动结算配置失败:', error);
+    }
+  };
+
   const handleSettle = async () => {
     if (!yearMonth) {
-      setError('请选择要结算的月份');
+      alert('❌ 请选择要结算的月份');
       return;
     }
 
     setLoading(true);
-    setError('');
-    setSuccess('');
     setResult(null);
 
     try {
@@ -89,14 +103,14 @@ export default function PointsSettlement() {
       const data = await response.json();
 
       if (data.success) {
-        setSuccess(`成功结算 ${yearMonth}！`);
+        alert(`✅ 成功结算 ${yearMonth}！\n\n总积分：${data.result.totalPoints.toFixed(1)}\n总奖池：¥${data.result.totalPool}\n已发放：¥${data.result.distributed}\n累加到下月：¥${data.result.nextCarryOver}`);
         setResult(data.result);
         fetchMonths(); // 刷新月份列表
       } else {
-        setError(data.message || '结算失败');
+        alert(`❌ 结算失败\n\n${data.message || '未知错误'}`);
       }
     } catch (error) {
-      setError('结算请求失败，请重试');
+      alert('❌ 结算请求失败，请重试');
       console.error('结算失败:', error);
     } finally {
       setLoading(false);
@@ -104,7 +118,7 @@ export default function PointsSettlement() {
   };
 
   const handleCancelSettlement = async (month: string) => {
-    if (!confirm(`确定要取消 ${month} 的结算吗？这将清除该月的所有结算记录！`)) {
+    if (!confirm(`⚠️ 确定要取消 ${month} 的结算吗？\n\n这将：\n• 清除该月的所有结算记录\n• 恢复所有用户的积分到月度奖池\n• 允许重新结算`)) {
       return;
     }
 
@@ -120,24 +134,26 @@ export default function PointsSettlement() {
       const data = await response.json();
 
       if (data.success) {
-        setSuccess(`已取消 ${month} 的结算`);
+        alert(`✅ 已取消 ${month} 的结算\n\n${data.message || '操作成功'}`);
         fetchMonths();
         if (result && result.yearMonth === month) {
           setResult(null);
         }
       } else {
-        setError(data.message || '取消结算失败');
+        alert(`❌ 取消结算失败\n\n${data.message || data.error || '未知错误'}`);
       }
     } catch (error) {
-      setError('取消结算请求失败');
+      alert('❌ 取消结算请求失败');
       console.error('取消结算失败:', error);
     }
   };
 
   const handleUpdateBasePool = async () => {
+    if (!confirm(`确认要将基础奖池金额设置为 ¥${basePool} 吗？`)) {
+      return;
+    }
+
     setBasePoolLoading(true);
-    setError('');
-    setSuccess('');
 
     try {
       const response = await fetch('/api/points/base-pool', {
@@ -151,108 +167,186 @@ export default function PointsSettlement() {
       const data = await response.json();
 
       if (data.success) {
-        setSuccess('基础奖池已更新');
+        alert(`✅ 基础奖池已更新为 ¥${basePool}`);
         fetchBasePool();
       } else {
-        setError(data.message || '更新失败');
+        alert(`❌ 更新失败\n\n${data.message || '未知错误'}`);
       }
     } catch (error) {
-      setError('更新基础奖池失败');
+      alert('❌ 更新基础奖池失败');
       console.error('更新基础奖池失败:', error);
     } finally {
       setBasePoolLoading(false);
     }
   };
 
+  const handleUpdateAutoSettle = async () => {
+    if (!confirm(`确认要将自动结算时间设置为每月最后一天的 ${autoSettleHour}:00 吗？`)) {
+      return;
+    }
+
+    setAutoSettleLoading(true);
+
+    try {
+      const response = await fetch('/api/admin/auto-settle/config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          autoSettleHour
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert(`✅ 自动结算配置已更新\n\n系统将在每月最后一天的 ${autoSettleHour}:00 自动执行结算`);
+        fetchAutoSettleConfig();
+      } else {
+        alert(`❌ 更新失败\n\n${data.message || '未知错误'}`);
+      }
+    } catch (error) {
+      alert('❌ 更新自动结算配置失败');
+      console.error('更新自动结算配置失败:', error);
+    } finally {
+      setAutoSettleLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {/* 手动结算表单 */}
-      <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6">
-        <h3 className="text-xl font-bold text-white mb-4">💰 手动结算</h3>
-        
-        <div className="space-y-4">
-          <div>
-            <label className="block text-white/80 mb-2">选择结算月份</label>
-            <div className="flex space-x-3">
-              <input
-                type="month"
-                value={yearMonth}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setYearMonth(value);
-                }}
-                className="flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-blue-500"
-              />
-              <button
-                onClick={handleSettle}
-                disabled={loading || !yearMonth}
-                className="px-6 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-500 text-white rounded-lg font-semibold transition-colors"
-              >
-                {loading ? '结算中...' : '执行结算'}
-              </button>
+      {/* PC端两列布局 */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* 左列：配置区 */}
+        <div className="space-y-6">
+          {/* 手动结算表单 */}
+          <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6">
+            <h3 className="text-xl font-bold text-white mb-4">💰 手动结算</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-white/80 mb-2">选择结算月份</label>
+                <div className="flex space-x-3">
+                  <input
+                    type="month"
+                    value={yearMonth}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setYearMonth(value);
+                    }}
+                    className="flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  />
+                  <button
+                    onClick={handleSettle}
+                    disabled={loading || !yearMonth}
+                    className="px-6 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-500 text-white rounded-lg font-semibold transition-colors"
+                  >
+                    {loading ? '结算中...' : '执行结算'}
+                  </button>
+                </div>
+              </div>
+
+              {/* 提示信息 */}
+              <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-3">
+                <p className="text-yellow-200 text-sm">
+                  ⚠️ 注意：结算后可以在下方取消，但请谨慎操作！
+                </p>
+              </div>
             </div>
           </div>
 
-          {/* 提示信息 */}
-          <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-3">
-            <p className="text-yellow-200 text-sm">
-              ⚠️ 注意：结算后可以在下方取消，但请谨慎操作！
-            </p>
-          </div>
-        </div>
-      </div>
+          {/* 基础奖池配置 */}
+          <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6">
+            <h3 className="text-xl font-bold text-white mb-4">🎁 基础奖池配置</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-white/80 mb-2">每月基础奖池金额（元）</label>
+                <div className="flex space-x-3">
+                  <input
+                    type="number"
+                    min="0"
+                    step="50"
+                    value={basePool}
+                    onChange={(e) => setBasePool(Number(e.target.value))}
+                    className="flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  />
+                  <button
+                    onClick={handleUpdateBasePool}
+                    disabled={basePoolLoading}
+                    className="px-6 py-2 bg-green-500 hover:bg-green-600 disabled:bg-gray-500 text-white rounded-lg font-semibold transition-colors"
+                  >
+                    {basePoolLoading ? '保存中...' : '保存配置'}
+                  </button>
+                </div>
+              </div>
 
-      {/* 基础奖池配置 */}
-      <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6">
-        <h3 className="text-xl font-bold text-white mb-4">🎁 基础奖池配置</h3>
-        
-        <div className="space-y-4">
-          <div>
-            <label className="block text-white/80 mb-2">每月基础奖池金额（元）</label>
-            <div className="flex space-x-3">
-              <input
-                type="number"
-                min="0"
-                step="50"
-                value={basePool}
-                onChange={(e) => setBasePool(Number(e.target.value))}
-                className="flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-blue-500"
-              />
-              <button
-                onClick={handleUpdateBasePool}
-                disabled={basePoolLoading}
-                className="px-6 py-2 bg-green-500 hover:bg-green-600 disabled:bg-gray-500 text-white rounded-lg font-semibold transition-colors"
-              >
-                {basePoolLoading ? '保存中...' : '保存配置'}
-              </button>
+              <div className="bg-blue-500/20 border border-blue-500/50 rounded-lg p-3">
+                <p className="text-blue-200 text-sm">
+                  💡 提示：基础奖池金额将用于每月结算时的奖励计算
+                </p>
+              </div>
             </div>
           </div>
 
-          <div className="bg-blue-500/20 border border-blue-500/50 rounded-lg p-3">
-            <p className="text-blue-200 text-sm">
-              💡 提示：基础奖池金额将用于每月结算时的奖励计算
-            </p>
+          {/* 自动结算配置 */}
+          <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6">
+            <h3 className="text-xl font-bold text-white mb-4">⏰ 自动结算配置</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-white/80 mb-2">每月最后一天结算时间（小时）</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="23"
+                  value={autoSettleHour}
+                  onChange={(e) => setAutoSettleHour(Number(e.target.value))}
+                  className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  placeholder="0-23"
+                />
+              </div>
+
+              <button
+                onClick={handleUpdateAutoSettle}
+                disabled={autoSettleLoading}
+                className="w-full px-6 py-2 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-500 text-white rounded-lg font-semibold transition-colors"
+              >
+                {autoSettleLoading ? '保存中...' : '保存自动结算配置'}
+              </button>
+
+              <div className="bg-purple-500/20 border border-purple-500/50 rounded-lg p-3">
+                <p className="text-purple-200 text-sm">
+                  🤖 自动结算：系统将在每月最后一天的 {autoSettleHour}:00 自动执行结算
+                </p>
+                <p className="text-purple-200 text-sm mt-1">
+                  📝 说明：结算后提交的作业，积分将计入总榜，但不计入当月奖池活动
+                </p>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* 消息提示 */}
-      {error && (
-        <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4">
-          <p className="text-red-200">{error}</p>
-        </div>
-      )}
+        {/* 右列：结果区 */}
+        <div className="space-y-6">
+          {/* 占位提示 */}
+          {!result && availableMonths.length === 0 && (
+            <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6">
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">💰</div>
+                <h3 className="text-xl font-bold text-white mb-2">结算管理</h3>
+                <p className="text-white/60 text-sm">
+                  执行结算后，结果将显示在这里
+                </p>
+              </div>
+            </div>
+          )}
 
-      {success && (
-        <div className="bg-green-500/20 border border-green-500/50 rounded-lg p-4">
-          <p className="text-green-200">{success}</p>
-        </div>
-      )}
-
-      {/* 结算结果 */}
-      {result && (
-        <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6">
-          <h3 className="text-xl font-bold text-white mb-4">📊 结算结果</h3>
+          {/* 结算结果 */}
+          {result && (
+            <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6">
+              <h3 className="text-xl font-bold text-white mb-4">📊 结算结果</h3>
           
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -291,13 +385,13 @@ export default function PointsSettlement() {
               </div>
             </div>
           </div>
-        </div>
-      )}
+            </div>
+          )}
 
-      {/* 历史结算记录 */}
-      {availableMonths.length > 0 && (
-        <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6">
-          <h3 className="text-xl font-bold text-white mb-4">📜 历史结算记录</h3>
+          {/* 历史结算记录 */}
+          {availableMonths.length > 0 && (
+            <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6">
+              <h3 className="text-xl font-bold text-white mb-4">📜 历史结算记录</h3>
           
           <div className="space-y-2">
             {availableMonths.map((month) => (
@@ -321,8 +415,10 @@ export default function PointsSettlement() {
               </div>
             ))}
           </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

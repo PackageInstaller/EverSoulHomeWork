@@ -106,8 +106,12 @@ export default function MessageSender() {
 
   return (
     <div className="space-y-6">
-      {/* 消息表单 */}
-      <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6">
+      {/* PC端两列布局 */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* 左列：消息表单 */}
+        <div className="space-y-6">
+          {/* 消息表单 */}
+          <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6">
         <h2 className="text-2xl font-bold text-white mb-6">📬 发送消息给用户</h2>
 
         {/* 标题输入 */}
@@ -164,10 +168,13 @@ export default function MessageSender() {
         >
           {sending ? '发送中...' : '发送消息'}
         </button>
-      </div>
+        </div>
+        </div>
 
-      {/* 用户列表 */}
-      {!sendToAll && (
+        {/* 右列：用户列表 */}
+        <div className="space-y-6">
+          {/* 用户列表 */}
+      {!sendToAll ? (
         <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-bold text-white">选择接收用户</h3>
@@ -216,7 +223,22 @@ export default function MessageSender() {
             </div>
           )}
         </div>
+      ) : (
+        <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6">
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">📢</div>
+            <h3 className="text-xl font-bold text-white mb-2">全体发送模式</h3>
+            <p className="text-white/60 text-sm">
+              消息将发送给所有注册用户
+            </p>
+            <p className="text-white/80 text-lg font-semibold mt-4">
+              共 {users.length} 位用户
+            </p>
+          </div>
+        </div>
       )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -263,9 +263,6 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
                   需要上传 {minImages} 到 {maxImages} 张图片，每张不超过3MB
                   <span className="text-blue-300 ml-2">（建议包含：胜利截图 + 站位截图）</span>
                 </div>
-                <div className="text-green-300 text-xs mb-2">
-                  ✨ 图片将自动转换为WebP格式并压缩，大幅节省流量
-                </div>
                 <input
                   type="file"
                   multiple

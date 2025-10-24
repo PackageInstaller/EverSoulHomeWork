@@ -17,6 +17,7 @@ interface Homework {
   description: string;
   teamCount: number;
   createdAt: string;
+  isAfterSettlement?: boolean; // 是否在结算后提交
   images: HomeworkImage[];
 }
 
@@ -144,12 +145,27 @@ export default function HomeworkSection({ stageId, teamCount }: HomeworkSectionP
                     <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg flex-shrink-0">
                       {homework.nickname.charAt(0)}
                     </div>
-                    <h3 className="text-lg font-semibold text-white">
-                      {homework.nickname}
-                    </h3>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">
+                        {homework.nickname}
+                      </h3>
+                      {homework.isAfterSettlement && (
+                        <span className="inline-flex items-center gap-1 text-xs text-yellow-300 bg-yellow-500/20 px-2 py-0.5 rounded mt-1">
+                          ⏰ 结算后提交 · 仅计入总榜
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <span className="text-white/50 text-sm">
-                    {new Date(homework.createdAt).toLocaleDateString('zh-CN')}
+                    {new Date(homework.createdAt).toLocaleString('zh-CN', {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                      hour12: false
+                    })}
                   </span>
                 </div>
                 {homework.description && (

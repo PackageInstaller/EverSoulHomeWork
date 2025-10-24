@@ -9,6 +9,7 @@ interface Homework {
   description: string;
   teamCount: number;
   createdAt: string;
+  isAfterSettlement?: boolean; // 是否在结算后提交
   thumbnail: string | null;
 }
 
@@ -231,9 +232,24 @@ export default function UserHomeworkModal({ nickname, onClose }: UserHomeworkMod
                             {homework.description}
                           </p>
                         )}
+                        {homework.isAfterSettlement && (
+                          <div className="mb-2">
+                            <span className="inline-flex items-center gap-1 text-xs text-yellow-300 bg-yellow-500/20 px-2 py-0.5 rounded">
+                              ⏰ 结算后提交 · 仅计入总榜
+                            </span>
+                          </div>
+                        )}
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-white/50">
-                            {new Date(homework.createdAt).toLocaleDateString('zh-CN')}
+                            {new Date(homework.createdAt).toLocaleString('zh-CN', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit',
+                              hour12: false
+                            })}
                           </span>
                           <span className="text-blue-400 group-hover:text-blue-300">
                             查看关卡 →

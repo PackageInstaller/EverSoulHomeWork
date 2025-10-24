@@ -72,7 +72,50 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 取消结算：重置相关字段
+    // 取消结算：需要恢复积分
+    console.log(`⚠️ [取消结算] 开始取消 ${yearMonth} 的结算...`)
+    
+    // 1. 获取该月所有积分历史
+    const pointsHistories = await prisma.pointsHistory.findMany({
+      where: { yearMonth }
+    })
+    
+    console.log(`📊 [取消结算] 找到 ${pointsHistories.length} 条积分记录`)
+    
+    // 2. 按用户分组统计
+    const userPointsMap = new Map<string, { points: number, count: number }>()
+    pointsHistories.forEach(history => {
+      const existing = userPointsMap.get(history.nickname) || { points: 0, count: 0 }
+      userPointsMap.set(history.nickname, {
+        points: existing.points + history.points,
+        count: existing.count + 1
+      })
+    })
+    
+    console.log(`👥 [取消结算] 涉及 ${userPointsMap.size} 个用户`)
+    
+    // 3. 删除旧的UserPoints记录
+    await prisma.userPoints.deleteMany({
+      where: { yearMonth }
+    })
+    
+    console.log(`🗑️ [取消结算] 已删除旧的用户积分记录`)
+    
+    // 4. 重新创建UserPoints记录（包括结算后提交的作业）
+    for (const [nickname, data] of userPointsMap.entries()) {
+      await prisma.userPoints.create({
+        data: {
+          nickname,
+          yearMonth,
+          points: data.points,
+          homeworkCount: data.count
+        }
+      })
+    }
+    
+    console.log(`✅ [取消结算] 已恢复所有用户积分记录`)
+    
+    // 5. 重置奖池状态
     await prisma.monthlyPrizePool.update({
       where: { yearMonth },
       data: {
@@ -83,10 +126,12 @@ export async function POST(request: NextRequest) {
         settledAt: null
       }
     })
+    
+    console.log(`✅ [取消结算] ${yearMonth} 结算已取消完成！`)
 
     return NextResponse.json({
       success: true,
-      message: '结算已取消'
+      message: `结算已取消，已恢复 ${userPointsMap.size} 个用户的积分`
     })
 
   } catch (error: any) {

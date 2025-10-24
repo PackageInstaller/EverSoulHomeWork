@@ -3,6 +3,13 @@ import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
+/**
+ * 获取年月标识
+ */
+function getYearMonth(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -49,6 +56,24 @@ export async function GET(request: NextRequest) {
       })
     ])
 
+    // 获取所有涉及的yearMonth及其结算信息
+    const yearMonths = Array.from(new Set(homeworks.map(hw => getYearMonth(new Date(hw.createdAt)))))
+    const prizePoolsMap = new Map()
+    
+    if (yearMonths.length > 0) {
+      const prizePools = await prisma.monthlyPrizePool.findMany({
+        where: {
+          yearMonth: {
+            in: yearMonths
+          }
+        }
+      })
+      
+      prizePools.forEach(pool => {
+        prizePoolsMap.set(pool.yearMonth, pool)
+      })
+    }
+
     // 按区域分组
     const groupedByArea: { [key: string]: typeof homeworks } = {}
     homeworks.forEach(hw => {
@@ -66,14 +91,22 @@ export async function GET(request: NextRequest) {
       page,
       limit,
       totalPages: Math.ceil(total / limit),
-      homeworks: homeworks.map(hw => ({
-        id: hw.id,
-        stageId: hw.stageId,
-        description: hw.description,
-        teamCount: hw.teamCount,
-        createdAt: hw.createdAt,
-        thumbnail: hw.images[0] ? `/api/uploads/homework/${hw.images[0].filename}` : null
-      })),
+      homeworks: homeworks.map(hw => {
+        const yearMonth = getYearMonth(new Date(hw.createdAt))
+        const prizePool = prizePoolsMap.get(yearMonth)
+        const isAfterSettlement = prizePool?.isSettled && prizePool.settledAt && 
+                                 new Date(hw.createdAt) > new Date(prizePool.settledAt)
+        
+        return {
+          id: hw.id,
+          stageId: hw.stageId,
+          description: hw.description,
+          teamCount: hw.teamCount,
+          createdAt: hw.createdAt,
+          isAfterSettlement, // 是否在结算后提交
+          thumbnail: hw.images[0] ? `/api/uploads/homework/${hw.images[0].filename}` : null
+        }
+      }),
       groupedByArea: Object.keys(groupedByArea).sort((a, b) => parseInt(a) - parseInt(b)).map(area => ({
         area: parseInt(area),
         stages: groupedByArea[area].map(hw => ({

@@ -141,21 +141,32 @@ export default function PointsLeaderboard({ initialYearMonth }: PointsLeaderboar
 
   return (
     <div className="space-y-6">
-      {/* 月份选择器 */}
+      {/* 月份选择器 - 优化UI */}
       {availableMonths.length > 0 && (
-        <div className="stage-card">
-          <label className="block text-white/80 mb-2 text-sm">选择月份：</label>
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="w-full md:w-auto px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-blue-500"
-          >
-            {availableMonths.map((month) => (
-              <option key={month.yearMonth} value={month.yearMonth} className="bg-gray-900">
-                {month.yearMonth} {month.isSettled ? '（已结算）' : '（进行中）'}
-              </option>
-            ))}
-          </select>
+        <div className="stage-card bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-2 border-blue-500/30">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="text-2xl">📅</div>
+              <div>
+                <h3 className="text-lg font-bold text-white">历史记录</h3>
+                <p className="text-white/60 text-sm">选择月份查看往期排行榜</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="text-white/80 text-sm font-medium">选择月份：</label>
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="px-4 py-2.5 bg-white/10 border-2 border-white/30 rounded-lg text-white font-medium focus:outline-none focus:border-blue-400 focus:bg-white/15 transition-all cursor-pointer hover:bg-white/15"
+              >
+                {availableMonths.map((month) => (
+                  <option key={month.yearMonth} value={month.yearMonth} className="bg-gray-900">
+                    {month.yearMonth} {month.isSettled ? '✅ 已结算' : '⏳ 进行中'}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
       )}
 
@@ -190,13 +201,27 @@ export default function PointsLeaderboard({ initialYearMonth }: PointsLeaderboar
 
         {/* 奖励规则说明 */}
         <div className="mt-4 bg-white/5 rounded-lg p-4 border border-white/10">
-          <h3 className="text-white font-semibold mb-2">📋 奖励规则</h3>
-          <ul className="text-white/70 text-sm space-y-1">
-            <li>• 19图起，每个无作业的图：单队0.1分，双队0.5分，三队1分</li>
-            <li>• 有作业的图按减半积分计算</li>
-            <li>• 总积分不足200：按1:1发放，剩余累加至下月</li>
-            <li>• 总积分高于200但小于总奖池：按1:1发放</li>
-            <li>• 总积分大于总奖池：按比例分配</li>
+          <h3 className="text-white font-semibold mb-2 flex items-center gap-2">
+            <span>📋</span>
+            <span>奖励规则</span>
+          </h3>
+          <ul className="text-white/70 text-sm space-y-1.5">
+            <li className="flex items-start gap-2">
+              <span className="text-blue-400 font-bold">•</span>
+              <span><strong className="text-white/90">积分计算：</strong>19图起，无作业图：单队0.1分，双队0.5分，三队1分；有作业图减半</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-green-400 font-bold">•</span>
+              <span><strong className="text-white/90">总积分 &lt; {prizePool.basePool}：</strong>按1:1发放，<strong className="text-yellow-300">剩余累加至下月</strong></span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-yellow-400 font-bold">•</span>
+              <span><strong className="text-white/90">{prizePool.basePool} ≤ 总积分 &lt; 总奖池：</strong>按1:1发放，<strong className="text-yellow-300">剩余累加至下月</strong></span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-purple-400 font-bold">•</span>
+              <span><strong className="text-white/90">总积分 ≥ 总奖池：</strong>按比例分配，全部发放</span>
+            </li>
           </ul>
         </div>
 

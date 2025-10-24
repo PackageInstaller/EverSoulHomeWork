@@ -6,7 +6,20 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db": "node scripts/db-manager.js",
+    "db:init": "node scripts/db-manager.js init",
+    "db:fix": "node scripts/db-manager.js fix",
+    "db:migrate": "node scripts/db-manager.js migrate",
+    "db:generate": "node scripts/db-manager.js generate",
+    "db:push": "node scripts/db-manager.js push",
+    "db:studio": "node scripts/db-manager.js studio",
+    "db:check": "node scripts/db-manager.js check",
+    "db:backup": "node scripts/db-manager.js backup",
+    "db:vacuum": "node scripts/db-manager.js vacuum",
+    "db:cleanup": "node scripts/db-manager.js cleanup",
+    "db:reset": "node scripts/db-manager.js reset",
+    "db:status": "node scripts/db-manager.js status"
   },
   "dependencies": {
     "@prisma/client": "^6.12.0",

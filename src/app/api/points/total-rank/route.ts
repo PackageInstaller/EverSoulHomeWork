@@ -11,15 +11,17 @@ export async function GET(request: Request) {
     const search = searchParams.get('search') || '';
 
     // 计算总积分排行
-    // 从 user_points 表中按昵称分组，统计每个用户的总积分和作业数量
-    const allUsers = await prisma.userPoints.groupBy({
+    // 从 points_history 表中统计所有用户的总积分（包括结算后提交的作业）
+    const allUsers = await prisma.pointsHistory.groupBy({
       by: ['nickname'],
       _sum: {
         points: true,
-        homeworkCount: true,
+      },
+      _count: {
+        homeworkId: true, // 统计作业数量
       },
       _max: {
-        updatedAt: true,
+        createdAt: true,
       },
     });
 
@@ -29,8 +31,8 @@ export async function GET(request: Request) {
         id: index + 1,
         nickname: user.nickname,
         totalPoints: user._sum.points || 0,
-        homeworkCount: user._sum.homeworkCount || 0,
-        lastUpdated: user._max.updatedAt?.toLocaleString('zh-CN') || '',
+        homeworkCount: user._count.homeworkId || 0,
+        lastUpdated: user._max.createdAt?.toLocaleString('zh-CN') || '',
       }))
       .sort((a, b) => b.totalPoints - a.totalPoints); // 按总积分降序排序
 
