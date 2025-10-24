@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
  * 手动刷新游戏数据缓存
  * 需要管理员权限
  * 
- * ✨ 新逻辑：先加载新数据，成功后再清除旧缓存
+ * ✨ 强制刷新：先清除旧缓存，再从远程重新加载所有数据
  */
 export async function POST(request: NextRequest) {
   // 验证管理员权限
@@ -61,10 +61,16 @@ export async function POST(request: NextRequest) {
     logs: [],
   };
   
-  refreshProgress.logs.push('🚀 开始刷新缓存...');
-  console.log('🔄 [手动刷新缓存] 开始加载新数据（不清除旧缓存）...');
+  refreshProgress.logs.push('🚀 开始强制刷新缓存...');
+  console.log('🔄 [手动刷新缓存] 开始强制刷新（清除旧缓存）...');
   
-  // ✨ 核心改进：先尝试加载新数据，不清除旧缓存
+  // ✨ 强制刷新：先清除所有旧缓存
+  refreshProgress.logs.push('🗑️ 正在清除旧缓存...');
+  console.log('🗑️ [手动刷新缓存] 清除旧缓存...');
+  clearCache();
+  refreshProgress.logs.push('✅ 旧缓存已清除');
+  console.log('✅ [手动刷新缓存] 旧缓存已清除');
+  
   const successes: string[] = [];
   const failures: string[] = [];
   const errors: string[] = [];
