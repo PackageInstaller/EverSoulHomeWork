@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import PointsSettlement from "@/components/PointsSettlement";
 import MessageSender from "@/components/MessageSender";
 
@@ -61,6 +61,7 @@ export default function AdminHomeworkPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [isBatchReject, setIsBatchReject] = useState(false);
   const [cacheRefreshing, setCacheRefreshing] = useState(false);
+  const isRefreshingRef = useRef(false); // 用于立即防止重复点击
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
 
   // 检查认证状态
@@ -316,11 +317,20 @@ export default function AdminHomeworkPage() {
 
   // 刷新游戏数据缓存
   const handleRefreshCache = async () => {
+    // 使用 ref 立即防止重复点击（不依赖异步的 state 更新）
+    if (isRefreshingRef.current) {
+      console.log('⚠️ [前端] 防止重复点击：已有刷新正在进行');
+      return;
+    }
+
     if (!confirm("确定要强制刷新游戏数据缓存吗？\n\n这会清除旧缓存并从GitHub重新下载所有数据，可能需要1-2分钟。")) {
       return;
     }
 
+    // 立即设置 ref 和 state
+    isRefreshingRef.current = true;
     setCacheRefreshing(true);
+    console.log('🔄 [前端] 开始刷新缓存...');
 
     try {
       // 设置 3 分钟超时，避免请求过早中断
@@ -335,32 +345,34 @@ export default function AdminHomeworkPage() {
       clearTimeout(timeoutId);
 
       if (response.status === 403) {
-        setCacheRefreshing(false);
         alert("❌ 权限不足，需要管理员权限");
         return;
       }
 
       if (response.status === 409) {
-        setCacheRefreshing(false);
         const result = await response.json();
         alert("⚠️ " + (result.error || '缓存刷新正在进行中'));
         return;
       }
 
       const result = await response.json();
-      setCacheRefreshing(false);
 
       // 显示结果
+      console.log('✅ [前端] 刷新完成:', result);
       alert(result.message || '刷新完成');
     } catch (error: any) {
-      console.error("刷新缓存失败:", error);
-      setCacheRefreshing(false);
+      console.error("❌ [前端] 刷新缓存失败:", error);
       
       if (error.name === 'AbortError') {
         alert("❌ 请求超时\n\n前端请求已超时，但服务器可能还在继续处理。\n\n建议：\n1. 等待 1-2 分钟后重试\n2. 如果持续失败，可能是 GitHub 访问受限");
       } else {
         alert(`❌ 刷新缓存失败\n\n错误信息: ${error.message || '网络错误'}`);
       }
+    } finally {
+      // 确保无论如何都重置标志
+      isRefreshingRef.current = false;
+      setCacheRefreshing(false);
+      console.log('🔓 [前端] 刷新标志已重置');
     }
   };
 
