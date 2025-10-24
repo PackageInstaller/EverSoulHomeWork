@@ -210,11 +210,12 @@ export default function PointsSettlement() {
       console.log('💾 [前端] 保存自动结算配置响应:', data);
 
       if (data.success) {
-        alert(`✅ 自动结算配置已更新\n\n系统将在每月最后一天的 ${autoSettleHour}:00 自动执行结算\n\n数据库保存值: ${data.saved?.value}`);
-        // 延迟一下再重新获取，确保数据库写入完成
-        setTimeout(() => {
-          fetchAutoSettleConfig();
-        }, 100);
+        // 直接使用返回的值更新 state，不依赖重新 fetch
+        const savedValue = data.saved ? parseInt(data.saved.value) : autoSettleHour;
+        console.log('💾 [前端] 更新 state 为:', savedValue);
+        setAutoSettleHour(savedValue);
+        
+        alert(`✅ 自动结算配置已更新\n\n系统将在每月最后一天的 ${savedValue}:00 自动执行结算\n\n数据库保存值: ${data.saved?.value}`);
       } else {
         alert(`❌ 更新失败\n\n${data.message || '未知错误'}`);
       }
