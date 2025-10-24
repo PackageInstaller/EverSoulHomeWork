@@ -323,7 +323,7 @@ export default function AdminHomeworkPage() {
       return;
     }
 
-    if (!confirm("确定要强制刷新游戏数据缓存吗？\n\n这会清除旧缓存并从GitHub重新下载所有数据，可能需要1-2分钟。")) {
+    if (!confirm("确定要强制刷新游戏数据缓存吗？\n\n这会清除旧缓存并从GitHub并行下载所有数据，大约需要10-20秒。")) {
       return;
     }
 
@@ -333,9 +333,9 @@ export default function AdminHomeworkPage() {
     console.log('🔄 [前端] 开始刷新缓存...');
 
     try {
-      // 设置 3 分钟超时，避免请求过早中断
+      // 设置 2 分钟超时，避免请求过早中断
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3 * 60 * 1000);
+      const timeoutId = setTimeout(() => controller.abort(), 2 * 60 * 1000);
 
       const response = await fetch("/api/cache/cron", {
         method: "POST",
@@ -364,7 +364,7 @@ export default function AdminHomeworkPage() {
       console.error("❌ [前端] 刷新缓存失败:", error);
       
       if (error.name === 'AbortError') {
-        alert("❌ 请求超时\n\n前端请求已超时，但服务器可能还在继续处理。\n\n建议：\n1. 等待 1-2 分钟后重试\n2. 如果持续失败，可能是 GitHub 访问受限");
+        alert("❌ 请求超时\n\n前端请求已超时（超过2分钟），但服务器可能还在继续处理。\n\n建议：\n1. 等待 30 秒后重试\n2. 如果持续失败，可能是 GitHub 访问受限");
       } else {
         alert(`❌ 刷新缓存失败\n\n错误信息: ${error.message || '网络错误'}`);
       }

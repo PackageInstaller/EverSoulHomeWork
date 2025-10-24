@@ -60,33 +60,37 @@ export async function POST(request: NextRequest) {
     const failures: string[] = [];
     const errors: string[] = [];
     
-    // 1. 加载 live 数据源
-    console.log('🔄 [手动刷新缓存] 正在加载 live 数据源...');
+    // 并行加载两个数据源（提高速度，减少总耗时）
+    console.log('🔄 [手动刷新缓存] 开始并行加载 live 和 review 数据源...');
     
-    try {
-      await preloadGameData('live');
-      successes.push('live');
-      console.log('✅ [手动刷新缓存] live数据源加载成功');
-    } catch (error: any) {
-      failures.push('live');
-      const errorMsg = error?.message || '未知错误';
-      errors.push(`live: ${errorMsg}`);
-      console.error('❌ [手动刷新缓存] live数据源加载失败:', errorMsg);
-    }
+    const loadPromises = [
+      preloadGameData('live')
+        .then(() => {
+          successes.push('live');
+          console.log('✅ [手动刷新缓存] live数据源加载成功');
+        })
+        .catch((error: any) => {
+          failures.push('live');
+          const errorMsg = error?.message || '未知错误';
+          errors.push(`live: ${errorMsg}`);
+          console.error('❌ [手动刷新缓存] live数据源加载失败:', errorMsg);
+        }),
+      
+      preloadGameData('review')
+        .then(() => {
+          successes.push('review');
+          console.log('✅ [手动刷新缓存] review数据源加载成功');
+        })
+        .catch((error: any) => {
+          failures.push('review');
+          const errorMsg = error?.message || '未知错误';
+          errors.push(`review: ${errorMsg}`);
+          console.error('❌ [手动刷新缓存] review数据源加载失败:', errorMsg);
+        })
+    ];
     
-    // 2. 加载 review 数据源
-    console.log('🔄 [手动刷新缓存] 正在加载 review 数据源...');
-    
-    try {
-      await preloadGameData('review');
-      successes.push('review');
-      console.log('✅ [手动刷新缓存] review数据源加载成功');
-    } catch (error: any) {
-      failures.push('review');
-      const errorMsg = error?.message || '未知错误';
-      errors.push(`review: ${errorMsg}`);
-      console.error('❌ [手动刷新缓存] review数据源加载失败:', errorMsg);
-    }
+    // 等待所有数据源加载完成（无论成功或失败）
+    await Promise.all(loadPromises);
     
     const duration = Date.now() - startTime;
     

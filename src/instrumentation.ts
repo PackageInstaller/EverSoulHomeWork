@@ -27,28 +27,36 @@ export async function register() {
       console.warn('⚠️  应用将继续启动，建议手动检查数据库状态');
     }
     try {
-      console.log('🎮 [服务器启动] 开始预加载游戏数据...');
+      console.log('🎮 [服务器启动] 开始并行预加载游戏数据...');
       const startTime = Date.now();
       let successCount = 0;
       let failureCount = 0;
-      try {
-        console.log('🔄 [服务器启动] 正在加载 live 数据源...');
-        await preloadGameData('live');
-        successCount++;
-        console.log('✅ [服务器启动] live 数据源加载成功');
-      } catch (error: any) {
-        failureCount++;
-        console.error('❌ [服务器启动] live 数据源加载失败:', error.message);
-      }
-      try {
-        console.log('🔄 [服务器启动] 正在加载 review 数据源...');
-        await preloadGameData('review');
-        successCount++;
-        console.log('✅ [服务器启动] review 数据源加载成功');
-      } catch (error: any) {
-        failureCount++;
-        console.error('❌ [服务器启动] review 数据源加载失败:', error.message);
-      }
+      
+      // 并行加载两个数据源
+      const loadPromises = [
+        preloadGameData('live')
+          .then(() => {
+            successCount++;
+            console.log('✅ [服务器启动] live 数据源加载成功');
+          })
+          .catch((error: any) => {
+            failureCount++;
+            console.error('❌ [服务器启动] live 数据源加载失败:', error.message);
+          }),
+        
+        preloadGameData('review')
+          .then(() => {
+            successCount++;
+            console.log('✅ [服务器启动] review 数据源加载成功');
+          })
+          .catch((error: any) => {
+            failureCount++;
+            console.error('❌ [服务器启动] review 数据源加载失败:', error.message);
+          })
+      ];
+      
+      // 等待所有数据源加载完成
+      await Promise.all(loadPromises);
       
       const duration = Date.now() - startTime;
       console.log(`✅ [服务器启动] 游戏数据缓存预加载完成 - 耗时: ${duration}ms, 成功: ${successCount}, 失败: ${failureCount}`);
