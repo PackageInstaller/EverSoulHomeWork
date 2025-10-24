@@ -3,8 +3,7 @@ module.exports = {
     {
       name: 'eversoul-web',
       script: 'node_modules/next/dist/bin/next',
-      args: 'start -p 3000',
-      cwd: '/home/rikka/EverSoulHomeWork',
+      args: 'start',
       interpreter: 'node',
       instances: 1,
       exec_mode: 'fork',
