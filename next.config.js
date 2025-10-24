@@ -5,7 +5,7 @@ const nextConfig = {
   },
   productionBrowserSourceMaps: false,
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production' ? {
+    removeConsole: process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_ENABLE_CONSOLE ? {
       exclude: ['error', 'warn'],
     } : false,
   },
@@ -19,25 +19,25 @@ const nextConfig = {
         if (plugin.constructor.name === 'TerserPlugin') {
           const newOptions = {
             ...plugin.options,
-            terserOptions: {
-              ...plugin.options.terserOptions,
-              compress: {
-                ...plugin.options.terserOptions?.compress,
-                drop_console: true,
-                drop_debugger: true,
-                pure_funcs: ['console.log', 'console.info', 'console.debug'],
-                passes: 3,
-                dead_code: true,
-                conditionals: true,
-                evaluate: true,
-                booleans: true,
-                loops: true,
-                unused: true,
-                hoist_funs: true,
-                if_return: true,
-                join_vars: true,
-                side_effects: true,
-              },
+              terserOptions: {
+                ...plugin.options.terserOptions,
+                compress: {
+                  ...plugin.options.terserOptions?.compress,
+                  drop_console: !process.env.NEXT_PUBLIC_ENABLE_CONSOLE,
+                  drop_debugger: true,
+                  pure_funcs: process.env.NEXT_PUBLIC_ENABLE_CONSOLE ? [] : ['console.log', 'console.info', 'console.debug'],
+                  passes: 3,
+                  dead_code: true,
+                  conditionals: true,
+                  evaluate: true,
+                  booleans: true,
+                  loops: true,
+                  unused: true,
+                  hoist_funs: true,
+                  if_return: true,
+                  join_vars: true,
+                  side_effects: true,
+                },
               mangle: {
                 ...plugin.options.terserOptions?.mangle,
                 toplevel: true,

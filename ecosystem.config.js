@@ -11,12 +11,15 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3000,
-        NODE_OPTIONS: '--no-warnings --no-experimental-fetch-warning'
+        NODE_OPTIONS: '--no-warnings --no-experimental-fetch-warning',
+        NEXT_PUBLIC_ENABLE_CONSOLE: 'true'
       },
       error_file: './logs/err.log',
       out_file: './logs/out.log',
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
-      merge_logs: true
+      merge_logs: true,
+      combine_logs: true,
+      time: true
     }
   ]
 };
