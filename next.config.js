@@ -10,6 +10,21 @@ const nextConfig = {
     } : false,
   },
   webpack: (config, { dev, isServer, webpack }) => {
+    // 配置 externals，防止打包 Node.js 原生模块
+    // instrumentation.ts 需要使用这些模块
+    if (isServer) {
+      const externals = config.externals || [];
+      config.externals = [
+        ...externals,
+        {
+          'child_process': 'commonjs child_process',
+          'fs': 'commonjs fs',
+          'path': 'commonjs path',
+          'util': 'commonjs util',
+        }
+      ];
+    }
+    
     if (!dev && !isServer) {
       config.optimization = {
         ...config.optimization,
