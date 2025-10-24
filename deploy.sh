@@ -11,8 +11,8 @@ if [ $? -eq 0 ]; then
     pm2 reload ecosystem.config.js --update-env
     if [ $? -ne 0 ]; then
         pm2 start ecosystem.config.js
-        pm2 monit
     fi
+    pm2 monit
 else
     echo -e "${RED}构建失败${NC}"
     exit 1
