@@ -45,3 +45,6 @@ public/uploads/
 
 # secrets
 admin-secret.json
+
+# logs
+logs/
