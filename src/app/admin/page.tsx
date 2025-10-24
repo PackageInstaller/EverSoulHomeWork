@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import PointsSettlement from "@/components/PointsSettlement";
 import MessageSender from "@/components/MessageSender";
 
@@ -61,88 +61,7 @@ export default function AdminHomeworkPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [isBatchReject, setIsBatchReject] = useState(false);
   const [cacheRefreshing, setCacheRefreshing] = useState(false);
-  const [refreshProgress, setRefreshProgress] = useState<{
-    current: number;
-    total: number;
-    currentSource: string;
-    logs: string[];
-  } | null>(null);
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
-  
-  // 使用 useRef 存储定时器引用，避免 state 异步更新问题
-  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  // 检查并恢复刷新进度
-  const checkAndRestoreProgress = async () => {
-    try {
-      const progressRes = await fetch("/api/cache/cron", {
-        method: "GET",
-        cache: "no-store",
-      });
-      if (progressRes.ok) {
-        const progress = await progressRes.json();
-        
-        // 如果后端正在刷新，恢复前端状态
-        if (progress.isRefreshing) {
-          console.log('[恢复进度] 检测到正在进行的刷新任务，恢复进度显示', progress);
-          setCacheRefreshing(true);
-          setRefreshProgress(progress);
-          
-          // 启动进度轮询（如果还没有启动）
-          if (!progressIntervalRef.current) {
-            console.log('[恢复进度] 启动进度轮询');
-            const interval = setInterval(async () => {
-              try {
-                const res = await fetch("/api/cache/cron", {
-                  method: "GET",
-                  cache: "no-store",
-                  headers: {
-                    'Cache-Control': 'no-cache',
-                  }
-                });
-                if (res.ok) {
-                  const prog = await res.json();
-                  console.log('[进度轮询]', prog);
-                  
-                  // 如果刷新完成，立即停止轮询并清理状态
-                  if (!prog.isRefreshing) {
-                    console.log('[进度轮询] 检测到任务已完成，停止轮询');
-                    clearInterval(interval);
-                    progressIntervalRef.current = null;
-                    
-                    // 延迟清理状态，让用户看到完成状态
-                    setTimeout(() => {
-                      setCacheRefreshing(false);
-                      setRefreshProgress(null);
-                      console.log('[进度轮询] 延迟清理完成');
-                    }, 1000);
-                  } else {
-                    // 还在进行中，更新进度
-                    setRefreshProgress(prog);
-                  }
-                }
-              } catch (error) {
-                console.error("获取进度失败:", error);
-              }
-            }, 800);
-            progressIntervalRef.current = interval;
-          }
-        } else {
-          // 没有正在进行的任务，确保清理所有状态
-          console.log('[恢复进度] 没有正在进行的刷新任务，清理所有状态');
-          // 无论当前状态如何，都清理
-          setCacheRefreshing(false);
-          setRefreshProgress(null);
-          if (progressIntervalRef.current) {
-            clearInterval(progressIntervalRef.current);
-            progressIntervalRef.current = null;
-          }
-        }
-      }
-    } catch (error) {
-      console.error("检查进度失败:", error);
-    }
-  };
 
   // 检查认证状态
   const checkAuth = async () => {
@@ -248,42 +167,6 @@ export default function AdminHomeworkPage() {
       fetchHomeworks();
     }
   }, [selectedStatus, isAuthenticated]);
-
-  // 检查并恢复刷新进度（页面加载时）
-  useEffect(() => {
-    if (isAuthenticated) {
-      checkAndRestoreProgress();
-    }
-  }, [isAuthenticated]);
-
-  // 监听页面可见性变化
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        console.log('[页面可见性] 页面重新可见，检查刷新状态');
-        checkAndRestoreProgress();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [isAuthenticated]);
-
-  // 清理定时器（组件卸载时）
-  useEffect(() => {
-    return () => {
-      if (progressIntervalRef.current) {
-        console.log('[清理] 组件卸载，清理进度轮询');
-        clearInterval(progressIntervalRef.current);
-        progressIntervalRef.current = null;
-      }
-    };
-  }, []);
 
   const handleStatusChange = async (homeworkId: string, newStatus: string) => {
     // 如果是拒绝操作，先打开拒绝原因弹窗
@@ -433,153 +316,39 @@ export default function AdminHomeworkPage() {
 
   // 刷新游戏数据缓存
   const handleRefreshCache = async () => {
-    if (!confirm("确定要刷新游戏数据缓存吗？\n\n这会从GitHub重新下载所有数据（不会先清除旧缓存），可能需要1-2分钟。")) {
+    if (!confirm("确定要强制刷新游戏数据缓存吗？\n\n这会清除旧缓存并从GitHub重新下载所有数据，可能需要1-2分钟。")) {
       return;
     }
 
-    // 清理之前的轮询（如果有）
-    if (progressIntervalRef.current) {
-      console.log('[主流程] 清理旧的轮询');
-      clearInterval(progressIntervalRef.current);
-      progressIntervalRef.current = null;
-    }
-
     setCacheRefreshing(true);
-    setRefreshProgress({ current: 0, total: 2, currentSource: '准备开始...', logs: ['⏳ 正在启动刷新任务...'] });
-    
-    // 启动进度轮询
-    console.log('[主流程] 启动新的进度轮询');
-    const interval = setInterval(async () => {
-      try {
-        const progressRes = await fetch("/api/cache/cron", {
-          method: "GET",
-          cache: "no-store",
-          headers: {
-            'Cache-Control': 'no-cache',
-          }
-        });
-        if (progressRes.ok) {
-          const progress = await progressRes.json();
-          console.log('[主流程轮询]', progress);
-          // 只更新进度，不做任何清理（清理由 POST 响应处理）
-          if (progress.isRefreshing) {
-            setRefreshProgress(progress);
-          }
-        }
-      } catch (error) {
-        console.error("获取进度失败:", error);
-      }
-    }, 800); // 每0.8秒更新一次进度
-    
-    progressIntervalRef.current = interval;
-    console.log('[主流程] 定时器已设置，ID:', interval);
 
     try {
-      // 使用 AbortController 设置超时（5分钟）
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000);
-
       const response = await fetch("/api/cache/cron", {
         method: "POST",
-        signal: controller.signal,
       });
 
-      clearTimeout(timeoutId);
-      console.log('[POST 请求] 收到响应，准备处理结果');
-
       if (response.status === 403) {
-        // 立即停止轮询和清理状态
-        if (progressIntervalRef.current) {
-          console.log('[POST 请求] 403 错误，清理轮询，ID:', progressIntervalRef.current);
-          clearInterval(progressIntervalRef.current);
-          progressIntervalRef.current = null;
-        }
         setCacheRefreshing(false);
-        setRefreshProgress(null);
         alert("❌ 权限不足，需要管理员权限");
         return;
       }
 
       if (response.status === 409) {
-        // 立即停止轮询和清理状态
-        if (progressIntervalRef.current) {
-          console.log('[POST 请求] 409 冲突，清理轮询，ID:', progressIntervalRef.current);
-          clearInterval(progressIntervalRef.current);
-          progressIntervalRef.current = null;
-        }
         setCacheRefreshing(false);
-        setRefreshProgress(null);
         const result = await response.json();
         alert("⚠️ " + (result.error || '缓存刷新正在进行中'));
         return;
       }
 
       const result = await response.json();
-      console.log('[POST 请求] 刷新完成，结果:', result);
-      
-      // 立即停止轮询，防止继续查询
-      if (progressIntervalRef.current) {
-        console.log('[POST 请求] 停止进度轮询，ID:', progressIntervalRef.current);
-        clearInterval(progressIntervalRef.current);
-        progressIntervalRef.current = null;
-        console.log('[POST 请求] 轮询已清理，确认:', progressIntervalRef.current);
-      } else {
-        console.log('[POST 请求] 警告：没有找到活跃的轮询定时器');
-      }
-      
-      // 显示最终完成状态（带日志）
-      if (result.logs && result.logs.length > 0) {
-        setRefreshProgress({
-          current: 2,
-          total: 2,
-          currentSource: '完成',
-          logs: result.logs
-        });
-      }
-      
-      // 等待一小段时间显示完成状态，然后清理
-      await new Promise(resolve => setTimeout(resolve, 1200));
-      
-      // 清理状态
       setCacheRefreshing(false);
-      setRefreshProgress(null);
-      console.log('[刷新完成] 清理所有状态');
 
-      // 显示详细结果
-      const detailInfo = [
-        result.message,
-        `⏱️ 耗时: ${result.durationSeconds}秒 (${result.duration})`,
-        result.successes?.length > 0 ? `✅ 成功: ${result.successes.join(', ')}` : '',
-        result.failures?.length > 0 ? `❌ 失败: ${result.failures.join(', ')}` : '',
-        result.errors?.length > 0 ? `\n错误详情:\n${result.errors.join('\n')}` : '',
-      ].filter(Boolean).join('\n');
-
-      if (result.success) {
-        alert(`✅ 刷新成功！\n\n${detailInfo}`);
-      } else if (result.partialSuccess) {
-        alert(`⚠️ 部分成功\n\n${detailInfo}`);
-      } else {
-        alert(`❌ 刷新失败\n\n${detailInfo}`);
-      }
+      // 显示结果
+      alert(result.message || '刷新完成');
     } catch (error: any) {
-      // 清理轮询
-      if (progressIntervalRef.current) {
-        console.log('[异常处理] 清理轮询，ID:', progressIntervalRef.current);
-        clearInterval(progressIntervalRef.current);
-        progressIntervalRef.current = null;
-      }
-      
       console.error("刷新缓存失败:", error);
-      
-      // 清理状态
       setCacheRefreshing(false);
-      setRefreshProgress(null);
-      
-      if (error.name === 'AbortError') {
-        alert("❌ 刷新超时（超过5分钟），请检查网络连接或联系管理员");
-      } else {
-        alert(`❌ 刷新缓存失败\n\n错误信息: ${error.message || '网络错误'}`);
-      }
+      alert(`❌ 刷新缓存失败\n\n错误信息: ${error.message || '网络错误'}`);
     }
   };
 
@@ -961,61 +730,6 @@ export default function AdminHomeworkPage() {
             </button>
           </div>
 
-          {/* 刷新进度显示 */}
-          {refreshProgress && (
-            <div className="mb-6 bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-sm rounded-lg p-5 border-2 border-blue-400/50 shadow-lg">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  <span className="text-white font-bold text-lg">
-                    📦 {refreshProgress.currentSource}
-                  </span>
-                </div>
-                <span className="text-white bg-blue-600 px-3 py-1 rounded-full text-sm font-bold">
-                  {refreshProgress.current}/{refreshProgress.total}
-                </span>
-              </div>
-              
-              {/* 进度条 */}
-              <div className="w-full bg-white/20 rounded-full h-3 mb-4 overflow-hidden shadow-inner">
-                <div
-                  className="bg-gradient-to-r from-blue-500 to-purple-500 h-full transition-all duration-500 ease-out shadow-lg"
-                  style={{ 
-                    // 至少显示 5% 以提供视觉反馈
-                    width: `${Math.max(5, (refreshProgress.current / refreshProgress.total) * 100)}%`,
-                  }}
-                >
-                  <div className="w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"></div>
-                </div>
-              </div>
-
-              {/* 百分比显示 */}
-              <div className="text-center mb-3">
-                <span className="text-white font-bold text-2xl">
-                  {refreshProgress.current === 0 
-                    ? "准备中..." 
-                    : `${Math.round((refreshProgress.current / refreshProgress.total) * 100)}%`
-                  }
-                </span>
-              </div>
-
-              {/* 日志信息 */}
-              {refreshProgress.logs.length > 0 && (
-                <div className="mt-3 bg-black/40 rounded-lg p-4 max-h-40 overflow-y-auto border border-white/10">
-                  <div className="text-xs text-white/60 mb-2 font-bold">实时日志：</div>
-                  {refreshProgress.logs.map((log, idx) => (
-                    <div 
-                      key={idx} 
-                      className="text-sm text-white/90 font-mono mb-1.5 leading-relaxed animate-fadeIn"
-                    >
-                      {log}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-          
           {/* 作业管理的状态筛选 */}
           {activeTab === "homework" && (
             <div className="flex space-x-4">
