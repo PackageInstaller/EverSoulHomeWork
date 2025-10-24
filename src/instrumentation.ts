@@ -45,8 +45,6 @@ export async function register() {
     // ========================================
     try {
       console.log('\n🎮 [服务器启动] 开始预加载游戏数据...');
-      console.log('💡 [服务器启动] 缓存存储在内存中，每次重启都需要重新加载');
-      
       const startTime = Date.now();
       let successCount = 0;
       let failureCount = 0;

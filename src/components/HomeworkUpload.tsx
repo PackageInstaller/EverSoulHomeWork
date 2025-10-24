@@ -65,8 +65,8 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
           setError('只允许上传图片文件');
           return;
         }
-        if (file.size > 3 * 1024 * 1024) {
-          setError(`图片 ${file.name} 超过3MB限制`);
+        if (file.size > 5 * 1024 * 1024) {
+          setError(`图片 ${file.name} 超过5MB限制`);
           return;
         }
       }
@@ -260,7 +260,7 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
                   作业截图 <span className="text-red-400">*</span>
                 </label>
                 <div className="text-white/70 text-xs mb-2">
-                  需要上传 {minImages} 到 {maxImages} 张图片，每张不超过3MB
+                  需要上传 {minImages} 到 {maxImages} 张图片，每张不超过5MB
                   <span className="text-blue-300 ml-2">（建议包含：胜利截图 + 站位截图）</span>
                 </div>
                 <input
