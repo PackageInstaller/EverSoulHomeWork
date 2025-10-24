@@ -189,7 +189,7 @@ export default function HomePage() {
             </div>
             <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
               <a
-                href="/leaderboard"
+                href="/monthrank"
                 className="bg-yellow-500 hover:bg-yellow-600 text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm transition-colors font-semibold whitespace-nowrap"
               >
                 <span className="hidden sm:inline">🏆 月度奖励榜</span>

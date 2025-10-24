@@ -2,11 +2,11 @@ import PointsLeaderboard from '@/components/PointsLeaderboard'
 import Link from 'next/link'
 
 export const metadata = {
-  title: '积分排行榜 - EverSoul 作业系统',
-  description: '查看玩家积分排行榜和月度奖池信息',
+  title: '月度积分榜 - EverSoul 作业系统',
+  description: '查看玩家月度积分排行榜和奖池信息',
 }
 
-export default function LeaderboardPage() {
+export default function MonthRankPage() {
   return (
     <main 
       className="min-h-screen relative"
@@ -26,7 +26,7 @@ export default function LeaderboardPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-3xl font-bold text-white">
-              积分排行榜
+              月度积分榜
             </h1>
             <Link
               href="/"

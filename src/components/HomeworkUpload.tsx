@@ -25,7 +25,7 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
   const [retryStatus, setRetryStatus] = useState('');
 
   const minImages = teamCount;
-  const maxImages = teamCount * 2;
+  const maxImages = (teamCount * 2) + 5;
 
   // 当弹窗打开时，检查登录状态并自动填充昵称
   useEffect(() => {
