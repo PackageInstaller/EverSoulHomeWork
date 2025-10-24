@@ -72,13 +72,20 @@ export default function PointsSettlement() {
 
   const fetchAutoSettleConfig = async () => {
     try {
-      const response = await fetch('/api/admin/auto-settle/config');
+      const response = await fetch('/api/admin/auto-settle/config', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+        }
+      });
       const data = await response.json();
+      console.log('📖 [前端] 获取自动结算配置响应:', data);
       if (data.success) {
+        console.log('📖 [前端] 设置 autoSettleHour 为:', data.config.autoSettleHour);
         setAutoSettleHour(data.config.autoSettleHour);
       }
     } catch (error) {
-      console.error('获取自动结算配置失败:', error);
+      console.error('❌ [前端] 获取自动结算配置失败:', error);
     }
   };
 
@@ -185,6 +192,7 @@ export default function PointsSettlement() {
       return;
     }
 
+    console.log('💾 [前端] 开始保存自动结算配置:', autoSettleHour);
     setAutoSettleLoading(true);
 
     try {
@@ -199,16 +207,20 @@ export default function PointsSettlement() {
       });
 
       const data = await response.json();
+      console.log('💾 [前端] 保存自动结算配置响应:', data);
 
       if (data.success) {
-        alert(`✅ 自动结算配置已更新\n\n系统将在每月最后一天的 ${autoSettleHour}:00 自动执行结算`);
-        fetchAutoSettleConfig();
+        alert(`✅ 自动结算配置已更新\n\n系统将在每月最后一天的 ${autoSettleHour}:00 自动执行结算\n\n数据库保存值: ${data.saved?.value}`);
+        // 延迟一下再重新获取，确保数据库写入完成
+        setTimeout(() => {
+          fetchAutoSettleConfig();
+        }, 100);
       } else {
         alert(`❌ 更新失败\n\n${data.message || '未知错误'}`);
       }
     } catch (error) {
       alert('❌ 更新自动结算配置失败');
-      console.error('更新自动结算配置失败:', error);
+      console.error('❌ [前端] 更新自动结算配置失败:', error);
     } finally {
       setAutoSettleLoading(false);
     }
