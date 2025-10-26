@@ -25,7 +25,7 @@ export function getAreaNumber(stageId: string): number {
  * @returns 是否已有作业
  */
 export async function hasApprovedHomework(
-  stageId: string, 
+  stageId: string,
   excludeHomeworkId?: string
 ): Promise<boolean> {
   const count = await prisma.userHomework.count({
@@ -264,7 +264,7 @@ export async function getOrCreateMonthlyPrizePool(yearMonth: string) {
   if (!pool) {
     // 获取基础奖池配置
     const basePool = await getBasePoolAmount()
-    
+
     // 获取上个月的奖池，检查是否有累加
     const prevYearMonth = getPreviousYearMonth(yearMonth)
     const prevPool = await prisma.monthlyPrizePool.findUnique({
@@ -285,10 +285,9 @@ export async function getOrCreateMonthlyPrizePool(yearMonth: string) {
   } else if (!pool.isSettled) {
     // 如果奖池存在且未结算，检查是否需要更新基础奖池金额
     const currentBasePool = await getBasePoolAmount()
-    
+
     if (pool.basePool !== currentBasePool) {
-      console.log(`📊 [月度奖池] ${yearMonth} 基础奖池从 ¥${pool.basePool} 更新为 ¥${currentBasePool}`)
-      
+
       // 更新基础奖池和总奖池
       pool = await prisma.monthlyPrizePool.update({
         where: { yearMonth },
@@ -319,7 +318,7 @@ function getPreviousYearMonth(yearMonth: string): string {
 export async function settleMonthlyPrizePool(yearMonth: string) {
   // 获取奖池
   const pool = await getOrCreateMonthlyPrizePool(yearMonth)
-  
+
   if (pool.isSettled) {
     throw new Error('该月份已经结算过了')
   }

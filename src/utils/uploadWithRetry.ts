@@ -35,15 +35,15 @@ export async function uploadWithRetry(options: UploadOptions): Promise<UploadRes
   } = options;
 
   let lastError: string = '';
-  
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(`上传尝试 ${attempt}/${maxRetries}...`);
 
       const result = await uploadWithTimeout(url, data, timeout, onProgress);
-      
+
       console.log(`✅ 上传成功 (第${attempt}次尝试)`);
-      
+
       return {
         success: true,
         data: result,
@@ -69,7 +69,7 @@ export async function uploadWithRetry(options: UploadOptions): Promise<UploadRes
 
   // 所有尝试都失败
   console.error(`❌ 上传彻底失败，已尝试 ${maxRetries} 次`);
-  
+
   return {
     success: false,
     error: lastError,
@@ -109,7 +109,7 @@ function uploadWithTimeout(
     // 监听完成
     xhr.addEventListener('load', () => {
       clearTimeout(timeoutId);
-      
+
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
           const result = JSON.parse(xhr.responseText);
@@ -172,7 +172,7 @@ export async function waitForOnline(maxWaitTime: number = 30000): Promise<boolea
 
   return new Promise((resolve) => {
     const startTime = Date.now();
-    
+
     const checkInterval = setInterval(() => {
       if (isOnline()) {
         clearInterval(checkInterval);
@@ -195,7 +195,7 @@ export async function smartUpload(options: UploadOptions): Promise<UploadResult>
   if (!isOnline()) {
     console.log('⚠️ 网络离线，等待恢复...');
     const online = await waitForOnline();
-    
+
     if (!online) {
       return {
         success: false,

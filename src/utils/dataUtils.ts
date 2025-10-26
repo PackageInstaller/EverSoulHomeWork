@@ -61,13 +61,13 @@ export function getCacheStats(): CacheStats {
   const currentCache = global.__appCache?.dataCache || new Map();
   const currentHits = global.__appCache?.cacheHitCount || 0;
   const currentMisses = global.__appCache?.cacheMissCount || 0;
-  
+
   const entries = Array.from(currentCache.entries()).map(([key, data]) => {
     const [dataSource, fileName] = key.split('-');
     const itemCount = Array.isArray(data) ? data.length : (typeof data === 'object' ? Object.keys(data).length : 1);
     const dataStr = JSON.stringify(data);
     const memorySize = `${Math.round(dataStr.length / 1024)}KB`;
-    
+
     return {
       key,
       dataSource,
@@ -99,15 +99,15 @@ export function getCacheStats(): CacheStats {
 export function clearCache(): void {
   const currentCache = global.__appCache?.dataCache || new Map();
   const promiseCache = global.__appCache?.loadGameDataPromises || new Map();
-  
+
   currentCache.clear();
   promiseCache.clear();
-  
+
   if (global.__appCache) {
     global.__appCache.cacheHitCount = 0;
     global.__appCache.cacheMissCount = 0;
   }
-  
+
   debugLog('缓存已清除（包括数据缓存和 Promise 缓存）');
 }
 
@@ -116,7 +116,7 @@ export function clearCache(): void {
  */
 export async function preloadGameData(dataSource: DataSource): Promise<void> {
   debugLog(`开始预加载 ${dataSource} 数据源的所有数据`);
-  
+
   try {
     await loadGameData(dataSource);
     debugLog(`${dataSource} 数据源预加载完成`);
@@ -129,7 +129,7 @@ export async function preloadGameData(dataSource: DataSource): Promise<void> {
 // 阵型类型映射（参考 Python 配置）
 const FORMATION_TYPE_MAPPING: { [key: number]: string } = {
   1: "基本阵型",
-  2: "狙击型", 
+  2: "狙击型",
   3: "防守阵型",
   4: "突击型"
 };
@@ -144,9 +144,9 @@ function debugLog(message: string, data?: any) {
  */
 export async function fetchJsonFromGitHub(dataSource: DataSource, fileName: string): Promise<any> {
   const cacheKey = `${dataSource}-${fileName}`;
-  
+
   debugLog(`尝试获取数据: ${fileName} (数据源: ${dataSource})`);
-  
+
   if (dataCache.has(cacheKey)) {
     global.__appCache!.cacheHitCount++;
     cacheHitCount = global.__appCache!.cacheHitCount;
@@ -165,7 +165,7 @@ export async function fetchJsonFromGitHub(dataSource: DataSource, fileName: stri
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       debugLog(`发起请求 (尝试 ${attempt}/${maxRetries}): ${url}`);
-      
+
       const response = await fetch(url, {
         headers: {
           'Accept': 'application/json',
@@ -174,21 +174,21 @@ export async function fetchJsonFromGitHub(dataSource: DataSource, fileName: stri
         cache: 'no-store',  // 禁用Next.js内置缓存（大文件会超过2MB限制）
         signal: AbortSignal.timeout(30000)  // 30秒超时
       });
-      
+
       debugLog(`响应状态: ${response.status} ${response.statusText}`);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText} - URL: ${url}`);
       }
-      
+
       const text = await response.text();
       debugLog(`响应文本长度: ${text.length} 字符`);
-      
+
       let data;
       try {
         data = JSON.parse(text);
         debugLog(`JSON 解析成功，数据类型: ${Array.isArray(data) ? `数组 (${data.length} 项)` : typeof data}`);
-        
+
         // 检查数据结构
         if (data && typeof data === 'object' && data.json && Array.isArray(data.json)) {
           debugLog(`检测到包装格式，提取 json 数组: ${data.json.length} 项`);
@@ -198,32 +198,32 @@ export async function fetchJsonFromGitHub(dataSource: DataSource, fileName: stri
         } else {
           debugLog(`其他数据格式`, { keys: Object.keys(data || {}), type: typeof data });
         }
-        
+
       } catch (parseError) {
         debugLog(`JSON 解析失败: ${parseError}`, text.substring(0, 200));
         throw new Error(`JSON 解析失败: ${parseError}`);
       }
-      
+
       dataCache.set(cacheKey, data);
       debugLog(`数据已缓存: ${fileName}, 最终数据类型: ${Array.isArray(data) ? `数组 (${data.length} 项)` : typeof data}`);
       return data;
 
     } catch (error: any) {
       lastError = error;
-      
+
       // 判断是否应该重试
-      const isNetworkError = error.name === 'TypeError' || 
-                            error.code === 'ECONNRESET' || 
-                            error.code === 'ETIMEDOUT' ||
-                            error.name === 'AbortError';
-      
+      const isNetworkError = error.name === 'TypeError' ||
+        error.code === 'ECONNRESET' ||
+        error.code === 'ETIMEDOUT' ||
+        error.name === 'AbortError';
+
       if (isNetworkError && attempt < maxRetries) {
         const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // 指数退避，最大5秒
         console.warn(`⚠️ 网络错误，${delay}ms 后重试 (${attempt}/${maxRetries}): ${fileName}`, error.message);
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }
-      
+
       // 不重试或已达最大重试次数
       break;
     }
@@ -240,20 +240,20 @@ export async function fetchJsonFromGitHub(dataSource: DataSource, fileName: stri
  */
 export async function loadGameData(dataSource: DataSource): Promise<GameData> {
   const cacheKey = `gamedata-${dataSource}`;
-  
+
   // 检查是否有正在进行的加载 Promise
   if (loadGameDataPromises.has(cacheKey)) {
     debugLog(`检测到正在进行的加载请求，等待完成: ${dataSource}`);
     return loadGameDataPromises.get(cacheKey)!;
   }
-  
+
   debugLog(`开始加载完整游戏数据，数据源: ${dataSource}`);
-  
+
   // 创建加载 Promise 并缓存
   const loadPromise = (async () => {
     const dataFiles = [
       'Stage',
-      'StageBattle', 
+      'StageBattle',
       'StringSystem',
       'StringItem',
       'StringCharacter',
@@ -274,9 +274,9 @@ export async function loadGameData(dataSource: DataSource): Promise<GameData> {
     try {
       const promises = dataFiles.map(file => fetchJsonFromGitHub(dataSource, file));
       const results = await Promise.all(promises);
-      
+
       debugLog(`所有数据文件加载完成`);
-      
+
       // 验证每个结果
       results.forEach((result, index) => {
         const fileName = dataFiles[index];
@@ -304,12 +304,12 @@ export async function loadGameData(dataSource: DataSource): Promise<GameData> {
         hero_grade: { json: results[13] },
         hero_level_grade: { json: results[14] }
       };
-      
+
       debugLog(`游戏数据结构构建完成`);
-      
+
       // 加载完成后，从 Promise 缓存中移除（但数据仍在 dataCache 中）
       loadGameDataPromises.delete(cacheKey);
-      
+
       return gameData;
     } catch (error) {
       debugLog(`加载游戏数据失败`, error);
@@ -318,10 +318,10 @@ export async function loadGameData(dataSource: DataSource): Promise<GameData> {
       throw error;
     }
   })();
-  
+
   // 缓存这个 Promise
   loadGameDataPromises.set(cacheKey, loadPromise);
-  
+
   return loadPromise;
 }
 
@@ -330,9 +330,9 @@ export async function loadGameData(dataSource: DataSource): Promise<GameData> {
  */
 export function getStringByType(data: GameData, stringType: string, no: number): StringData {
   const defaultString = { no, zh_tw: "", zh_cn: "", kr: "", en: "", ja: "" };
-  
+
   const jsonKey = `string_${stringType}`;
-  
+
   // 检查数据是否存在
   const gameDataKey = jsonKey as keyof GameData;
   if (!data[gameDataKey]) {
@@ -342,12 +342,12 @@ export function getStringByType(data: GameData, stringType: string, no: number):
 
   const stringData = (data[gameDataKey] as any).json;
   const result = stringData.find((item: any) => item.no === no);
-  
+
   if (!result) {
     debugLog(`未找到字符串数据: type=${stringType}, no=${no}`);
     return defaultString;
   }
-  
+
   debugLog(`找到字符串数据: type=${stringType}, no=${no}, zh_tw=${result.zh_tw}`);
   return {
     no: result.no,
@@ -364,13 +364,13 @@ export function getStringByType(data: GameData, stringType: string, no: number):
  */
 export function getStringItem(data: GameData, itemNo: number): StringData {
   debugLog(`查找物品: ${itemNo}`);
-  
+
   // 在 Item.json 中查找物品
   for (const item of data.item.json) {
     if (item.no === itemNo) {
       const nameSno = item.name_sno;
       debugLog(`找到物品 ${itemNo}，name_sno: ${nameSno}`);
-      
+
       if (nameSno) {
         // 在 StringItem.json 中查找物品名称
         for (const string of data.string_item.json) {
@@ -389,7 +389,7 @@ export function getStringItem(data: GameData, itemNo: number): StringData {
       }
     }
   }
-  
+
   debugLog(`未找到物品: ${itemNo}`);
   return { no: itemNo, zh_tw: "", zh_cn: "", kr: "", en: "", ja: "" };
 }
@@ -399,9 +399,9 @@ export function getStringItem(data: GameData, itemNo: number): StringData {
  */
 export function getStringCharacter(data: GameData, heroNo: number, special: boolean = false): StringData {
   let nameSno = heroNo;
-  
+
   debugLog(`查找角色: ${heroNo}, special: ${special}`);
-  
+
   if (special) {
     // 在角色模式下，先找到 hero_no 对应的 name_sno
     for (const hero of data.hero.json) {
@@ -412,7 +412,7 @@ export function getStringCharacter(data: GameData, heroNo: number, special: bool
       }
     }
   }
-  
+
   // 根据 name_sno 查找对应的文本
   for (const char of data.string_character.json) {
     if (char.no === nameSno) {
@@ -427,7 +427,7 @@ export function getStringCharacter(data: GameData, heroNo: number, special: bool
       };
     }
   }
-  
+
   debugLog(`未找到角色: ${heroNo}`);
   return { no: heroNo, zh_tw: "", zh_cn: "", kr: "", en: "", ja: "" };
 }
@@ -464,7 +464,7 @@ export function getBaseBattlePower(data: GameData, entityType: number, level: nu
 
     for (const kv of data.key_values.json) {
       const keyName = kv.key_name || "";
-      
+
       if (keyName === `${typePrefix}_base`) {
         try {
           baseValue = parseFloat(kv.values_data || "0");
@@ -532,9 +532,9 @@ export function getHeroLevelGradeValue(data: GameData, level: number): number {
       }
     }
 
-    const maxLevelData = levelGrades.reduce((max, current) => 
+    const maxLevelData = levelGrades.reduce((max, current) =>
       (current.level || 0) > (max.level || 0) ? current : max, levelGrades[0]);
-    
+
     if (level >= (maxLevelData.level || 0)) {
       levelGradeValue = maxLevelData.value || 1.0;
     }
@@ -551,9 +551,9 @@ export function getHeroLevelGradeValue(data: GameData, level: number): number {
  * 计算战斗力（完全按照Python实现）
  */
 export function calculateBattlePower(
-  data: GameData, 
-  entityType: number, 
-  level: number, 
+  data: GameData,
+  entityType: number,
+  level: number,
   grade: number,
   equipmentPower: number = 0,
   equipmentPowerPer: number = 0.0,
@@ -565,7 +565,7 @@ export function calculateBattlePower(
     const basePower = getBaseBattlePower(data, entityType, level);
     const gradeValue = getHeroGradeValue(data, grade);
     const levelGradeValue = getHeroLevelGradeValue(data, level);
-    
+
     const totalPower = (
       basePower +
       (levelGradeValue - 1.0) * basePower +
@@ -580,7 +580,7 @@ export function calculateBattlePower(
     if (totalPower === Infinity) {
       return 0;
     }
-    
+
     const result = Math.floor(totalPower);
     debugLog(`总战力: base=${basePower}, gradeValue=${gradeValue}, levelGradeValue=${levelGradeValue} => ${result}`);
     return result;
@@ -595,7 +595,7 @@ export function calculateBattlePower(
  */
 export function getDropItemRate(data: GameData, groupNo?: number): DropItemInfo[] {
   debugLog(`查找掉落组: ${groupNo}`);
-  
+
   if (groupNo == null) {
     return [];
   }
@@ -608,9 +608,9 @@ export function getDropItemRate(data: GameData, groupNo?: number): DropItemInfo[
       const itemNo = dropGroup.item_no;
       const value = dropGroup.amount || 0;
       const dropRate = dropGroup.drop_rate || 0;  // 修正：使用 drop_rate 字段
-      
+
       debugLog(`找到掉落数据: item=${itemNo}, amount=${value}, drop_rate=${dropRate}`);
-      
+
       if (itemNo) {
         const itemName = getStringItem(data, itemNo);
         // 转换掉落率 (1000 = 1%)
@@ -628,23 +628,23 @@ export function getDropItemRate(data: GameData, groupNo?: number): DropItemInfo[
 
   // 名称作为键，保存概率最高的物品
   const nameTobestItem: { [key: string]: DropItemInfo } = {};
-  
+
   for (const item of dropItems) {
     const itemName = item.item_name.zh_tw;
     const itemRate = item.rate;
-    
+
     // 如果名称还没有记录，或者当前概率更高，则更新
     if (!(itemName in nameTobestItem) || itemRate > nameTobestItem[itemName].rate) {
       nameTobestItem[itemName] = item;
     }
   }
-  
+
   // 将字典值转换为列表
   const uniqueItems = Object.values(nameTobestItem);
-  
+
   // 按掉落率从高到低排序
   const sortedItems = uniqueItems.sort((a, b) => b.rate - a.rate);
-  
+
   debugLog(`去重排序后: ${sortedItems.length} 个物品`);
   return sortedItems;
 }
@@ -654,22 +654,22 @@ export function getDropItemRate(data: GameData, groupNo?: number): DropItemInfo[
  */
 export function getCashPack(data: GameData, type: string, stageData: Stage): string[] {
   debugLog(`查找现金商店包: type=${type}, stage=${stageData.no}`);
-  
+
   const messages: string[] = [];
-  
+
   // 礼包类型映射
   const packageTypeMapping: { [key: string]: string } = {
     'barrier': '通关礼包',
-    'stage': '主线礼包', 
+    'stage': '主线礼包',
     'tower': '起源之塔礼包',
     'grade_eternal': '角色升阶礼包'
   };
-  
+
   // 获取礼包类型显示名称
   const packageTypeName = packageTypeMapping[type] || '特殊礼包';
-  
+
   // 获取符合条件的商店物品
-  const shopItems = data.cash_shop_item.json.filter(item => 
+  const shopItems = data.cash_shop_item.json.filter(item =>
     item.type === type && item.type_value === String(stageData.no)
   );
 
@@ -679,19 +679,19 @@ export function getCashPack(data: GameData, type: string, stageData: Stage): str
     shopItems.forEach(shopItem => {
       const packageInfo: string[] = [];
       packageInfo.push(`▼【${packageTypeName}】`);
-      
-             // 获取礼包名称和描述
-       const nameSno = shopItem.name_sno;
-       const packageName = nameSno ? getStringByType(data, "cashshop", nameSno)?.zh_tw || "？？？" : "？？？";
-       
-       const infoSno = shopItem.item_info_sno;
-       const packageDesc = infoSno ? getStringByType(data, "cashshop", infoSno)?.zh_tw || "？？？" : "？？？";
-       
-       const descSno = shopItem.desc_sno;
-       let limitDesc = descSno ? getStringByType(data, "ui", descSno)?.zh_tw || "？？？" : "？？？";
+
+      // 获取礼包名称和描述
+      const nameSno = shopItem.name_sno;
+      const packageName = nameSno ? getStringByType(data, "cashshop", nameSno)?.zh_tw || "？？？" : "？？？";
+
+      const infoSno = shopItem.item_info_sno;
+      const packageDesc = infoSno ? getStringByType(data, "cashshop", infoSno)?.zh_tw || "？？？" : "？？？";
+
+      const descSno = shopItem.desc_sno;
+      let limitDesc = descSno ? getStringByType(data, "ui", descSno)?.zh_tw || "？？？" : "？？？";
       // 简化format处理，直接替换占位符
       limitDesc = limitDesc.replace('{0}', String(shopItem.limit_buy || 0));
-      
+
       // 基本信息部分
       const basicInfo: string[] = [`礼包名称：${packageName}`];
       if (packageDesc && packageDesc !== "？？？") {
@@ -700,7 +700,7 @@ export function getCashPack(data: GameData, type: string, stageData: Stage): str
       basicInfo.push(limitDesc);
       basicInfo.push(`剩余时间：${shopItem.limit_hour || 0}小时`);
       packageInfo.push(basicInfo.join('\n'));
-      
+
       // 礼包内容部分
       const contentInfo: string[] = [];
       if (shopItem.item_infos) {
@@ -717,7 +717,7 @@ export function getCashPack(data: GameData, type: string, stageData: Stage): str
               }
             }
           }
-          
+
           if (items.length > 0) {
             contentInfo.push('\n礼包内容：');
             items.forEach(([itemNo, value]) => {
@@ -732,7 +732,7 @@ export function getCashPack(data: GameData, type: string, stageData: Stage): str
       if (contentInfo.length > 0) {
         packageInfo.push(contentInfo.join('\n'));
       }
-      
+
       // 价格信息部分
       const priceInfo: string[] = ['\n价格信息：'];
       if (shopItem.price_krw) {
@@ -742,10 +742,10 @@ export function getCashPack(data: GameData, type: string, stageData: Stage): str
         priceInfo.push(`・ ${shopItem.price_other}日元`);
       }
       packageInfo.push(priceInfo.join('\n'));
-      
+
       // 添加分隔线
       packageInfo.push('-'.repeat(25));
-      
+
       // 将整个礼包信息作为一条消息添加到列表中
       messages.push(packageInfo.join('\n'));
     });
@@ -759,7 +759,7 @@ export function getCashPack(data: GameData, type: string, stageData: Stage): str
  */
 export function processBattleTeams(data: GameData, stageNo: number): BattleTeamInfo[] {
   debugLog(`处理战斗队伍: stage=${stageNo}`);
-  
+
   const battleTeams = data.stage_battle.json
     .filter(battle => battle.no === stageNo)
     .sort((a, b) => (a.team_no || 0) - (b.team_no || 0));
@@ -779,7 +779,7 @@ export function processBattleTeams(data: GameData, stageNo: number): BattleTeamI
 
       if (heroNo) {
         heroPositions.push(i);
-        
+
         if (!firstValidHero) {
           firstValidHero = {
             position: i,
@@ -828,18 +828,18 @@ export function processBattleTeams(data: GameData, stageNo: number): BattleTeamI
  * 获取关卡详细信息
  */
 export async function getStageDetails(
-  dataSource: DataSource, 
-  areaNo: number, 
+  dataSource: DataSource,
+  areaNo: number,
   stageNo: number
 ): Promise<StageDetails | null> {
   try {
     debugLog(`获取关卡详情: ${areaNo}-${stageNo}, 数据源: ${dataSource}`);
     const data = await loadGameData(dataSource);
-    
+
     // 查找关卡 - 按照 Python 代码的逻辑
     let mainStage = null;
     let dropGroupNo = null;
-    
+
     for (const stage of data.stage.json) {
       if (stage.area_no === areaNo && stage.stage_no === stageNo) {
         if ("area_no" in stage) { // 确保是主线关卡
@@ -883,7 +883,7 @@ export async function getStageDetails(
     for (let i = 1; i <= 9; i++) {
       const itemNo = (mainStage as any)[`item_no_${i}`];
       const amount = (mainStage as any)[`amount_${i}`];
-      
+
       if (itemNo) {
         const itemName = getStringItem(data, itemNo);
         fixedItems.push({
@@ -931,17 +931,17 @@ export async function getStageDetails(
 export async function getStageList(dataSource: DataSource): Promise<Stage[]> {
   try {
     debugLog(`获取关卡列表，数据源: ${dataSource}`);
-    
+
     const data = await loadGameData(dataSource);
-    
+
     debugLog(`原始关卡数据数量: ${data.stage.json.length}`);
-    
+
     // 检查数据结构
     if (data.stage.json.length > 0) {
       const firstStage = data.stage.json[0];
       debugLog(`第一个关卡数据示例`, firstStage);
     }
-    
+
     // 严格按照 Python 逻辑过滤关卡 - 确保是主线关卡
     const filteredStages = data.stage.json.filter(stage => {
       // 检查是否有必要的主线关卡字段
@@ -949,25 +949,25 @@ export async function getStageList(dataSource: DataSource): Promise<Stage[]> {
       const hasStageNo = stage.stage_no !== undefined && stage.stage_no !== null && stage.stage_no > 0;
       const isMainStage = "area_no" in stage && "stage_no" in stage; // 确保是主线关卡
       const hasStageType = stage.stage_type === 1; // 主线关卡的stage_type应该是1
-      
+
       return hasAreaNo && hasStageNo && isMainStage && hasStageType;
     });
-    
+
     debugLog(`过滤后的关卡数量: ${filteredStages.length}`);
-    
+
     const sortedStages = filteredStages.sort((a, b) => {
       if (a.area_no !== b.area_no) {
         return a.area_no - b.area_no;
       }
       return a.stage_no - b.stage_no;
     });
-    
+
     debugLog(`关卡列表排序完成`);
-    
+
     if (sortedStages.length > 0) {
       debugLog(`第一个关卡: ${sortedStages[0].area_no}-${sortedStages[0].stage_no}`);
       debugLog(`最后一个关卡: ${sortedStages[sortedStages.length - 1].area_no}-${sortedStages[sortedStages.length - 1].stage_no}`);
-      
+
       // 动态统计每个区域的关卡数量和最大关卡号
       const areaStats: { [key: number]: { count: number, maxStage: number, stages: number[] } } = {};
       sortedStages.forEach(stage => {
@@ -979,7 +979,7 @@ export async function getStageList(dataSource: DataSource): Promise<Stage[]> {
         areaStats[areaNo].maxStage = Math.max(areaStats[areaNo].maxStage, stage.stage_no);
         areaStats[areaNo].stages.push(stage.stage_no);
       });
-      
+
       // 显示详细统计
       Object.keys(areaStats).forEach(areaKey => {
         const areaNo = parseInt(areaKey);
@@ -988,7 +988,7 @@ export async function getStageList(dataSource: DataSource): Promise<Stage[]> {
         debugLog(`区域 ${areaNo}: ${stats.count} 个关卡 [${stageList.join(',')}]`);
       });
     }
-    
+
     return sortedStages;
   } catch (error) {
     debugLog(`获取关卡列表失败`, error);

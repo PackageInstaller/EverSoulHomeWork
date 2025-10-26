@@ -52,7 +52,7 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
-      
+
       // 验证文件数量
       if (files.length < minImages || files.length > maxImages) {
         setError(`请选择 ${minImages} 到 ${maxImages} 张图片`);
@@ -85,10 +85,8 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
     setRetryStatus('');
 
     try {
-      // 步骤1：图片压缩和WebP转换（高压缩）
       setCompressionStatus('正在压缩图片并转换为WebP格式...');
-      console.log('开始处理图片（WebP高压缩模式）...');
-      
+
       const compressionResults = await compressImages(
         formData.images,
         {
@@ -111,29 +109,23 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
       const savedSize = totalOriginal - totalCompressed;
       const savedPercent = ((savedSize / totalOriginal) * 100).toFixed(1);
       const webpCount = compressionResults.filter(r => r.format === 'webp').length;
-      
-      console.log(`处理完成: 节省 ${formatFileSize(savedSize)} (${savedPercent}%)`);
-      console.log(`格式: ${webpCount}个WebP, ${compressionResults.length - webpCount}个其他格式`);
-      
+
       let statusMessage = `处理完成：节省 ${formatFileSize(savedSize)} (${savedPercent}%)`;
       if (webpCount > 0) {
         statusMessage += ` - ${webpCount}张转为WebP`;
       }
       setCompressionStatus(statusMessage);
 
-      // 步骤2：准备上传数据
       const data = new FormData();
       data.append('stageId', stageId);
       data.append('nickname', formData.nickname.trim());
       data.append('description', formData.description.trim());
       data.append('teamCount', teamCount.toString());
-      
-      // 使用压缩后的图片
+
       compressionResults.forEach((result) => {
         data.append('images', result.file);
       });
 
-      // 步骤3：上传（带自动重试）
       setCompressionStatus('');
       const uploadResult = await smartUpload({
         url: '/api/homework/upload',
@@ -145,7 +137,6 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
           setUploadProgress(percent);
         },
         onRetry: (attempt, maxRetries, error) => {
-          console.log(`重试 ${attempt}/${maxRetries - 1}: ${error}`);
           setRetryStatus(`网络不稳定，正在重试 (${attempt}/${maxRetries})...`);
         },
       });
@@ -319,7 +310,7 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
                     <span>{uploadProgress}%</span>
                   </div>
                   <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
-                    <div 
+                    <div
                       className="h-full bg-gradient-to-r from-green-500 to-blue-500 transition-all duration-300 ease-out"
                       style={{ width: `${uploadProgress}%` }}
                     />

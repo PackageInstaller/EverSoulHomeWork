@@ -7,12 +7,7 @@ export const dynamic = 'force-dynamic';
 // 用于防止并发刷新
 let refreshPromise: Promise<any> | null = null;
 
-/**
- * 手动刷新游戏数据缓存
- * 需要管理员权限
- * 
- * ✨ 强制刷新：先清除旧缓存，再从远程重新加载所有数据
- */
+
 export async function POST(request: NextRequest) {
   // 验证管理员权限
   const isAdmin = await validateAdminSession(request);

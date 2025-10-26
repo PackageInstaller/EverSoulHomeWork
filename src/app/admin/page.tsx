@@ -170,9 +170,7 @@ export default function AdminHomeworkPage() {
     }
   }, [selectedStatus, isAuthenticated]);
 
-  // 自动刷新作业列表（只在待审核且列表为空时启用）
   useEffect(() => {
-    // 清除旧的定时器
     if (autoRefreshIntervalRef.current) {
       clearInterval(autoRefreshIntervalRef.current);
       autoRefreshIntervalRef.current = null;
@@ -186,7 +184,6 @@ export default function AdminHomeworkPage() {
 
     if (!shouldEnableAutoRefresh) {
       if (homeworks.length > 0 && selectedStatus === 'pending') {
-        console.log('✅ [自动刷新] 检测到有作业，停止自动刷新');
       }
       return;
     }
@@ -194,16 +191,14 @@ export default function AdminHomeworkPage() {
     const startAutoRefresh = () => {
       autoRefreshIntervalRef.current = setInterval(() => {
         if (!document.hidden && isAuthenticated && activeTab === 'homework' && selectedStatus === 'pending') {
-          console.log('🔄 [自动刷新] 刷新待审核作业列表...');
           fetchHomeworks(selectedStatus, pagination.page);
         }
-      }, 1000);
+      }, 15000);
     };
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
         if (autoRefreshIntervalRef.current) {
-          console.log('📱 [自动刷新] 页面不可见，停止轮询');
           clearInterval(autoRefreshIntervalRef.current);
           autoRefreshIntervalRef.current = null;
         }
@@ -216,20 +211,16 @@ export default function AdminHomeworkPage() {
           homeworks.length === 0;
 
         if (shouldResume) {
-          console.log('📱 [自动刷新] 页面可见，启动轮询');
           startAutoRefresh();
         }
       }
     };
-
-    console.log('✅ [自动刷新] 待审核列表为空，启用自动刷新（1秒间隔）');
     startAutoRefresh();
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       if (autoRefreshIntervalRef.current) {
-        console.log('🛑 [自动刷新] 停止作业列表自动刷新');
         clearInterval(autoRefreshIntervalRef.current);
         autoRefreshIntervalRef.current = null;
       }
@@ -238,7 +229,6 @@ export default function AdminHomeworkPage() {
   }, [isAuthenticated, activeTab, selectedStatus, homeworks.length, pagination.page]);
 
   const handleStatusChange = async (homeworkId: string, newStatus: string) => {
-    // 如果是拒绝操作，先打开拒绝原因弹窗
     if (newStatus === "rejected") {
       setRejectHomeworkId(homeworkId);
       setRejectModalOpen(true);
@@ -275,12 +265,10 @@ export default function AdminHomeworkPage() {
         fetchHomeworks(selectedStatus, pagination.page);
         alert(`作业状态已更新为: ${getStatusText(newStatus)}`);
       } else {
-        // 失败时恢复列表
         fetchHomeworks(selectedStatus, pagination.page);
         alert(result.error || "更新状态失败");
       }
     } catch (error) {
-      // 失败时恢复列表
       fetchHomeworks(selectedStatus, pagination.page);
       alert("网络错误");
     }
@@ -326,7 +314,6 @@ export default function AdminHomeworkPage() {
         setIsBatchReject(false);
       } catch (error) {
         alert("批量拒绝失败");
-        // 失败时恢复列表
         fetchHomeworks(selectedStatus, pagination.page);
       } finally {
         setBatchLoading(false);
@@ -367,12 +354,10 @@ export default function AdminHomeworkPage() {
         setRejectHomeworkId(null);
         setRejectReason("");
       } else {
-        // 失败时恢复列表
         fetchHomeworks(selectedStatus, pagination.page);
         alert(result.error || "更新状态失败");
       }
     } catch (error) {
-      // 失败时恢复列表
       fetchHomeworks(selectedStatus, pagination.page);
       alert("网络错误");
     }
@@ -391,12 +376,10 @@ export default function AdminHomeworkPage() {
     // 立即设置 ref 和 state
     isRefreshingRef.current = true;
     setCacheRefreshing(true);
-    console.log('🔄 [前端] 开始刷新缓存...');
 
     try {
-      // 设置 2 分钟超时，避免请求过早中断
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2 * 60 * 1000);
+      const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000);
 
       const response = await fetch("/api/cache/cron", {
         method: "POST",
@@ -411,9 +394,6 @@ export default function AdminHomeworkPage() {
       }
 
       const result = await response.json();
-
-      // 显示结果
-      console.log('✅ [前端] 刷新完成:', result);
       alert(result.message || '刷新完成');
     } catch (error: any) {
       console.error("❌ [前端] 刷新缓存失败:", error);
@@ -424,10 +404,8 @@ export default function AdminHomeworkPage() {
         alert(`❌ 刷新缓存失败\n\n错误信息: ${error.message || '网络错误'}`);
       }
     } finally {
-      // 确保无论如何都重置标志
       isRefreshingRef.current = false;
       setCacheRefreshing(false);
-      console.log('🔓 [前端] 刷新标志已重置');
     }
   };
 
@@ -436,7 +414,6 @@ export default function AdminHomeworkPage() {
       return;
     }
 
-    // 乐观更新：立即从UI中移除
     setHomeworks(prev => prev.filter(hw => hw.id !== homeworkId));
 
     try {
@@ -456,12 +433,10 @@ export default function AdminHomeworkPage() {
         fetchHomeworks(selectedStatus, pagination.page);
         alert("作业删除成功");
       } else {
-        // 失败时恢复列表
         fetchHomeworks(selectedStatus, pagination.page);
         alert(result.error || "删除失败");
       }
     } catch (error) {
-      // 失败时恢复列表
       fetchHomeworks(selectedStatus, pagination.page);
       alert("网络错误");
     }

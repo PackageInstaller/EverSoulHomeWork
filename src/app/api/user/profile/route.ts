@@ -130,7 +130,7 @@ export async function PATCH(request: Request) {
     if (oldPassword && newPassword) {
       // 验证旧密码
       const isOldPasswordValid = await bcrypt.compare(oldPassword, currentUser.password);
-      
+
       if (!isOldPasswordValid) {
         return NextResponse.json(
           { success: false, message: '当前密码不正确' },
@@ -152,7 +152,7 @@ export async function PATCH(request: Request) {
 
     // 检查昵称是否变更
     const nicknameChanged = nickname.trim() !== currentUser.nickname;
-    
+
     // 如果昵称变更，检查是否会与现有数据冲突
     if (nicknameChanged) {
       // 1. 检查新昵称是否已被其他用户使用

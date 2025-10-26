@@ -82,7 +82,7 @@ async function checkFileUpdate(
 ): Promise<{ updated: boolean; newEtag?: string }> {
   try {
     const url = `${GITHUB_BASE_URL}/${dataSource}/${fileName}.json`;
-    
+
     // 发送HEAD请求检查文件元信息
     const response = await fetch(url, {
       method: 'HEAD',
@@ -98,9 +98,9 @@ async function checkFileUpdate(
     }
 
     // 获取ETag或Last-Modified
-    const newEtag = response.headers.get('etag') || 
-                    response.headers.get('last-modified') || 
-                    Date.now().toString();
+    const newEtag = response.headers.get('etag') ||
+      response.headers.get('last-modified') ||
+      Date.now().toString();
 
     // 如果没有之前的ETag，认为是新数据
     if (!currentEtag) {
@@ -109,7 +109,7 @@ async function checkFileUpdate(
 
     // 比较ETag判断是否更新
     const updated = newEtag !== currentEtag;
-    
+
     if (updated) {
       console.log(`检测到更新: ${fileName} - 旧ETag: ${currentEtag}, 新ETag: ${newEtag}`);
     }
@@ -148,13 +148,13 @@ export async function getSmartCachedData(
 
   // 情况3: 缓存有效，检查是否需要检测更新
   const shouldCheck = smartCache.autoUpdate && (
-    !cached.lastCheck || 
+    !cached.lastCheck ||
     (now - cached.lastCheck) > smartCache.updateInterval
   );
 
   if (shouldCheck) {
     console.log(`[检查更新] ${fileName} - 上次检查: ${cached.lastCheck ? Math.round((now - cached.lastCheck) / 60000) + '分钟前' : '从未'}`);
-    
+
     // 异步检查更新（不阻塞当前请求）
     checkAndUpdate(dataSource, fileName, cacheKey, cached).catch(err => {
       console.error(`后台更新检查失败: ${fileName}`, err);
@@ -184,10 +184,10 @@ async function checkAndUpdate(
 
   if (updated) {
     console.log(`🔄 [后台更新] ${fileName} - 检测到新版本，开始下载...`);
-    
+
     try {
       const newData = await fetchDataFromGitHub(dataSource, fileName);
-      
+
       // 更新缓存
       smartCache.cache.set(cacheKey, {
         data: newData,
@@ -195,7 +195,7 @@ async function checkAndUpdate(
         etag: newEtag,
         lastCheck: Date.now(),
       });
-      
+
       smartCache.stats.updates++;
       console.log(`✅ [更新完成] ${fileName} - 缓存已更新`);
     } catch (error) {
@@ -215,11 +215,11 @@ async function fetchAndCache(
   cacheKey: string
 ): Promise<any> {
   const data = await fetchDataFromGitHub(dataSource, fileName);
-  
+
   // 获取ETag（如果可能）
   const url = `${GITHUB_BASE_URL}/${dataSource}/${fileName}.json`;
   let etag: string | undefined;
-  
+
   try {
     const headResp = await fetch(url, { method: 'HEAD' });
     etag = headResp.headers.get('etag') || headResp.headers.get('last-modified') || undefined;
@@ -245,7 +245,7 @@ async function fetchAndCache(
 async function fetchDataFromGitHub(dataSource: DataSource, fileName: string): Promise<any> {
   const url = `${GITHUB_BASE_URL}/${dataSource}/${fileName}.json`;
   console.log(`⬇️ [开始下载] ${url}`);
-  
+
   const response = await fetch(url, {
     headers: {
       'Accept': 'application/json',
@@ -277,7 +277,7 @@ export function getSmartCacheStats() {
     const [dataSource, fileName] = key.split('-');
     const age = Date.now() - item.timestamp;
     const timeSinceCheck = item.lastCheck ? Date.now() - item.lastCheck : null;
-    
+
     return {
       key,
       dataSource,
@@ -318,15 +318,15 @@ export function clearSmartCache() {
 export async function refreshCache(dataSource: DataSource, fileName: string) {
   const cacheKey = `${dataSource}-${fileName}`;
   console.log(`🔄 [手动刷新] ${fileName}`);
-  
+
   const data = await fetchDataFromGitHub(dataSource, fileName);
-  
+
   smartCache.cache.set(cacheKey, {
     data,
     timestamp: Date.now(),
     lastCheck: Date.now(),
   });
-  
+
   console.log(`✅ [刷新完成] ${fileName}`);
   return data;
 }
@@ -343,7 +343,7 @@ export async function refreshAllCache(dataSource: DataSource) {
   ];
 
   console.log(`🔄 [批量刷新] 开始刷新${dataFiles.length}个数据文件...`);
-  
+
   for (const fileName of dataFiles) {
     try {
       await refreshCache(dataSource, fileName);
@@ -351,7 +351,7 @@ export async function refreshAllCache(dataSource: DataSource) {
       console.error(`刷新失败: ${fileName}`, error);
     }
   }
-  
+
   console.log(`✅ [批量刷新完成]`);
 }
 

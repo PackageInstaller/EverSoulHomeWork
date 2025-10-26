@@ -73,9 +73,9 @@ export default function UserHomeworkModal({ nickname, onClose }: UserHomeworkMod
   const filteredHomeworks = selectedArea === null
     ? homeworks
     : homeworks.filter(hw => {
-        const area = parseInt(hw.stageId.split('-')[0]);
-        return area === selectedArea;
-      });
+      const area = parseInt(hw.stageId.split('-')[0]);
+      return area === selectedArea;
+    });
 
   // 统计每个区域的作业数
   const getAreaHomeworkCount = (area: number) => {
@@ -142,11 +142,10 @@ export default function UserHomeworkModal({ nickname, onClose }: UserHomeworkMod
                   {/* 全部按钮 */}
                   <button
                     onClick={() => setSelectedArea(null)}
-                    className={`rounded-lg px-4 py-2 transition-all ${
-                      selectedArea === null
+                    className={`rounded-lg px-4 py-2 transition-all ${selectedArea === null
                         ? 'bg-gradient-to-r from-blue-500 to-purple-500 border border-blue-400 shadow-lg scale-105'
                         : 'bg-white/10 border border-white/20 hover:bg-white/20 hover:scale-105'
-                    }`}
+                      }`}
                   >
                     <span className="text-white font-medium">全部</span>
                     <span className="text-white/70 text-sm ml-2">
@@ -158,16 +157,15 @@ export default function UserHomeworkModal({ nickname, onClose }: UserHomeworkMod
                   {groupedByArea.map(group => {
                     const count = getAreaHomeworkCount(group.area);
                     const isSelected = selectedArea === group.area;
-                    
+
                     return (
                       <button
                         key={group.area}
                         onClick={() => setSelectedArea(group.area)}
-                        className={`rounded-lg px-4 py-2 transition-all ${
-                          isSelected
+                        className={`rounded-lg px-4 py-2 transition-all ${isSelected
                             ? 'bg-gradient-to-r from-blue-500 to-purple-500 border border-blue-400 shadow-lg scale-105'
                             : 'bg-blue-500/20 border border-blue-500/30 hover:bg-blue-500/30 hover:scale-105'
-                        }`}
+                          }`}
                       >
                         <span className="text-white font-medium">{group.area}图</span>
                         <span className="text-white/70 text-sm ml-2">
@@ -196,67 +194,67 @@ export default function UserHomeworkModal({ nickname, onClose }: UserHomeworkMod
                     </div>
                   ) : (
                     filteredHomeworks.map(homework => (
-                    <Link
-                      key={homework.id}
-                      href={`/stage/${homework.stageId}?source=live&returnSource=live`}
-                      className="group bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 overflow-hidden transition-all hover:scale-105 hover:shadow-xl"
-                    >
-                      {/* 缩略图 */}
-                      {homework.thumbnail ? (
-                        <div className="relative h-32 bg-black/20 overflow-hidden">
-                          <img
-                            src={homework.thumbnail}
-                            alt={`${homework.stageId}作业`}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                        </div>
-                      ) : (
-                        <div className="h-32 bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center">
-                          <span className="text-white/50 text-4xl">📝</span>
-                        </div>
-                      )}
-
-                      {/* 信息 */}
-                      <div className="p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-white font-bold text-lg">
-                            {homework.stageId}
-                          </span>
-                          <span className="text-white/60 text-sm">
-                            {homework.teamCount}队
-                          </span>
-                        </div>
-                        {homework.description && (
-                          <p className="text-white/70 text-sm line-clamp-2 mb-2">
-                            {homework.description}
-                          </p>
-                        )}
-                        {homework.isAfterSettlement && (
-                          <div className="mb-2">
-                            <span className="inline-flex items-center gap-1 text-xs text-yellow-300 bg-yellow-500/20 px-2 py-0.5 rounded">
-                              ⏰ 结算后提交 · 仅计入总榜
-                            </span>
+                      <Link
+                        key={homework.id}
+                        href={`/stage/${homework.stageId}?source=live&returnSource=live`}
+                        className="group bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 overflow-hidden transition-all hover:scale-105 hover:shadow-xl"
+                      >
+                        {/* 缩略图 */}
+                        {homework.thumbnail ? (
+                          <div className="relative h-32 bg-black/20 overflow-hidden">
+                            <img
+                              src={homework.thumbnail}
+                              alt={`${homework.stageId}作业`}
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                          </div>
+                        ) : (
+                          <div className="h-32 bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center">
+                            <span className="text-white/50 text-4xl">📝</span>
                           </div>
                         )}
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-white/50">
-                            {new Date(homework.createdAt).toLocaleString('zh-CN', {
-                              year: 'numeric',
-                              month: '2-digit',
-                              day: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              second: '2-digit',
-                              hour12: false
-                            })}
-                          </span>
-                          <span className="text-blue-400 group-hover:text-blue-300">
-                            查看关卡 →
-                          </span>
+
+                        {/* 信息 */}
+                        <div className="p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-white font-bold text-lg">
+                              {homework.stageId}
+                            </span>
+                            <span className="text-white/60 text-sm">
+                              {homework.teamCount}队
+                            </span>
+                          </div>
+                          {homework.description && (
+                            <p className="text-white/70 text-sm line-clamp-2 mb-2">
+                              {homework.description}
+                            </p>
+                          )}
+                          {homework.isAfterSettlement && (
+                            <div className="mb-2">
+                              <span className="inline-flex items-center gap-1 text-xs text-yellow-300 bg-yellow-500/20 px-2 py-0.5 rounded">
+                                ⏰ 结算后提交 · 仅计入总榜
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-white/50">
+                              {new Date(homework.createdAt).toLocaleString('zh-CN', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit',
+                                hour12: false
+                              })}
+                            </span>
+                            <span className="text-blue-400 group-hover:text-blue-300">
+                              查看关卡 →
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    </Link>
+                      </Link>
                     ))
                   )}
                 </div>

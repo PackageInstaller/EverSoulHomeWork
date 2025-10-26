@@ -26,19 +26,19 @@ function generateSecurePassword(): string {
   const numbers = '0123456789';
   const special = '!@#$%^&*()_+-=[]{}|;:,.<>?';
   const allChars = uppercase + lowercase + numbers + special;
-  
+
   let password = '';
   // 确保至少包含每种类型的字符
   password += uppercase[Math.floor(Math.random() * uppercase.length)];
   password += lowercase[Math.floor(Math.random() * lowercase.length)];
   password += numbers[Math.floor(Math.random() * numbers.length)];
   password += special[Math.floor(Math.random() * special.length)];
-  
+
   // 填充剩余字符
   for (let i = password.length; i < 16; i++) {
     password += allChars[Math.floor(Math.random() * allChars.length)];
   }
-  
+
   // 打乱字符顺序
   return password.split('').sort(() => Math.random() - 0.5).join('');
 }
@@ -51,7 +51,7 @@ export function loadConfig(): AppConfig {
     // 尝试读取JSON配置文件
     if (fs.existsSync(CONFIG_FILE_PATH)) {
       const configData = fs.readFileSync(CONFIG_FILE_PATH, 'utf-8').trim();
-      
+
       // 检查文件是否为空
       if (!configData) {
         console.log('⚠️ 配置文件为空，重新生成...');
@@ -65,30 +65,30 @@ export function loadConfig(): AppConfig {
         console.log('⚠️ 请妥善保管此密码！');
         return newConfig;
       }
-      
+
       try {
         const config = JSON.parse(configData) as AppConfig;
-        
+
         // 验证配置完整性
         let needsSave = false;
-        
+
         if (!config.jwtSecret) {
           config.jwtSecret = generateJwtSecret();
           needsSave = true;
           console.log('✅ 已自动生成JWT密钥');
         }
-        
+
         if (!config.adminPassword) {
           config.adminPassword = generateSecurePassword();
           needsSave = true;
           console.log('✅ 已自动生成管理员密码:', config.adminPassword);
           console.log('⚠️ 请妥善保管此密码！');
         }
-        
+
         if (needsSave) {
           saveConfig(config);
         }
-        
+
         return config;
       } catch (parseError) {
         console.error('⚠️ 配置文件JSON格式错误，重新生成...');
@@ -103,7 +103,7 @@ export function loadConfig(): AppConfig {
         return newConfig;
       }
     }
-    
+
     // 尝试读取旧格式的txt文件（兼容性）
     const oldConfigPath = path.join(process.cwd(), 'admin-secret.txt');
     if (fs.existsSync(oldConfigPath)) {
@@ -112,11 +112,11 @@ export function loadConfig(): AppConfig {
         adminPassword,
         jwtSecret: generateJwtSecret()
       };
-      
+
       // 保存为新格式
       saveConfig(config);
       console.log('✅ 已迁移配置文件到JSON格式');
-      
+
       // 删除旧文件
       try {
         fs.unlinkSync(oldConfigPath);
@@ -124,26 +124,26 @@ export function loadConfig(): AppConfig {
       } catch (error) {
         console.warn('⚠️ 无法删除旧配置文件:', error);
       }
-      
+
       return config;
     }
-    
+
     // 如果都不存在，创建默认配置
     const defaultConfig: AppConfig = {
       adminPassword: generateSecurePassword(),
       jwtSecret: generateJwtSecret()
     };
-    
+
     saveConfig(defaultConfig);
     console.log('✅ 已创建新的配置文件');
     console.log('🔑 管理员密码:', defaultConfig.adminPassword);
     console.log('⚠️ 请妥善保管此密码！');
-    
+
     return defaultConfig;
-    
+
   } catch (error) {
     console.error('❌ 读取配置文件失败:', error);
-    
+
     // 尝试生成新配置
     try {
       const emergencyConfig: AppConfig = {

@@ -7,7 +7,6 @@ interface DropRateChartProps {
 }
 
 export default function DropRateChart({ dropItems }: DropRateChartProps) {
-  // 计算数学期望
   const calculateExpectedValue = (rate: number, hours: number) => {
     // rate 是每分钟的概率（百分比形式）
     // 向下取整
@@ -20,11 +19,7 @@ export default function DropRateChart({ dropItems }: DropRateChartProps) {
   // 按概率排序
   const sortedItems = [...dropItems]
     .sort((a, b) => (b.rate || 0) - (a.rate || 0));
-
-  // 获取最大概率用于计算条形图比例
   const maxRate = Math.max(...sortedItems.map(item => item.rate || 0));
-
-  // 根据概率获取颜色
   const getRateColor = (rate: number) => {
     if (rate > 10) return { bg: 'bg-green-500', text: 'text-green-300', border: 'border-green-400' };
     if (rate > 1) return { bg: 'bg-blue-500', text: 'text-blue-300', border: 'border-blue-400' };

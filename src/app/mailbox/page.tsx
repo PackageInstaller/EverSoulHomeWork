@@ -35,13 +35,13 @@ export default function MailboxPage() {
     try {
       setLoading(true);
       const params = new URLSearchParams();
-      
+
       if (filter === 'unread') {
         params.append('type', 'unread');
       } else if (filter === 'read') {
         params.append('type', 'read');
       }
-      
+
       // 添加时间戳防止 CDN 缓存
       params.append('_t', Date.now().toString());
 
@@ -127,7 +127,7 @@ export default function MailboxPage() {
         });
 
         // 更新本地状态
-        setMessages(messages.map(m => 
+        setMessages(messages.map(m =>
           m.id === message.id ? { ...m, isRead: true } : m
         ));
         setUnreadCount(Math.max(0, unreadCount - 1));
@@ -172,7 +172,7 @@ export default function MailboxPage() {
   };
 
   const getTypeColor = (type: string) => {
-    return type === 'system' 
+    return type === 'system'
       ? 'bg-blue-100 text-blue-700'
       : 'bg-purple-100 text-purple-700';
   };
@@ -205,37 +205,34 @@ export default function MailboxPage() {
                   <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => setFilter('all')}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        filter === 'all'
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === 'all'
                           ? 'bg-blue-500 text-white'
                           : 'bg-white/10 text-white/70 hover:bg-white/20'
-                      }`}
+                        }`}
                     >
                       全部
                     </button>
                     <button
                       onClick={() => setFilter('unread')}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        filter === 'unread'
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === 'unread'
                           ? 'bg-blue-500 text-white'
                           : 'bg-white/10 text-white/70 hover:bg-white/20'
-                      }`}
+                        }`}
                     >
                       未读 {unreadCount > 0 && `(${unreadCount})`}
                     </button>
                     <button
                       onClick={() => setFilter('read')}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        filter === 'read'
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === 'read'
                           ? 'bg-blue-500 text-white'
                           : 'bg-white/10 text-white/70 hover:bg-white/20'
-                      }`}
+                        }`}
                     >
                       已读
                     </button>
                   </div>
                 </div>
-                
+
                 {/* 全部展开/收起按钮 */}
                 {messages.length > 0 && (
                   <button
@@ -264,31 +261,31 @@ export default function MailboxPage() {
                     {Array.from(groupMessagesByType().entries()).map(([type, typeMessages]) => {
                       const isExpanded = expandedTypes.has(type);
                       const unreadInType = typeMessages.filter(m => !m.isRead).length;
-                      
+
                       return (
                         <div
                           key={type}
                           className="bg-white/5 rounded-lg border border-white/10 overflow-hidden"
                         >
                           {/* 类型头部 - 可点击展开/收起 */}
-                          <div 
+                          <div
                             className="p-3 flex items-center justify-between cursor-pointer hover:bg-white/10 transition-colors"
                             onClick={() => toggleTypeExpanded(type)}
                           >
                             <div className="flex items-center space-x-3">
                               {/* 展开/收起图标 */}
-                              <div 
-                                className="text-white text-lg transition-transform duration-200" 
+                              <div
+                                className="text-white text-lg transition-transform duration-200"
                                 style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
                               >
                                 ▶
                               </div>
-                              
+
                               {/* 类型图标 */}
                               <div className="text-2xl">
                                 {type === 'system' ? '🔔' : '👤'}
                               </div>
-                              
+
                               {/* 类型信息 */}
                               <div>
                                 <h3 className="text-white font-bold">
@@ -313,13 +310,11 @@ export default function MailboxPage() {
                                 <div
                                   key={message.id}
                                   onClick={() => handleMessageClick(message)}
-                                  className={`p-4 cursor-pointer transition-colors ${
-                                    index > 0 ? 'border-t border-white/5' : ''
-                                  } ${
-                                    selectedMessage?.id === message.id
+                                  className={`p-4 cursor-pointer transition-colors ${index > 0 ? 'border-t border-white/5' : ''
+                                    } ${selectedMessage?.id === message.id
                                       ? 'bg-blue-500/20'
                                       : 'hover:bg-white/5'
-                                  } ${!message.isRead ? 'bg-yellow-500/10' : ''}`}
+                                    } ${!message.isRead ? 'bg-yellow-500/10' : ''}`}
                                 >
                                   <div className="flex items-start justify-between mb-2">
                                     <h3 className={`text-sm font-medium text-white ${!message.isRead ? 'font-bold' : 'text-white/80'}`}>

@@ -15,10 +15,7 @@ export async function GET(
   { params }: { params: { path: string[] } }
 ) {
   try {
-    // 构建文件路径
     const filePath = join(process.cwd(), 'public', 'uploads', ...params.path);
-    
-    // 安全检查：防止路径遍历攻击
     const publicUploadsDir = join(process.cwd(), 'public', 'uploads');
     if (!filePath.startsWith(publicUploadsDir)) {
       return NextResponse.json(
@@ -26,8 +23,6 @@ export async function GET(
         { status: 403 }
       );
     }
-
-    // 检查文件是否存在
     if (!existsSync(filePath)) {
       console.error(`文件不存在: ${filePath}`);
       return NextResponse.json(
@@ -36,10 +31,7 @@ export async function GET(
       );
     }
 
-    // 读取文件
     const fileBuffer = await readFile(filePath);
-    
-    // 根据文件扩展名设置Content-Type
     const ext = params.path[params.path.length - 1].split('.').pop()?.toLowerCase();
     const contentTypeMap: { [key: string]: string } = {
       'png': 'image/png',
@@ -52,7 +44,6 @@ export async function GET(
     };
     const contentType = contentTypeMap[ext || ''] || 'application/octet-stream';
 
-    // 返回文件内容
     return new NextResponse(fileBuffer, {
       headers: {
         'Content-Type': contentType,
@@ -78,19 +69,16 @@ export async function HEAD(
 ) {
   try {
     const filePath = join(process.cwd(), 'public', 'uploads', ...params.path);
-    
-    // 安全检查
+
     const publicUploadsDir = join(process.cwd(), 'public', 'uploads');
     if (!filePath.startsWith(publicUploadsDir)) {
       return new NextResponse(null, { status: 403 });
     }
 
-    // 检查文件是否存在
     if (!existsSync(filePath)) {
       return new NextResponse(null, { status: 404 });
     }
 
-    // 获取文件扩展名
     const ext = params.path[params.path.length - 1].split('.').pop()?.toLowerCase();
     const contentTypeMap: { [key: string]: string } = {
       'png': 'image/png',
@@ -103,7 +91,6 @@ export async function HEAD(
     };
     const contentType = contentTypeMap[ext || ''] || 'application/octet-stream';
 
-    // 返回Header（不包含文件内容）
     return new NextResponse(null, {
       status: 200,
       headers: {

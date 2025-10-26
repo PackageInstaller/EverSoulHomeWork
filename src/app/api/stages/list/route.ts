@@ -14,9 +14,9 @@ export async function GET(request: NextRequest) {
     const dataSource = (searchParams.get('source') || 'live') as DataSource;
 
     console.log(`[API] 获取关卡列表，数据源: ${dataSource}`);
-    
+
     const stages = await getStageList(dataSource);
-    
+
     return NextResponse.json({
       success: true,
       dataSource,

@@ -23,11 +23,11 @@ export default function PointsSettlement() {
     yearMonth: string;
     isSettled: boolean;
   }>>([]);
-  
+
   // 基础奖池配置
   const [basePool, setBasePool] = useState(200);
   const [basePoolLoading, setBasePoolLoading] = useState(false);
-  
+
   // 自动结算配置
   const [autoSettleHour, setAutoSettleHour] = useState(23); // 默认23点
   const [autoSettleLoading, setAutoSettleLoading] = useState(false);
@@ -37,7 +37,7 @@ export default function PointsSettlement() {
     const now = new Date();
     const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     setYearMonth(currentYearMonth);
-    
+
     // 获取可用月份列表
     fetchMonths();
     // 获取基础奖池配置
@@ -192,7 +192,6 @@ export default function PointsSettlement() {
       return;
     }
 
-    console.log('💾 [前端] 开始保存自动结算配置:', autoSettleHour);
     setAutoSettleLoading(true);
 
     try {
@@ -201,20 +200,17 @@ export default function PointsSettlement() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           autoSettleHour
         })
       });
 
       const data = await response.json();
-      console.log('💾 [前端] 保存自动结算配置响应:', data);
 
       if (data.success) {
-        // 直接使用返回的值更新 state，不依赖重新 fetch
         const savedValue = data.saved ? parseInt(data.saved.value) : autoSettleHour;
-        console.log('💾 [前端] 更新 state 为:', savedValue);
         setAutoSettleHour(savedValue);
-        
+
         alert(`✅ 自动结算配置已更新\n\n系统将在每月最后一天的 ${savedValue}:00 自动执行结算\n\n数据库保存值: ${data.saved?.value}`);
       } else {
         alert(`❌ 更新失败\n\n${data.message || '未知错误'}`);
@@ -236,7 +232,7 @@ export default function PointsSettlement() {
           {/* 手动结算表单 */}
           <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6">
             <h3 className="text-xl font-bold text-white mb-4">💰 手动结算</h3>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-white/80 mb-2">选择结算月份</label>
@@ -272,7 +268,7 @@ export default function PointsSettlement() {
           {/* 基础奖池配置 */}
           <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6">
             <h3 className="text-xl font-bold text-white mb-4">🎁 基础奖池配置</h3>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-white/80 mb-2">每月基础奖池金额（元）</label>
@@ -306,7 +302,7 @@ export default function PointsSettlement() {
           {/* 自动结算配置 */}
           <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6">
             <h3 className="text-xl font-bold text-white mb-4">⏰ 自动结算配置</h3>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-white/80 mb-2">每月最后一天结算时间（小时）</label>
@@ -360,44 +356,44 @@ export default function PointsSettlement() {
           {result && (
             <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6">
               <h3 className="text-xl font-bold text-white mb-4">📊 结算结果</h3>
-          
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white/5 rounded-lg p-3">
-                <div className="text-white/60 text-sm">总积分</div>
-                <div className="text-white text-2xl font-bold">{result.totalPoints}</div>
-              </div>
-              <div className="bg-white/5 rounded-lg p-3">
-                <div className="text-white/60 text-sm">总奖池</div>
-                <div className="text-white text-2xl font-bold">¥{result.totalPool}</div>
-              </div>
-              <div className="bg-white/5 rounded-lg p-3">
-                <div className="text-white/60 text-sm">已发放</div>
-                <div className="text-green-400 text-2xl font-bold">¥{result.distributed}</div>
-              </div>
-              <div className="bg-white/5 rounded-lg p-3">
-                <div className="text-white/60 text-sm">下月累加</div>
-                <div className="text-yellow-400 text-2xl font-bold">¥{result.nextCarryOver}</div>
-              </div>
-            </div>
 
-            {/* 奖励明细 */}
-            <div>
-              <h4 className="text-white font-semibold mb-2">💰 奖励明细</h4>
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {result.rewards.map((reward, index) => (
-                  <div key={index} className="bg-white/5 rounded-lg p-3 flex justify-between items-center">
-                    <div className="flex items-center space-x-3">
-                      <span className="text-white/40 text-sm">#{index + 1}</span>
-                      <span className="text-white font-medium">{reward.nickname}</span>
-                      <span className="text-white/60 text-sm">{reward.points} 分</span>
-                    </div>
-                    <span className="text-green-400 font-semibold">¥{reward.reward.toFixed(2)}</span>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-white/5 rounded-lg p-3">
+                    <div className="text-white/60 text-sm">总积分</div>
+                    <div className="text-white text-2xl font-bold">{result.totalPoints}</div>
                   </div>
-                ))}
+                  <div className="bg-white/5 rounded-lg p-3">
+                    <div className="text-white/60 text-sm">总奖池</div>
+                    <div className="text-white text-2xl font-bold">¥{result.totalPool}</div>
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-3">
+                    <div className="text-white/60 text-sm">已发放</div>
+                    <div className="text-green-400 text-2xl font-bold">¥{result.distributed}</div>
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-3">
+                    <div className="text-white/60 text-sm">下月累加</div>
+                    <div className="text-yellow-400 text-2xl font-bold">¥{result.nextCarryOver}</div>
+                  </div>
+                </div>
+
+                {/* 奖励明细 */}
+                <div>
+                  <h4 className="text-white font-semibold mb-2">💰 奖励明细</h4>
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {result.rewards.map((reward, index) => (
+                      <div key={index} className="bg-white/5 rounded-lg p-3 flex justify-between items-center">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-white/40 text-sm">#{index + 1}</span>
+                          <span className="text-white font-medium">{reward.nickname}</span>
+                          <span className="text-white/60 text-sm">{reward.points} 分</span>
+                        </div>
+                        <span className="text-green-400 font-semibold">¥{reward.reward.toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
             </div>
           )}
 
@@ -405,29 +401,29 @@ export default function PointsSettlement() {
           {availableMonths.length > 0 && (
             <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6">
               <h3 className="text-xl font-bold text-white mb-4">📜 历史结算记录</h3>
-          
-          <div className="space-y-2">
-            {availableMonths.map((month) => (
-              <div key={month.yearMonth} className="bg-white/5 rounded-lg p-3 flex justify-between items-center">
-                <div className="flex items-center space-x-3">
-                  <span className="text-white font-medium">{month.yearMonth}</span>
-                  {month.isSettled ? (
-                    <span className="px-2 py-1 bg-green-500/20 text-green-300 text-xs rounded">已结算</span>
-                  ) : (
-                    <span className="px-2 py-1 bg-yellow-500/20 text-yellow-300 text-xs rounded">未结算</span>
-                  )}
-                </div>
-                {month.isSettled && (
-                  <button
-                    onClick={() => handleCancelSettlement(month.yearMonth)}
-                    className="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded text-sm transition-colors"
-                  >
-                    取消结算
-                  </button>
-                )}
+
+              <div className="space-y-2">
+                {availableMonths.map((month) => (
+                  <div key={month.yearMonth} className="bg-white/5 rounded-lg p-3 flex justify-between items-center">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-white font-medium">{month.yearMonth}</span>
+                      {month.isSettled ? (
+                        <span className="px-2 py-1 bg-green-500/20 text-green-300 text-xs rounded">已结算</span>
+                      ) : (
+                        <span className="px-2 py-1 bg-yellow-500/20 text-yellow-300 text-xs rounded">未结算</span>
+                      )}
+                    </div>
+                    {month.isSettled && (
+                      <button
+                        onClick={() => handleCancelSettlement(month.yearMonth)}
+                        className="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded text-sm transition-colors"
+                      >
+                        取消结算
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
             </div>
           )}
         </div>

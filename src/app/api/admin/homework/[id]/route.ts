@@ -3,40 +3,13 @@ import { prisma } from '@/lib/prisma'
 import { unlink } from 'fs/promises'
 import path from 'path'
 import { calculateHomeworkPoints, addPointsToUser, removePointsFromUser } from '@/lib/pointsCalculator'
+import { validateAdminSession } from '@/lib/adminAuth'
 
 export const dynamic = 'force-dynamic'
 
 const UPLOAD_DIR = path.join(process.cwd(), 'public/uploads/homework')
 
-// 验证管理员会话
-async function validateAdminSession(request: NextRequest) {
-  const sessionToken = request.cookies.get('admin_session')?.value;
 
-  if (!sessionToken) {
-    return false;
-  }
-
-  try {
-    const decoded = Buffer.from(sessionToken, 'base64').toString();
-    const [user, timestamp] = decoded.split(':');
-    
-    if (user !== 'admin') {
-      return false;
-    }
-
-    const tokenTime = parseInt(timestamp);
-    const currentTime = Date.now();
-    const oneHour = 3600000; // 1小时的毫秒数
-
-    if (currentTime - tokenTime > oneHour) {
-      return false;
-    }
-
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 // 更新作业状态
 export async function PATCH(

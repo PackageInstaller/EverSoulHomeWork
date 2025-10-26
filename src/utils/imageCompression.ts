@@ -60,27 +60,24 @@ export async function compressImage(
     throw new Error(`图片 ${file.name} 大小为 ${originalSizeKB.toFixed(2)}KB，超过 ${maxSizeKB}KB 限制`);
   }
 
-  console.log(`开始处理图片 ${file.name} (${originalSizeKB.toFixed(2)}KB)...`);
-  console.log(`WebP支持: ${supportsWebP}, 转换WebP: ${convertToWebP}`);
-
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    
+
     reader.onerror = () => reject(new Error('读取文件失败'));
-    
+
     reader.onload = (e) => {
       const img = new Image();
-      
+
       img.onerror = () => reject(new Error('图片加载失败'));
-      
+
       img.onload = () => {
         try {
           // 计算压缩后的尺寸（保持宽高比）
           let { width, height } = img;
-          
+
           if (width > maxWidth || height > maxHeight) {
             const aspectRatio = width / height;
-            
+
             if (width > height) {
               width = Math.min(width, maxWidth);
               height = Math.round(width / aspectRatio);
@@ -88,15 +85,13 @@ export async function compressImage(
               height = Math.min(height, maxHeight);
               width = Math.round(height * aspectRatio);
             }
-            
-            console.log(`尺寸调整: ${img.width}x${img.height} → ${width}x${height}`);
           }
 
           // 创建Canvas进行压缩
           const canvas = document.createElement('canvas');
           canvas.width = width;
           canvas.height = height;
-          
+
           const ctx = canvas.getContext('2d');
           if (!ctx) {
             reject(new Error('Canvas context创建失败'));
@@ -106,7 +101,7 @@ export async function compressImage(
           // 使用高质量缩放算法
           ctx.imageSmoothingEnabled = true;
           ctx.imageSmoothingQuality = 'high';
-          
+
           // 绘制图片
           ctx.drawImage(img, 0, 0, width, height);
 
@@ -114,13 +109,12 @@ export async function compressImage(
           let outputFormat: string;
           let outputQuality: number;
           let fileExtension: string;
-          
+
           if (convertToWebP && supportsWebP) {
             // 转换为WebP（最优压缩）
             outputFormat = 'image/webp';
             outputQuality = webpQuality;
             fileExtension = '.webp';
-            console.log(`转换为WebP格式，质量: ${(webpQuality * 100).toFixed(0)}%`);
           } else if (file.type.startsWith('image/png')) {
             // PNG保持PNG（支持透明度）
             outputFormat = 'image/png';
@@ -146,12 +140,8 @@ export async function compressImage(
               const compressionRatio = (compressedSize / originalSize) * 100;
               const savedSize = originalSize - compressedSize;
               const savedPercent = ((savedSize / originalSize) * 100).toFixed(1);
-
-              console.log(`处理完成: ${originalSizeKB.toFixed(2)}KB → ${compressedSizeKB.toFixed(2)}KB (节省${savedPercent}%)`);
-
               // 如果压缩后反而更大，使用原图
               if (compressedSize >= originalSize) {
-                console.log('处理后体积更大，使用原图');
                 resolve({
                   file,
                   originalSize,
@@ -208,10 +198,10 @@ export async function compressImages(
   onProgress?: (current: number, total: number, currentFile: string) => void
 ): Promise<CompressionResult[]> {
   const results: CompressionResult[] = [];
-  
+
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
-    
+
     if (onProgress) {
       onProgress(i + 1, files.length, file.name);
     }
@@ -231,9 +221,7 @@ export async function compressImages(
   const savedSize = totalOriginal - totalCompressed;
   const savedPercent = ((savedSize / totalOriginal) * 100).toFixed(1);
   const webpCount = results.filter(r => r.format === 'webp').length;
-  
-  console.log(`批量处理完成: ${(totalOriginal / 1024).toFixed(2)}KB → ${(totalCompressed / 1024).toFixed(2)}KB (节省${savedPercent}%)`);
-  console.log(`格式分布: ${webpCount}个WebP, ${results.length - webpCount}个其他格式`);
+
 
   return results;
 }
@@ -243,11 +231,11 @@ export async function compressImages(
  */
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B';
-  
+
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
+
   return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
 }
 

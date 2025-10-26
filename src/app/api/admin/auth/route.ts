@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateAdminPassword } from '@/config/admin-password';
+import { generateAdminSessionToken, validateAdminSession } from '@/lib/adminAuth';
 
 export const dynamic = 'force-dynamic'
 
@@ -18,8 +19,8 @@ export async function POST(request: NextRequest) {
     const isValid = validateAdminPassword(password);
 
     if (isValid) {
-      // 生成简单的会话token (在生产环境中应该使用更安全的方法)
-      const sessionToken = Buffer.from(`admin:${Date.now()}`).toString('base64');
+      // 生成 JWT 会话 token（1小时有效期）
+      const sessionToken = generateAdminSessionToken('1h');
       
       const response = NextResponse.json({
         success: true,
@@ -35,10 +36,10 @@ export async function POST(request: NextRequest) {
       // 设置cookie (有效期1小时)
       response.cookies.set('admin_session', sessionToken, {
         httpOnly: true,
-        secure: false, // 允许HTTP连接（如果使用HTTPS，改为true）
-        sameSite: 'lax', // 使用lax以兼容更多场景
+        secure: process.env.NODE_ENV === 'production', // 生产环境使用 HTTPS
+        sameSite: 'lax',
         maxAge: 3600, // 1小时
-        path: '/' // 明确指定路径
+        path: '/'
       });
 
       return response;
@@ -60,32 +61,9 @@ export async function POST(request: NextRequest) {
 // 验证管理员会话
 export async function GET(request: NextRequest) {
   try {
-    const sessionToken = request.cookies.get('admin_session')?.value;
+    const isValid = await validateAdminSession(request);
 
-    if (!sessionToken) {
-      return NextResponse.json(
-        { success: false, message: '未登录' },
-        { status: 401 }
-      );
-    }
-
-    // 验证token格式和时间
-    try {
-      const decoded = Buffer.from(sessionToken, 'base64').toString();
-      const [user, timestamp] = decoded.split(':');
-      
-      if (user !== 'admin') {
-        throw new Error('Invalid user');
-      }
-
-      const tokenTime = parseInt(timestamp);
-      const currentTime = Date.now();
-      const oneHour = 3600000; // 1小时的毫秒数
-
-      if (currentTime - tokenTime > oneHour) {
-        throw new Error('Token expired');
-      }
-
+    if (isValid) {
       return NextResponse.json({
         success: true,
         message: '会话有效'
@@ -96,9 +74,9 @@ export async function GET(request: NextRequest) {
           'Expires': '0'
         }
       });
-    } catch {
+    } else {
       return NextResponse.json(
-        { success: false, message: '会话无效' },
+        { success: false, message: '会话无效或已过期' },
         { status: 401 }
       );
     }

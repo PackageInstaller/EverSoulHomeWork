@@ -19,7 +19,7 @@ export default function StageDetailPage() {
   const stageId = params.id as string;
   const dataSource = (searchParams.get('source') || 'live') as DataSource;
   const returnSource = searchParams.get('returnSource') || dataSource; // 返回时使用的数据源
-  
+
   const [areaNo, stageNo] = stageId.split('-').map(Number);
 
   useEffect(() => {
@@ -34,13 +34,13 @@ export default function StageDetailPage() {
     try {
       setLoading(true);
       setError(null);
-      
+
       // 通过 API 获取关卡详情（使用服务器缓存）
       const response = await fetch(
         `/api/stages/details?source=${dataSource}&area=${areaNo}&stage=${stageNo}`
       );
       const data = await response.json();
-      
+
       if (data.success && data.details) {
         setStageDetails(data.details);
       } else {
@@ -60,15 +60,15 @@ export default function StageDetailPage() {
       <>
         {/* 固定背景层 */}
         {backgroundImage && (
-          <div 
+          <div
             className="fixed inset-0 z-0"
             style={getBackgroundStyle(backgroundImage)}
           />
         )}
-        
+
         {/* 半透明覆盖层 */}
         <div className="fixed inset-0 z-10 bg-black/50"></div>
-        
+
         {/* 内容区域 */}
         <div className="relative z-20 min-h-screen flex items-center justify-center">
           <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 sm:p-8 shadow-2xl border border-white/20 max-w-xs sm:max-w-md w-full">
@@ -88,15 +88,15 @@ export default function StageDetailPage() {
       <>
         {/* 固定背景层 */}
         {backgroundImage && (
-          <div 
+          <div
             className="fixed inset-0 z-0"
             style={getBackgroundStyle(backgroundImage)}
           />
         )}
-        
+
         {/* 半透明覆盖层 */}
         <div className="fixed inset-0 z-10 bg-black/50"></div>
-        
+
         {/* 内容区域 */}
         <div className="relative z-20 min-h-screen flex items-center justify-center p-4">
           <div className="bg-white/95 backdrop-blur-sm rounded-xl p-4 sm:p-8 shadow-2xl border border-white/20 max-w-xs sm:max-w-md w-full text-center">
@@ -129,15 +129,15 @@ export default function StageDetailPage() {
       <>
         {/* 固定背景层 */}
         {backgroundImage && (
-          <div 
+          <div
             className="fixed inset-0 z-0"
             style={getBackgroundStyle(backgroundImage)}
           />
         )}
-        
+
         {/* 半透明覆盖层 */}
         <div className="fixed inset-0 z-10 bg-black/50"></div>
-        
+
         {/* 内容区域 */}
         <div className="relative z-20 min-h-screen">
           {/* 导航栏 */}
@@ -148,14 +148,14 @@ export default function StageDetailPage() {
                 <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 mb-2 sm:mb-0">
                   {/* 返回按钮 */}
                   <div className="flex items-center space-x-2">
-                    <a 
+                    <a
                       href="/"
                       className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-md transition-colors flex items-center space-x-1 border border-white/30 text-xs sm:text-sm hover:scale-105 font-medium"
                     >
                       <span>←</span>
                       <span>首页</span>
                     </a>
-                    <a 
+                    <a
                       href={`/stage?source=${returnSource}`}
                       className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-md transition-colors flex items-center space-x-1 border border-white/30 text-xs sm:text-sm hover:scale-105 font-medium"
                     >
@@ -164,28 +164,26 @@ export default function StageDetailPage() {
                     </a>
                   </div>
                 </div>
-                
+
                 {/* 数据源切换 */}
                 <div className="flex items-center space-x-2 text-xs sm:text-sm">
                   <span className="text-white/80 font-medium">数据源：</span>
                   <div className="relative inline-flex bg-white/10 backdrop-blur-sm rounded-full p-1 border border-white/20">
                     <a
                       href={`/stage/${areaNo}-${stageNo}?source=live&returnSource=${returnSource}`}
-                      className={`px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-medium rounded-full transition-all duration-300 ${
-                        dataSource === 'live'
+                      className={`px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-medium rounded-full transition-all duration-300 ${dataSource === 'live'
                           ? 'bg-white text-gray-900 shadow-lg'
                           : 'text-white/70 hover:text-white hover:bg-white/10'
-                      }`}
+                        }`}
                     >
                       正式服
                     </a>
                     <a
                       href={`/stage/${areaNo}-${stageNo}?source=review&returnSource=${returnSource}`}
-                      className={`px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-medium rounded-full transition-all duration-300 ${
-                        dataSource === 'review'
+                      className={`px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-medium rounded-full transition-all duration-300 ${dataSource === 'review'
                           ? 'bg-white text-gray-900 shadow-lg'
                           : 'text-white/70 hover:text-white hover:bg-white/10'
-                      }`}
+                        }`}
                     >
                       测试服
                     </a>

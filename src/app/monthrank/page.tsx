@@ -8,7 +8,7 @@ export const metadata = {
 
 export default function MonthRankPage() {
   return (
-    <main 
+    <main
       className="min-h-screen relative"
       style={{
         backgroundImage: 'url(/background/prizeBg.webp)',
@@ -20,7 +20,7 @@ export default function MonthRankPage() {
     >
       {/* 半透明覆盖层 */}
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
-      
+
       <div className="container mx-auto px-4 py-8 relative z-10">
         {/* 页面标题和导航 */}
         <div className="mb-8">

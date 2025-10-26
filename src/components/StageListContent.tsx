@@ -12,7 +12,7 @@ interface StageListContentProps {
 export default function StageListContent({ initialStages = [] }: StageListContentProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  
+
   const [liveStages, setLiveStages] = useState<Stage[]>([]);
   const [reviewStages, setReviewStages] = useState<Stage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,10 +21,10 @@ export default function StageListContent({ initialStages = [] }: StageListConten
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
   const [backgroundImage, setBackgroundImage] = useState<string>('');
   const [selectedArea, setSelectedArea] = useState<number | null>(null);
-  
+
   // 从URL参数获取数据源，默认为live
   const dataSource = (searchParams.get('source') || 'live') as DataSource;
-  
+
   // 根据当前数据源选择对应的stages
   const stages = dataSource === 'live' ? liveStages : reviewStages;
 
@@ -72,7 +72,7 @@ export default function StageListContent({ initialStages = [] }: StageListConten
       // 检查是否至少有一个数据源加载成功
       const liveSuccess = liveData.status === 'fulfilled' && liveData.value.success;
       const reviewSuccess = reviewData.status === 'fulfilled' && reviewData.value.success;
-      
+
       if (!liveSuccess && !reviewSuccess) {
         setError('所有数据源加载失败');
         addDebugInfo('❌ 所有数据源都无法加载');
@@ -173,11 +173,11 @@ export default function StageListContent({ initialStages = [] }: StageListConten
   return (
     <div className="min-h-screen relative">
       {/* 固定背景 */}
-      <div 
+      <div
         className="fixed inset-0 z-0"
         style={getBackgroundStyle(backgroundImage)}
       />
-      
+
       {/* 内容层 */}
       <div className="relative z-10 min-h-screen">
         {/* 导航栏 */}
@@ -190,17 +190,16 @@ export default function StageListContent({ initialStages = [] }: StageListConten
               >
                 ← 返回首页
               </button>
-              
+
               <div className="flex items-center space-x-4">
                 <span className="text-white/80 text-sm font-medium">数据源:</span>
                 <div className="relative inline-flex bg-white/10 backdrop-blur-sm rounded-full p-1 border border-white/20">
                   <button
                     onClick={() => router.push('/stage?source=live')}
-                    className={`px-4 py-2 text-xs font-medium rounded-full transition-all duration-300 relative ${
-                      dataSource === 'live'
+                    className={`px-4 py-2 text-xs font-medium rounded-full transition-all duration-300 relative ${dataSource === 'live'
                         ? 'bg-white text-gray-900 shadow-lg transform scale-105'
                         : 'text-white/70 hover:text-white hover:bg-white/10'
-                    }`}
+                      }`}
                   >
                     正式服
                     {liveStages.length > 0 && (
@@ -209,11 +208,10 @@ export default function StageListContent({ initialStages = [] }: StageListConten
                   </button>
                   <button
                     onClick={() => router.push('/stage?source=review')}
-                    className={`px-4 py-2 text-xs font-medium rounded-full transition-all duration-300 relative ${
-                      dataSource === 'review'
+                    className={`px-4 py-2 text-xs font-medium rounded-full transition-all duration-300 relative ${dataSource === 'review'
                         ? 'bg-white text-gray-900 shadow-lg transform scale-105'
                         : 'text-white/70 hover:text-white hover:bg-white/10'
-                    }`}
+                      }`}
                   >
                     测试服
                     {reviewStages.length > 0 && (
@@ -237,7 +235,7 @@ export default function StageListContent({ initialStages = [] }: StageListConten
               </div>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {Object.keys(stagesByArea)
               .map(Number)
@@ -275,7 +273,7 @@ export default function StageListContent({ initialStages = [] }: StageListConten
                   </div>
                 );
               })}
-            </div>
+          </div>
         </div>
       </div>
 
@@ -295,18 +293,18 @@ export default function StageListContent({ initialStages = [] }: StageListConten
                 </svg>
               </button>
             </div>
-            
+
             {/* 模态框内容 */}
             <div className="p-6 overflow-y-auto max-h-[70vh]">
               {stagesByArea[selectedArea] && (
                 <div>
                   <div className="mb-4 p-4 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
                     <p className="text-sm text-white">
-                      共 {stagesByArea[selectedArea].length} 个关卡 • 
+                      共 {stagesByArea[selectedArea].length} 个关卡 •
                       关卡范围: {selectedArea}-1 到 {selectedArea}-{Math.max(...stagesByArea[selectedArea].map(s => s.stage_no))}
                     </p>
                   </div>
-                  
+
                   <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
                     {stagesByArea[selectedArea]
                       .sort((a, b) => a.stage_no - b.stage_no)

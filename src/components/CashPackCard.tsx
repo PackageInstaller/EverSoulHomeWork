@@ -7,17 +7,17 @@ interface CashPackCardProps {
 export default function CashPackCard({ packInfo }: CashPackCardProps) {
   // 解析礼包信息字符串
   const lines = packInfo.split('\n').filter(line => line.trim() !== '');
-  
+
   // 查找各个部分的索引
   let titleLine = '';
   let basicInfo: string[] = [];
   let contentLines: string[] = [];
   let priceLines: string[] = [];
   let currentSection = 'title';
-  
+
   for (const line of lines) {
     const trimmed = line.trim();
-    
+
     if (trimmed.startsWith('▼【') && trimmed.endsWith('】')) {
       titleLine = trimmed;
       currentSection = 'basic';
@@ -47,7 +47,7 @@ export default function CashPackCard({ packInfo }: CashPackCardProps) {
           <h3 className="text-lg font-bold text-yellow-300">{titleLine}</h3>
         </div>
       )}
-      
+
       {/* 基本信息 */}
       {basicInfo.length > 0 && (
         <div className="space-y-2">
@@ -58,7 +58,7 @@ export default function CashPackCard({ packInfo }: CashPackCardProps) {
           ))}
         </div>
       )}
-      
+
       {/* 礼包内容 */}
       {contentLines.length > 0 && (
         <div className="space-y-2">
@@ -73,7 +73,7 @@ export default function CashPackCard({ packInfo }: CashPackCardProps) {
           </div>
         </div>
       )}
-      
+
       {/* 价格信息 */}
       {priceLines.length > 0 && (
         <div className="space-y-2">

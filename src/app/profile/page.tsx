@@ -31,7 +31,6 @@ export default function ProfilePage() {
       }
 
       try {
-        // 添加时间戳防止 CDN 缓存
         const timestamp = Date.now();
         const response = await fetch(`/api/user/profile?_t=${timestamp}`, {
           headers: {
@@ -72,7 +71,7 @@ export default function ProfilePage() {
 
     // 如果要修改密码（填写了任一密码字段）
     const isChangingPassword = oldPassword || newPassword || confirmPassword;
-    
+
     if (isChangingPassword) {
       if (!oldPassword) {
         setMessage({ type: "error", text: "请输入当前密码" });
@@ -127,7 +126,7 @@ export default function ProfilePage() {
         // 如果修改了密码，需要强制退出重新登录
         if (isChangingPassword) {
           setMessage({ type: "success", text: "密码修改成功，请重新登录" });
-          
+
           // 清除token并跳转到登录页
           setTimeout(() => {
             localStorage.removeItem("Token");
@@ -136,7 +135,7 @@ export default function ProfilePage() {
         } else {
           // 只修改了昵称，更新本地token和用户信息
           localStorage.setItem("Token", data.token);
-          
+
           // 更新 localStorage 中的用户信息（如果存在）
           try {
             const userInfo = JSON.parse(atob(data.token.split('.')[1]));
@@ -148,7 +147,7 @@ export default function ProfilePage() {
           } catch (e) {
             console.error('解析用户信息失败', e);
           }
-          
+
           setMessage({ type: "success", text: "资料更新成功，即将刷新页面..." });
           setTimeout(() => {
             window.location.href = "/";
@@ -199,11 +198,10 @@ export default function ProfilePage() {
         <div className="bg-white rounded-xl shadow-md border border-gray-200 p-8">
           {message && (
             <div
-              className={`mb-4 p-3 rounded-md text-center ${
-                message.type === "error"
+              className={`mb-4 p-3 rounded-md text-center ${message.type === "error"
                   ? "bg-red-100 text-red-700 border border-red-300"
                   : "bg-green-100 text-green-700 border border-green-300"
-              }`}
+                }`}
             >
               {message.text}
             </div>
@@ -254,62 +252,62 @@ export default function ProfilePage() {
               <h3 className="text-sm font-medium text-gray-700 mb-4">
                 修改密码（可选）
               </h3>
-                <div>
-                  <label
-                    htmlFor="old-password"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    当前密码
-                  </label>
-                  <input
-                    id="old-password"
-                    name="old-password"
-                    type="password"
-                    value={oldPassword}
-                    onChange={(e) => setOldPassword(e.target.value)}
-                    className="mt-1 block w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="请输入当前密码"
-                    autoComplete="current-password"
-                  />
-                </div>
+              <div>
+                <label
+                  htmlFor="old-password"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  当前密码
+                </label>
+                <input
+                  id="old-password"
+                  name="old-password"
+                  type="password"
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                  className="mt-1 block w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="请输入当前密码"
+                  autoComplete="current-password"
+                />
+              </div>
 
-                <div>
-                  <label
-                    htmlFor="new-password"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    新密码
-                  </label>
-                  <input
-                    id="new-password"
-                    name="new-password"
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="mt-1 block w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="至少6位字符"
-                    autoComplete="new-password"
-                  />
-                </div>
+              <div>
+                <label
+                  htmlFor="new-password"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  新密码
+                </label>
+                <input
+                  id="new-password"
+                  name="new-password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="mt-1 block w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="至少6位字符"
+                  autoComplete="new-password"
+                />
+              </div>
 
-                <div>
-                  <label
-                    htmlFor="confirm-password"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    确认新密码
-                  </label>
-                  <input
-                    id="confirm-password"
-                    name="confirm-password"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="mt-1 block w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="请再次输入新密码"
-                    autoComplete="new-password"
-                  />
-                </div>
+              <div>
+                <label
+                  htmlFor="confirm-password"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  确认新密码
+                </label>
+                <input
+                  id="confirm-password"
+                  name="confirm-password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="mt-1 block w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="请再次输入新密码"
+                  autoComplete="new-password"
+                />
+              </div>
             </div>
 
             <div className="flex space-x-3">

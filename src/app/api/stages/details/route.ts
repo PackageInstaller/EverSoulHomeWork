@@ -26,9 +26,9 @@ export async function GET(request: NextRequest) {
     }
 
     console.log(`[API] 获取关卡详情: ${area}-${stage}，数据源: ${dataSource}`);
-    
+
     const details = await getStageDetails(dataSource, area, stage);
-    
+
     if (!details) {
       return NextResponse.json(
         {
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
         { status: 404 }
       );
     }
-    
+
     return NextResponse.json({
       success: true,
       dataSource,

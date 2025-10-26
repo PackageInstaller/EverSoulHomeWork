@@ -112,131 +112,130 @@ export default function MessageSender() {
         <div className="space-y-6">
           {/* 消息表单 */}
           <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6">
-        <h2 className="text-2xl font-bold text-white mb-6">📬 发送消息给用户</h2>
+            <h2 className="text-2xl font-bold text-white mb-6">📬 发送消息给用户</h2>
 
-        {/* 标题输入 */}
-        <div className="mb-4">
-          <label className="block text-white text-sm font-medium mb-2">
-            消息标题
-          </label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="请输入消息标题"
-            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+            {/* 标题输入 */}
+            <div className="mb-4">
+              <label className="block text-white text-sm font-medium mb-2">
+                消息标题
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="请输入消息标题"
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
 
-        {/* 内容输入 */}
-        <div className="mb-4">
-          <label className="block text-white text-sm font-medium mb-2">
-            消息内容
-          </label>
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="请输入消息内容"
-            rows={5}
-            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-          />
-        </div>
+            {/* 内容输入 */}
+            <div className="mb-4">
+              <label className="block text-white text-sm font-medium mb-2">
+                消息内容
+              </label>
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="请输入消息内容"
+                rows={5}
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              />
+            </div>
 
-        {/* 发送给全体用户选项 */}
-        <div className="mb-6">
-          <label className="flex items-center text-white cursor-pointer">
-            <input
-              type="checkbox"
-              checked={sendToAll}
-              onChange={(e) => {
-                setSendToAll(e.target.checked);
-                if (e.target.checked) {
-                  setSelectedUsers(new Set());
-                }
-              }}
-              className="mr-2 w-4 h-4"
-            />
-            <span className="text-sm font-medium">发送给全体用户</span>
-          </label>
-        </div>
+            {/* 发送给全体用户选项 */}
+            <div className="mb-6">
+              <label className="flex items-center text-white cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={sendToAll}
+                  onChange={(e) => {
+                    setSendToAll(e.target.checked);
+                    if (e.target.checked) {
+                      setSelectedUsers(new Set());
+                    }
+                  }}
+                  className="mr-2 w-4 h-4"
+                />
+                <span className="text-sm font-medium">发送给全体用户</span>
+              </label>
+            </div>
 
-        {/* 发送按钮 */}
-        <button
-          onClick={handleSend}
-          disabled={sending}
-          className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white font-medium rounded-lg transition-colors"
-        >
-          {sending ? '发送中...' : '发送消息'}
-        </button>
-        </div>
+            {/* 发送按钮 */}
+            <button
+              onClick={handleSend}
+              disabled={sending}
+              className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white font-medium rounded-lg transition-colors"
+            >
+              {sending ? '发送中...' : '发送消息'}
+            </button>
+          </div>
         </div>
 
         {/* 右列：用户列表 */}
         <div className="space-y-6">
           {/* 用户列表 */}
-      {!sendToAll ? (
-        <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-white">选择接收用户</h3>
-            <div className="flex items-center gap-3">
-              <span className="text-white/70 text-sm">
-                已选择 {selectedUsers.size} / {users.length} 位用户
-              </span>
-              <button
-                onClick={toggleSelectAll}
-                className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition-colors"
-              >
-                {selectedUsers.size === users.length ? '取消全选' : '全选'}
-              </button>
-            </div>
-          </div>
+          {!sendToAll ? (
+            <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-white">选择接收用户</h3>
+                <div className="flex items-center gap-3">
+                  <span className="text-white/70 text-sm">
+                    已选择 {selectedUsers.size} / {users.length} 位用户
+                  </span>
+                  <button
+                    onClick={toggleSelectAll}
+                    className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition-colors"
+                  >
+                    {selectedUsers.size === users.length ? '取消全选' : '全选'}
+                  </button>
+                </div>
+              </div>
 
-          {loading ? (
-            <div className="text-center py-8 text-white/70">加载中...</div>
+              {loading ? (
+                <div className="text-center py-8 text-white/70">加载中...</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                  {users.map((user) => (
+                    <label
+                      key={user.id}
+                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${selectedUsers.has(user.id)
+                          ? 'bg-blue-500/30 border border-blue-400'
+                          : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                        }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedUsers.has(user.id)}
+                        onChange={() => toggleUser(user.id)}
+                        className="w-4 h-4"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-white font-medium truncate">
+                          {user.nickname}
+                        </div>
+                        <div className="text-white/50 text-xs truncate">
+                          {user.email}
+                        </div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
-              {users.map((user) => (
-                <label
-                  key={user.id}
-                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
-                    selectedUsers.has(user.id)
-                      ? 'bg-blue-500/30 border border-blue-400'
-                      : 'bg-white/5 border border-white/10 hover:bg-white/10'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedUsers.has(user.id)}
-                    onChange={() => toggleUser(user.id)}
-                    className="w-4 h-4"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-white font-medium truncate">
-                      {user.nickname}
-                    </div>
-                    <div className="text-white/50 text-xs truncate">
-                      {user.email}
-                    </div>
-                  </div>
-                </label>
-              ))}
+            <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6">
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">📢</div>
+                <h3 className="text-xl font-bold text-white mb-2">全体发送模式</h3>
+                <p className="text-white/60 text-sm">
+                  消息将发送给所有注册用户
+                </p>
+                <p className="text-white/80 text-lg font-semibold mt-4">
+                  共 {users.length} 位用户
+                </p>
+              </div>
             </div>
           )}
-        </div>
-      ) : (
-        <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-6">
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">📢</div>
-            <h3 className="text-xl font-bold text-white mb-2">全体发送模式</h3>
-            <p className="text-white/60 text-sm">
-              消息将发送给所有注册用户
-            </p>
-            <p className="text-white/80 text-lg font-semibold mt-4">
-              共 {users.length} 位用户
-            </p>
-          </div>
-        </div>
-      )}
         </div>
       </div>
     </div>

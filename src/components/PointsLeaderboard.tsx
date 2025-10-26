@@ -57,7 +57,7 @@ export default function PointsLeaderboard({ initialYearMonth }: PointsLeaderboar
 
       if (result.success) {
         setAvailableMonths(result.months);
-        
+
         // 如果没有选择月份，使用最新的月份或当前月份
         if (!selectedMonth) {
           if (result.months.length > 0) {
@@ -85,10 +85,10 @@ export default function PointsLeaderboard({ initialYearMonth }: PointsLeaderboar
   const fetchLeaderboard = async () => {
     try {
       setLoading(true);
-      const url = selectedMonth 
+      const url = selectedMonth
         ? `/api/points/leaderboard?yearMonth=${selectedMonth}`
         : '/api/points/leaderboard';
-      
+
       const response = await fetch(url);
       const result = await response.json();
 
@@ -180,19 +180,19 @@ export default function PointsLeaderboard({ initialYearMonth }: PointsLeaderboar
             <div className="text-white/70 text-sm mb-1">基础奖池</div>
             <div className="text-2xl font-bold text-yellow-300">¥{prizePool.basePool}</div>
           </div>
-          
+
           {prizePool.carryOver > 0 && (
             <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-xl p-4 border border-green-500/30">
               <div className="text-white/70 text-sm mb-1">上月累加</div>
               <div className="text-2xl font-bold text-green-300">¥{prizePool.carryOver}</div>
             </div>
           )}
-          
+
           <div className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-xl p-4 border border-blue-500/30">
             <div className="text-white/70 text-sm mb-1">总奖池</div>
             <div className="text-2xl font-bold text-blue-300">¥{prizePool.totalPool}</div>
           </div>
-          
+
           <div className="bg-gradient-to-br from-pink-500/20 to-red-500/20 rounded-xl p-4 border border-pink-500/30">
             <div className="text-white/70 text-sm mb-1">当月总积分</div>
             <div className="text-2xl font-bold text-pink-300">{totalPoints.toFixed(1)}</div>
@@ -238,7 +238,7 @@ export default function PointsLeaderboard({ initialYearMonth }: PointsLeaderboar
       {/* 排行榜 */}
       <div className="stage-card">
         <h2 className="text-2xl font-bold text-white mb-4">🏆 排行榜</h2>
-        
+
         {leaderboard.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-white/70">本月暂无积分记录</p>
@@ -252,7 +252,7 @@ export default function PointsLeaderboard({ initialYearMonth }: PointsLeaderboar
               let rankIconType: 'image' | 'text' = 'text';
               let rankIconSrc = '';
               let rankText = `#${entry.rank}`;
-              
+
               if (entry.rank === 1) {
                 rankStyle = 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-2 border-yellow-500/50';
                 rankIconType = 'image';
@@ -284,8 +284,8 @@ export default function PointsLeaderboard({ initialYearMonth }: PointsLeaderboar
                       {/* 排名图标 */}
                       <div className="w-12 h-12 flex items-center justify-center flex-shrink-0">
                         {rankIconType === 'image' ? (
-                          <img 
-                            src={rankIconSrc} 
+                          <img
+                            src={rankIconSrc}
                             alt={`排名${entry.rank}`}
                             className="w-full h-full object-contain"
                           />
@@ -316,7 +316,7 @@ export default function PointsLeaderboard({ initialYearMonth }: PointsLeaderboar
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="text-right">
                       <div className="text-xl font-bold text-blue-300">
                         {entry.points.toFixed(1)} 积分

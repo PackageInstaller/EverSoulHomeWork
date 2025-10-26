@@ -273,13 +273,12 @@ export default function HomePage() {
                   onClick={() =>
                     item.available ? setActiveTab(item.id) : null
                   }
-                  className={`w-full text-left p-2 sm:p-3 rounded-lg transition-colors ${
-                    activeTab === item.id
+                  className={`w-full text-left p-2 sm:p-3 rounded-lg transition-colors ${activeTab === item.id
                       ? "bg-blue-100 text-blue-700 border-2 border-blue-200"
                       : item.available
-                      ? "hover:bg-gray-100 text-gray-700"
-                      : "text-gray-400 cursor-not-allowed"
-                  }`}
+                        ? "hover:bg-gray-100 text-gray-700"
+                        : "text-gray-400 cursor-not-allowed"
+                    }`}
                   disabled={!item.available}
                 >
                   <div className="flex items-center space-x-2 sm:space-x-3">

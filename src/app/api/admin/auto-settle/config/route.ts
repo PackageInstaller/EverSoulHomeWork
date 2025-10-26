@@ -1,37 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { validateAdminSession } from '@/lib/adminAuth'
 
 export const dynamic = 'force-dynamic'
-
-// 验证管理员会话
-async function validateAdminSession(request: NextRequest) {
-  const sessionToken = request.cookies.get('admin_session')?.value;
-
-  if (!sessionToken) {
-    return false;
-  }
-
-  try {
-    const decoded = Buffer.from(sessionToken, 'base64').toString();
-    const [user, timestamp] = decoded.split(':');
-    
-    if (user !== 'admin') {
-      return false;
-    }
-
-    const tokenTime = parseInt(timestamp);
-    const currentTime = Date.now();
-    const oneHour = 3600000;
-
-    if (currentTime - tokenTime > oneHour) {
-      return false;
-    }
-
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 // 获取自动结算配置
 export async function GET(request: NextRequest) {

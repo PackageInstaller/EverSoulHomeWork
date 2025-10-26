@@ -26,7 +26,7 @@ export function getConsistentMainStoryBackground(stageId: string): string {
     hash = ((hash << 5) - hash) + char;
     hash = hash & hash; // 转换为32位整数
   }
-  
+
   const index = Math.abs(hash) % MAIN_STORY_BACKGROUNDS.length;
   const selectedBackground = MAIN_STORY_BACKGROUNDS[index];
   return `/background/${selectedBackground}`;

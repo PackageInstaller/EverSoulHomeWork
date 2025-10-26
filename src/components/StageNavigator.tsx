@@ -37,7 +37,7 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
             .filter((stage: Stage) => stage.area_no === currentArea)
             .map((stage: Stage) => stage.stage_no)
             .sort((a: number, b: number) => a - b);
-          
+
           setAvailableStages(currentAreaStages);
         }
       } catch (error) {
@@ -72,9 +72,8 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
     <>
       {/* 悬浮按钮 */}
       <div
-        className={`fixed top-1/2 -translate-y-1/2 ${
-          position === 'right' ? 'right-0' : 'left-0'
-        } z-50 transition-all duration-300`}
+        className={`fixed top-1/2 -translate-y-1/2 ${position === 'right' ? 'right-0' : 'left-0'
+          } z-50 transition-all duration-300`}
       >
         {!isExpanded && (
           <button
@@ -142,10 +141,9 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
                     disabled={stage.isCurrent}
                     className={`
                       aspect-square rounded-lg font-medium text-sm transition-all
-                      ${
-                        stage.isCurrent
-                          ? 'bg-blue-600 text-white ring-2 ring-blue-400 cursor-default'
-                          : 'bg-gray-100 hover:bg-blue-100 text-gray-700 hover:text-blue-600 hover:ring-2 hover:ring-blue-300'
+                      ${stage.isCurrent
+                        ? 'bg-blue-600 text-white ring-2 ring-blue-400 cursor-default'
+                        : 'bg-gray-100 hover:bg-blue-100 text-gray-700 hover:text-blue-600 hover:ring-2 hover:ring-blue-300'
                       }
                       disabled:cursor-default
                     `}
@@ -163,7 +161,7 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
             <p className="text-xs text-gray-600 text-center">
               {!loading && stages.length > 0 && (
                 <span className="font-medium text-blue-600">
-                  本章共 {stages.length} 关 · 
+                  本章共 {stages.length} 关 ·
                 </span>
               )}
               {' '}点击关卡编号快速跳转，点击箭头切换位置
