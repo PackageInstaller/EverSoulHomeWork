@@ -38,7 +38,7 @@ export default function AdminHomeworkPage() {
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"homework" | "points" | "messages">("homework");
-  
+
   const [homeworks, setHomeworks] = useState<Homework[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -139,12 +139,12 @@ export default function AdminHomeworkPage() {
           }
         }
       );
-      
+
       if (response.status === 401) {
         setIsAuthenticated(false);
         return;
       }
-      
+
       const result = await response.json();
 
       if (result.success) {
@@ -170,7 +170,7 @@ export default function AdminHomeworkPage() {
     }
   }, [selectedStatus, isAuthenticated]);
 
-  // 自动刷新作业列表（只在作业审核标签页激活时）
+  // 自动刷新作业列表（只在待审核且列表为空时启用）
   useEffect(() => {
     // 清除旧的定时器
     if (autoRefreshIntervalRef.current) {
@@ -178,46 +178,55 @@ export default function AdminHomeworkPage() {
       autoRefreshIntervalRef.current = null;
     }
 
-    // 只在已认证且在作业审核标签页时启用自动刷新
-    if (!isAuthenticated || activeTab !== 'homework') {
+    const shouldEnableAutoRefresh =
+      isAuthenticated &&
+      activeTab === 'homework' &&
+      selectedStatus === 'pending' &&
+      homeworks.length === 0;
+
+    if (!shouldEnableAutoRefresh) {
+      if (homeworks.length > 0 && selectedStatus === 'pending') {
+        console.log('✅ [自动刷新] 检测到有作业，停止自动刷新');
+      }
       return;
     }
 
-    // 启动自动刷新
     const startAutoRefresh = () => {
       autoRefreshIntervalRef.current = setInterval(() => {
-        if (!document.hidden && isAuthenticated && activeTab === 'homework') {
-          console.log('🔄 [自动刷新] 刷新作业列表...');
+        if (!document.hidden && isAuthenticated && activeTab === 'homework' && selectedStatus === 'pending') {
+          console.log('🔄 [自动刷新] 刷新待审核作业列表...');
           fetchHomeworks(selectedStatus, pagination.page);
         }
-      }, 1000); // 每 1 秒刷新一次
+      }, 1000);
     };
 
-    // 页面可见性变化处理
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        // 页面不可见，停止轮询
         if (autoRefreshIntervalRef.current) {
           console.log('📱 [自动刷新] 页面不可见，停止轮询');
           clearInterval(autoRefreshIntervalRef.current);
           autoRefreshIntervalRef.current = null;
         }
       } else {
-        // 页面可见，恢复轮询
-        if (!autoRefreshIntervalRef.current && isAuthenticated && activeTab === 'homework') {
+        const shouldResume =
+          !autoRefreshIntervalRef.current &&
+          isAuthenticated &&
+          activeTab === 'homework' &&
+          selectedStatus === 'pending' &&
+          homeworks.length === 0;
+
+        if (shouldResume) {
           console.log('📱 [自动刷新] 页面可见，启动轮询');
           startAutoRefresh();
         }
       }
     };
 
-    console.log('✅ [自动刷新] 启用作业列表自动刷新（1秒间隔）');
+    console.log('✅ [自动刷新] 待审核列表为空，启用自动刷新（1秒间隔）');
     startAutoRefresh();
 
-    // 监听页面可见性变化
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // 清理函数
     return () => {
       if (autoRefreshIntervalRef.current) {
         console.log('🛑 [自动刷新] 停止作业列表自动刷新');
@@ -226,7 +235,7 @@ export default function AdminHomeworkPage() {
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isAuthenticated, activeTab, selectedStatus, pagination.page]);
+  }, [isAuthenticated, activeTab, selectedStatus, homeworks.length, pagination.page]);
 
   const handleStatusChange = async (homeworkId: string, newStatus: string) => {
     // 如果是拒绝操作，先打开拒绝原因弹窗
@@ -236,8 +245,7 @@ export default function AdminHomeworkPage() {
       return;
     }
 
-    // 乐观更新：如果状态变化会导致作业从当前列表移除，先从UI中移除
-    const shouldRemoveFromList = 
+    const shouldRemoveFromList =
       (selectedStatus === 'pending' && newStatus !== 'pending') ||
       (selectedStatus === 'approved' && newStatus !== 'approved') ||
       (selectedStatus === 'rejected' && newStatus !== 'rejected');
@@ -282,8 +290,6 @@ export default function AdminHomeworkPage() {
     // 批量拒绝
     if (isBatchReject) {
       if (selectedHomeworks.size === 0) return;
-
-      // 乐观更新：如果当前不是查看"rejected"列表，先从UI中移除
       if (selectedStatus !== 'rejected') {
         setHomeworks(prev => prev.filter(hw => !selectedHomeworks.has(hw.id)));
       }
@@ -294,7 +300,7 @@ export default function AdminHomeworkPage() {
           fetch(`/api/admin/homework/${homeworkId}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
               status: "rejected",
               rejectReason: rejectReason.trim() || undefined
             }),
@@ -308,8 +314,7 @@ export default function AdminHomeworkPage() {
           alert(`成功拒绝 ${successCount} 个作业` + (rejectReason.trim() ? "，已发送拒绝原因通知" : ""));
         } else {
           alert(
-            `操作完成：成功 ${successCount} 个，失败 ${
-              selectedHomeworks.size - successCount
+            `操作完成：成功 ${successCount} 个，失败 ${selectedHomeworks.size - successCount
             } 个`
           );
         }
@@ -332,7 +337,6 @@ export default function AdminHomeworkPage() {
     // 单个拒绝
     if (!rejectHomeworkId) return;
 
-    // 乐观更新：如果当前不是查看"rejected"列表，先从UI中移除
     if (selectedStatus !== 'rejected') {
       setHomeworks(prev => prev.filter(hw => hw.id !== rejectHomeworkId));
     }
@@ -343,7 +347,7 @@ export default function AdminHomeworkPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           status: "rejected",
           rejectReason: rejectReason.trim() || undefined
         }),
@@ -376,9 +380,7 @@ export default function AdminHomeworkPage() {
 
   // 刷新游戏数据缓存
   const handleRefreshCache = async () => {
-    // 使用 ref 立即防止重复点击（不依赖异步的 state 更新）
     if (isRefreshingRef.current) {
-      console.log('⚠️ [前端] 防止重复点击：已有刷新正在进行');
       return;
     }
 
@@ -415,7 +417,7 @@ export default function AdminHomeworkPage() {
       alert(result.message || '刷新完成');
     } catch (error: any) {
       console.error("❌ [前端] 刷新缓存失败:", error);
-      
+
       if (error.name === 'AbortError') {
         alert("❌ 请求超时\n\n前端请求已超时（超过2分钟），但服务器可能还在继续处理。\n\n建议：\n1. 等待 30 秒后重试\n2. 如果持续失败，可能是 GitHub 访问受限");
       } else {
@@ -503,8 +505,7 @@ export default function AdminHomeworkPage() {
 
     if (
       !confirm(
-        `确定要将选中的 ${
-          selectedHomeworks.size
+        `确定要将选中的 ${selectedHomeworks.size
         } 个作业状态更新为 ${getStatusText(newStatus)} 吗？`
       )
     ) {
@@ -512,7 +513,7 @@ export default function AdminHomeworkPage() {
     }
 
     // 乐观更新：如果状态变化会导致作业从当前列表移除，先从UI中移除
-    const shouldRemoveFromList = 
+    const shouldRemoveFromList =
       (selectedStatus === 'pending' && newStatus !== 'pending') ||
       (selectedStatus === 'approved' && newStatus !== 'approved') ||
       (selectedStatus === 'rejected' && newStatus !== 'rejected');
@@ -538,8 +539,7 @@ export default function AdminHomeworkPage() {
         alert(`成功更新 ${successCount} 个作业`);
       } else {
         alert(
-          `更新完成：成功 ${successCount} 个，失败 ${
-            selectedHomeworks.size - successCount
+          `更新完成：成功 ${successCount} 个，失败 ${selectedHomeworks.size - successCount
           } 个`
         );
       }
@@ -588,8 +588,7 @@ export default function AdminHomeworkPage() {
         alert(`成功删除 ${successCount} 个作业`);
       } else {
         alert(
-          `删除完成：成功 ${successCount} 个，失败 ${
-            selectedHomeworks.size - successCount
+          `删除完成：成功 ${successCount} 个，失败 ${selectedHomeworks.size - successCount
           } 个`
         );
       }
@@ -679,7 +678,7 @@ export default function AdminHomeworkPage() {
           <h1 className="text-2xl font-bold text-white mb-6 text-center">
             管理员登录
           </h1>
-          
+
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <input
@@ -694,13 +693,13 @@ export default function AdminHomeworkPage() {
                 disabled={loginLoading}
               />
             </div>
-            
+
             {loginError && (
               <div className="text-red-400 text-sm bg-red-900/20 border border-red-500/20 rounded-lg p-3">
                 {loginError}
               </div>
             )}
-            
+
             <button
               type="submit"
               disabled={loginLoading}
@@ -735,45 +734,42 @@ export default function AdminHomeworkPage() {
               >
                 ← 返回主页
               </a>
-            <button
-              onClick={handleLogout}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors text-sm"
-            >
-              登出
-            </button>
+              <button
+                onClick={handleLogout}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors text-sm"
+              >
+                登出
+              </button>
             </div>
           </div>
-          
+
           {/* 标签页切换和工具按钮 */}
           <div className="flex justify-between items-center mb-6">
             <div className="flex space-x-4">
               <button
                 onClick={() => setActiveTab("homework")}
-                className={`px-6 py-3 rounded-lg transition-colors ${
-                  activeTab === "homework"
+                className={`px-6 py-3 rounded-lg transition-colors ${activeTab === "homework"
                     ? "bg-blue-500 text-white"
                     : "bg-white/10 text-white/70 hover:bg-white/20"
-                }`}
+                  }`}
               >
                 📝 作业管理
               </button>
               <button
                 onClick={() => setActiveTab("points")}
-                className={`px-6 py-3 rounded-lg transition-colors ${
-                  activeTab === "points"
+                className={`px-6 py-3 rounded-lg transition-colors ${activeTab === "points"
                     ? "bg-blue-500 text-white"
                     : "bg-white/10 text-white/70 hover:bg-white/20"
-                }`}
+                  }`}
               >
                 💎 积分结算
               </button>
               <button
                 onClick={() => setActiveTab("messages")}
-                className={`px-6 py-3 rounded-lg transition-colors ${
-                  activeTab === "messages"
+                className={`px-6 py-3 rounded-lg transition-colors ${activeTab === "messages"
                     ? "bg-blue-500 text-white"
                     : "bg-white/10 text-white/70 hover:bg-white/20"
-                }`}
+                  }`}
               >
                 📬 消息发送
               </button>
@@ -783,11 +779,10 @@ export default function AdminHomeworkPage() {
             <button
               onClick={handleRefreshCache}
               disabled={cacheRefreshing}
-              className={`px-6 py-3 rounded-lg transition-colors flex items-center gap-2 ${
-                cacheRefreshing
+              className={`px-6 py-3 rounded-lg transition-colors flex items-center gap-2 ${cacheRefreshing
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-purple-600 hover:bg-purple-700"
-              } text-white font-medium shadow-lg`}
+                } text-white font-medium shadow-lg`}
               title="刷新游戏数据缓存（游戏更新后使用）"
             >
               <svg
@@ -820,22 +815,23 @@ export default function AdminHomeworkPage() {
                   <button
                     key={option.value}
                     onClick={() => setSelectedStatus(option.value)}
-                    className={`px-4 py-2 rounded-lg transition-colors ${
-                      selectedStatus === option.value
+                    className={`px-4 py-2 rounded-lg transition-colors ${selectedStatus === option.value
                         ? "bg-blue-500 text-white"
                         : "bg-white/10 text-white/70 hover:bg-white/20"
-                    }`}
+                      }`}
                   >
                     {option.label}
                   </button>
                 ))}
               </div>
-              
-              {/* 自动刷新指示器 */}
-              <div className="flex items-center space-x-2 px-3 py-1.5 bg-green-500/20 border border-green-500/30 rounded-lg">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-xs text-green-300">自动刷新已启用</span>
-              </div>
+
+              {/* 自动刷新指示器（仅在待审核且列表为空时显示） */}
+              {selectedStatus === 'pending' && homeworks.length === 0 && (
+                <div className="flex items-center space-x-2 px-3 py-1.5 bg-green-500/20 border border-green-500/30 rounded-lg">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs text-green-300">等待新作业提交...</span>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -846,7 +842,7 @@ export default function AdminHomeworkPage() {
             {/* 统计信息和批量操作 */}
             <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 p-4 mb-6">
               <div className="flex items-center justify-between">
-              <div className="text-white text-sm">
+                <div className="text-white text-sm">
                   共 {pagination.total} 个作业 • 第 {pagination.page} 页，共{" "}
                   {pagination.totalPages} 页
                   {selectedHomeworks.size > 0 && (
@@ -965,252 +961,252 @@ export default function AdminHomeworkPage() {
             ) : (
               /* 作业列表 - 按用户分组 */
               <div className="space-y-4">
-            {homeworks.length === 0 ? (
-              <div className="text-center py-12 bg-black/20 backdrop-blur-sm rounded-xl border border-white/20">
-                <p className="text-white/70">暂无作业数据</p>
-              </div>
-            ) : (
-              <>
-                {/* 全部展开/收起按钮 */}
-                <div className="flex justify-end mb-2">
-                  <button
-                    onClick={toggleExpandAll}
-                    className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition-colors"
-                  >
-                    {expandedUsers.size === groupHomeworksByUser().size ? "全部收起" : "全部展开"}
-                  </button>
-                </div>
-
-                {/* 按用户分组显示 */}
-                {Array.from(groupHomeworksByUser().entries()).map(([nickname, userHomeworks]) => {
-                  const isExpanded = expandedUsers.has(nickname);
-                  const userHomeworkIds = userHomeworks.map(hw => hw.id);
-                  const allUserHomeworksSelected = userHomeworkIds.every(id => selectedHomeworks.has(id));
-                  const someUserHomeworksSelected = userHomeworkIds.some(id => selectedHomeworks.has(id));
-
-                  return (
-                    <div
-                      key={nickname}
-                      className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 overflow-hidden"
-                    >
-                      {/* 用户头部 - 可点击展开/收起 */}
-                      <div 
-                        className="p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors"
-                        onClick={() => toggleUserExpanded(nickname)}
+                {homeworks.length === 0 ? (
+                  <div className="text-center py-12 bg-black/20 backdrop-blur-sm rounded-xl border border-white/20">
+                    <p className="text-white/70">暂无作业数据</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* 全部展开/收起按钮 */}
+                    <div className="flex justify-end mb-2">
+                      <button
+                        onClick={toggleExpandAll}
+                        className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition-colors"
                       >
-                        <div className="flex items-center space-x-4">
-                          {/* 展开/收起图标 */}
-                          <div className="text-white text-xl transition-transform duration-200" style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>
-                            ▶
-                          </div>
-                          
-                          {/* 头像 */}
-                          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg flex-shrink-0">
-                            {nickname.charAt(0)}
-                          </div>
-                          
-                          {/* 用户信息 */}
-                          <div>
-                            <h3 className="text-white font-bold text-lg">{nickname}</h3>
-                            <p className="text-white/60 text-sm">
-                              共提交 {userHomeworks.length} 个作业
-                              {userHomeworks.filter(hw => hw.status === 'pending').length > 0 && (
-                                <span className="ml-2 text-yellow-300">
-                                  • {userHomeworks.filter(hw => hw.status === 'pending').length} 个待审核
-                                </span>
-                              )}
-                            </p>
-                          </div>
-                        </div>
+                        {expandedUsers.size === groupHomeworksByUser().size ? "全部收起" : "全部展开"}
+                      </button>
+                    </div>
 
-                        {/* 用户级别的选择框和快捷操作 */}
-                        <div className="flex items-center space-x-3" onClick={(e) => e.stopPropagation()}>
-                          <label className="flex items-center space-x-2 cursor-pointer group">
-                            <input
-                              type="checkbox"
-                              checked={allUserHomeworksSelected}
-                              ref={input => {
-                                if (input) {
-                                  input.indeterminate = someUserHomeworksSelected && !allUserHomeworksSelected;
-                                }
-                              }}
-                              onChange={() => {
-                                if (allUserHomeworksSelected) {
-                                  setSelectedHomeworks(prev => {
-                                    const newSet = new Set(prev);
-                                    userHomeworkIds.forEach(id => newSet.delete(id));
-                                    return newSet;
-                                  });
-                                } else {
-                                  setSelectedHomeworks(prev => {
-                                    const newSet = new Set(prev);
-                                    userHomeworkIds.forEach(id => newSet.add(id));
-                                    return newSet;
-                                  });
-                                }
-                              }}
-                              className="w-5 h-5 rounded border-2 border-white/30 bg-white/10 checked:bg-blue-500 checked:border-blue-500 cursor-pointer transition-colors"
-                            />
-                            <span className="text-white/70 group-hover:text-white text-sm">
-                              选择全部
-                            </span>
-                          </label>
-                        </div>
-                      </div>
+                    {/* 按用户分组显示 */}
+                    {Array.from(groupHomeworksByUser().entries()).map(([nickname, userHomeworks]) => {
+                      const isExpanded = expandedUsers.has(nickname);
+                      const userHomeworkIds = userHomeworks.map(hw => hw.id);
+                      const allUserHomeworksSelected = userHomeworkIds.every(id => selectedHomeworks.has(id));
+                      const someUserHomeworksSelected = userHomeworkIds.some(id => selectedHomeworks.has(id));
 
-                      {/* 展开的作业列表 */}
-                      {isExpanded && (
-                        <div className="border-t border-white/10">
-                          {userHomeworks.map((homework, index) => (
-                            <div
-                              key={homework.id}
-                              className={`p-6 ${index > 0 ? 'border-t border-white/10' : ''}`}
-                            >
-                              {/* 复选框和作业编号 */}
-                              <div className="flex items-start justify-between mb-4">
-                                <div className="flex items-center space-x-3">
-                                  <label className="flex items-center space-x-2 cursor-pointer group">
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedHomeworks.has(homework.id)}
-                                      onChange={() => toggleHomeworkSelection(homework.id)}
-                                      className="w-5 h-5 rounded border-2 border-white/30 bg-white/10 checked:bg-blue-500 checked:border-blue-500 cursor-pointer transition-colors"
-                                    />
-                                    <span className="text-white/70 group-hover:text-white text-sm">
-                                      作业 #{index + 1}
+                      return (
+                        <div
+                          key={nickname}
+                          className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 overflow-hidden"
+                        >
+                          {/* 用户头部 - 可点击展开/收起 */}
+                          <div
+                            className="p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors"
+                            onClick={() => toggleUserExpanded(nickname)}
+                          >
+                            <div className="flex items-center space-x-4">
+                              {/* 展开/收起图标 */}
+                              <div className="text-white text-xl transition-transform duration-200" style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+                                ▶
+                              </div>
+
+                              {/* 头像 */}
+                              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg flex-shrink-0">
+                                {nickname.charAt(0)}
+                              </div>
+
+                              {/* 用户信息 */}
+                              <div>
+                                <h3 className="text-white font-bold text-lg">{nickname}</h3>
+                                <p className="text-white/60 text-sm">
+                                  共提交 {userHomeworks.length} 个作业
+                                  {userHomeworks.filter(hw => hw.status === 'pending').length > 0 && (
+                                    <span className="ml-2 text-yellow-300">
+                                      • {userHomeworks.filter(hw => hw.status === 'pending').length} 个待审核
                                     </span>
-                                  </label>
-                                </div>
-                              </div>
-
-                              {/* 作业基本信息 */}
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                                <div>
-                                  <label className="text-white/60 text-sm">关卡</label>
-                                  <p className="text-white font-medium">{homework.stageId}</p>
-                                </div>
-                                <div>
-                                  <label className="text-white/60 text-sm">状态</label>
-                                  <p className={`inline-block px-2 py-1 rounded text-xs border ${getStatusColor(homework.status)}`}>
-                                    {getStatusText(homework.status)}
-                                  </p>
-                                </div>
-                                <div>
-                                  <label className="text-white/60 text-sm">提交时间</label>
-                                  <p className="text-white/80 text-sm">
-                                    {new Date(homework.createdAt).toLocaleString("zh-CN")}
-                                  </p>
-                                </div>
-                              </div>
-
-                              {/* 作业描述 */}
-                              {homework.description && (
-                                <div className="mb-4">
-                                  <label className="text-white/60 text-sm">作业说明</label>
-                                  <p className="text-white/80 text-sm mt-1 leading-relaxed">
-                                    {homework.description}
-                                  </p>
-                                </div>
-                              )}
-
-                              {/* 图片列表 */}
-                              <div className="mb-4">
-                                <label className="text-white/60 text-sm mb-2 block">
-                                  作业图片 ({homework.images.length}张)
-                                </label>
-                                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                                  {homework.images.map((image, imgIndex) => (
-                                    <div key={image.id} className="relative group">
-                                      <img
-                                        src={image.url}
-                                        alt={`图片${imgIndex + 1}`}
-                                        className="w-full h-20 object-cover rounded-lg cursor-pointer transition-transform hover:scale-105"
-                                        onClick={() => {
-                                          setCurrentHomeworkImages(homework.images);
-                                          setCurrentImageIndex(imgIndex);
-                                          setSelectedImage(image.url);
-                                        }}
-                                      />
-                                      <div className="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-1 rounded">
-                                        {formatFileSize(image.fileSize)}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-
-                              {/* 操作按钮 */}
-                              <div className="flex space-x-3">
-                                {homework.status === "pending" && (
-                                  <>
-                                    <button
-                                      onClick={() => handleStatusChange(homework.id, "approved")}
-                                      className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-                                    >
-                                      ✓ 通过
-                                    </button>
-                                    <button
-                                      onClick={() => handleStatusChange(homework.id, "rejected")}
-                                      className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-                                    >
-                                      ✗ 拒绝
-                                    </button>
-                                  </>
-                                )}
-                                {homework.status !== "pending" && (
-                                  <button
-                                    onClick={() => handleStatusChange(homework.id, "pending")}
-                                    className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-                                  >
-                                    恢复待审核
-                                  </button>
-                                )}
-                                <button
-                                  onClick={() => handleDelete(homework.id)}
-                                  className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-                                >
-                                  🗑️ 删除
-                                </button>
+                                  )}
+                                </p>
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </>
-            )}
-            </div>
-          )}
 
-          {/* 分页 */}
-          {!loading && pagination.totalPages > 1 && (
-          <div className="flex justify-center space-x-2 mt-6">
-            <button
+                            {/* 用户级别的选择框和快捷操作 */}
+                            <div className="flex items-center space-x-3" onClick={(e) => e.stopPropagation()}>
+                              <label className="flex items-center space-x-2 cursor-pointer group">
+                                <input
+                                  type="checkbox"
+                                  checked={allUserHomeworksSelected}
+                                  ref={input => {
+                                    if (input) {
+                                      input.indeterminate = someUserHomeworksSelected && !allUserHomeworksSelected;
+                                    }
+                                  }}
+                                  onChange={() => {
+                                    if (allUserHomeworksSelected) {
+                                      setSelectedHomeworks(prev => {
+                                        const newSet = new Set(prev);
+                                        userHomeworkIds.forEach(id => newSet.delete(id));
+                                        return newSet;
+                                      });
+                                    } else {
+                                      setSelectedHomeworks(prev => {
+                                        const newSet = new Set(prev);
+                                        userHomeworkIds.forEach(id => newSet.add(id));
+                                        return newSet;
+                                      });
+                                    }
+                                  }}
+                                  className="w-5 h-5 rounded border-2 border-white/30 bg-white/10 checked:bg-blue-500 checked:border-blue-500 cursor-pointer transition-colors"
+                                />
+                                <span className="text-white/70 group-hover:text-white text-sm">
+                                  选择全部
+                                </span>
+                              </label>
+                            </div>
+                          </div>
+
+                          {/* 展开的作业列表 */}
+                          {isExpanded && (
+                            <div className="border-t border-white/10">
+                              {userHomeworks.map((homework, index) => (
+                                <div
+                                  key={homework.id}
+                                  className={`p-6 ${index > 0 ? 'border-t border-white/10' : ''}`}
+                                >
+                                  {/* 复选框和作业编号 */}
+                                  <div className="flex items-start justify-between mb-4">
+                                    <div className="flex items-center space-x-3">
+                                      <label className="flex items-center space-x-2 cursor-pointer group">
+                                        <input
+                                          type="checkbox"
+                                          checked={selectedHomeworks.has(homework.id)}
+                                          onChange={() => toggleHomeworkSelection(homework.id)}
+                                          className="w-5 h-5 rounded border-2 border-white/30 bg-white/10 checked:bg-blue-500 checked:border-blue-500 cursor-pointer transition-colors"
+                                        />
+                                        <span className="text-white/70 group-hover:text-white text-sm">
+                                          作业 #{index + 1}
+                                        </span>
+                                      </label>
+                                    </div>
+                                  </div>
+
+                                  {/* 作业基本信息 */}
+                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                                    <div>
+                                      <label className="text-white/60 text-sm">关卡</label>
+                                      <p className="text-white font-medium">{homework.stageId}</p>
+                                    </div>
+                                    <div>
+                                      <label className="text-white/60 text-sm">状态</label>
+                                      <p className={`inline-block px-2 py-1 rounded text-xs border ${getStatusColor(homework.status)}`}>
+                                        {getStatusText(homework.status)}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <label className="text-white/60 text-sm">提交时间</label>
+                                      <p className="text-white/80 text-sm">
+                                        {new Date(homework.createdAt).toLocaleString("zh-CN")}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  {/* 作业描述 */}
+                                  {homework.description && (
+                                    <div className="mb-4">
+                                      <label className="text-white/60 text-sm">作业说明</label>
+                                      <p className="text-white/80 text-sm mt-1 leading-relaxed">
+                                        {homework.description}
+                                      </p>
+                                    </div>
+                                  )}
+
+                                  {/* 图片列表 */}
+                                  <div className="mb-4">
+                                    <label className="text-white/60 text-sm mb-2 block">
+                                      作业图片 ({homework.images.length}张)
+                                    </label>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                                      {homework.images.map((image, imgIndex) => (
+                                        <div key={image.id} className="relative group">
+                                          <img
+                                            src={image.url}
+                                            alt={`图片${imgIndex + 1}`}
+                                            className="w-full h-20 object-cover rounded-lg cursor-pointer transition-transform hover:scale-105"
+                                            onClick={() => {
+                                              setCurrentHomeworkImages(homework.images);
+                                              setCurrentImageIndex(imgIndex);
+                                              setSelectedImage(image.url);
+                                            }}
+                                          />
+                                          <div className="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-1 rounded">
+                                            {formatFileSize(image.fileSize)}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  {/* 操作按钮 */}
+                                  <div className="flex space-x-3">
+                                    {homework.status === "pending" && (
+                                      <>
+                                        <button
+                                          onClick={() => handleStatusChange(homework.id, "approved")}
+                                          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                                        >
+                                          ✓ 通过
+                                        </button>
+                                        <button
+                                          onClick={() => handleStatusChange(homework.id, "rejected")}
+                                          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                                        >
+                                          ✗ 拒绝
+                                        </button>
+                                      </>
+                                    )}
+                                    {homework.status !== "pending" && (
+                                      <button
+                                        onClick={() => handleStatusChange(homework.id, "pending")}
+                                        className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                                      >
+                                        恢复待审核
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={() => handleDelete(homework.id)}
+                                      className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                                    >
+                                      🗑️ 删除
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* 分页 */}
+            {!loading && pagination.totalPages > 1 && (
+              <div className="flex justify-center space-x-2 mt-6">
+                <button
                   onClick={() =>
                     fetchHomeworks(selectedStatus, pagination.page - 1)
                   }
-              disabled={pagination.page === 1}
-              className="px-4 py-2 bg-white/10 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-colors"
-            >
-              上一页
-            </button>
-            <span className="px-4 py-2 text-white">
-              {pagination.page} / {pagination.totalPages}
-            </span>
-            <button
+                  disabled={pagination.page === 1}
+                  className="px-4 py-2 bg-white/10 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-colors"
+                >
+                  上一页
+                </button>
+                <span className="px-4 py-2 text-white">
+                  {pagination.page} / {pagination.totalPages}
+                </span>
+                <button
                   onClick={() =>
                     fetchHomeworks(selectedStatus, pagination.page + 1)
                   }
-              disabled={pagination.page === pagination.totalPages}
-              className="px-4 py-2 bg-white/10 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-colors"
-            >
-              下一页
-            </button>
-          </div>
-          )}
-        </>
+                  disabled={pagination.page === pagination.totalPages}
+                  className="px-4 py-2 bg-white/10 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-colors"
+                >
+                  下一页
+                </button>
+              </div>
+            )}
+          </>
         ) : activeTab === "points" ? (
           <PointsSettlement />
         ) : (
@@ -1219,7 +1215,7 @@ export default function AdminHomeworkPage() {
 
         {/* 图片预览模态框 */}
         {selectedImage && (
-          <div 
+          <div
             className="fixed inset-0 bg-black/90 z-[999999] flex items-center justify-center p-4"
             onClick={() => setSelectedImage(null)}
           >
@@ -1250,7 +1246,7 @@ export default function AdminHomeworkPage() {
 
               {/* 图片计数器 */}
               {currentHomeworkImages.length > 1 && (
-                <div 
+                <div
                   className="absolute bg-black/80 text-white px-4 py-2 rounded-lg text-sm shadow-lg"
                   style={{
                     top: '-60px',
@@ -1263,7 +1259,7 @@ export default function AdminHomeworkPage() {
 
               {/* 缩略图导航 */}
               {currentHomeworkImages.length > 1 && (
-                <div 
+                <div
                   className="absolute flex space-x-2 bg-black/80 rounded-lg p-3 shadow-lg max-w-[90vw] overflow-x-auto"
                   style={{
                     bottom: '-80px',
@@ -1279,11 +1275,10 @@ export default function AdminHomeworkPage() {
                         setCurrentImageIndex(index);
                         setSelectedImage(image.url);
                       }}
-                      className={`flex-shrink-0 w-14 h-14 rounded-md overflow-hidden border-2 transition-all duration-200 ${
-                        index === currentImageIndex 
-                          ? 'border-white scale-110' 
+                      className={`flex-shrink-0 w-14 h-14 rounded-md overflow-hidden border-2 transition-all duration-200 ${index === currentImageIndex
+                          ? 'border-white scale-110'
                           : 'border-transparent hover:border-white/50'
-                      }`}
+                        }`}
                     >
                       <img
                         src={image.url}
@@ -1311,13 +1306,13 @@ export default function AdminHomeworkPage() {
                 setIsBatchReject(false);
               }}
             />
-            
+
             {/* 模态框内容 */}
             <div className="relative bg-white rounded-xl shadow-2xl p-6 w-full max-w-md mx-4">
               <h3 className="text-xl font-bold text-gray-900 mb-4">
                 {isBatchReject ? `批量拒绝作业（${selectedHomeworks.size}个）` : "拒绝作业"}
               </h3>
-              
+
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   拒绝原因（可选）
