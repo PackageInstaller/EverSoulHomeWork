@@ -39,29 +39,7 @@ function sanitizeDescription(description: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. 速率限制检查
-    const clientIP = getClientIP(request);
-    const rateLimitResult = await checkRateLimit(clientIP, RateLimitPresets.UPLOAD_HOMEWORK);
-    
-    if (!rateLimitResult.allowed) {
-      return NextResponse.json(
-        { 
-          error: `请求过于频繁，请在 ${rateLimitResult.retryAfter} 秒后重试`,
-          retryAfter: rateLimitResult.retryAfter
-        },
-        { 
-          status: 429,
-          headers: {
-            'Retry-After': rateLimitResult.retryAfter?.toString() || '60',
-            'X-RateLimit-Limit': RateLimitPresets.UPLOAD_HOMEWORK.maxRequests.toString(),
-            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
-            'X-RateLimit-Reset': new Date(rateLimitResult.resetTime).toISOString()
-          }
-        }
-      );
-    }
-    
-    // 2. 签名验证
+    // 1. 签名验证（先验证签名，拒绝无效请求）
     const signatureData = extractSignatureFromRequest(request);
     if (!signatureData) {
       return NextResponse.json(
@@ -128,6 +106,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: signatureResult.error || '签名验证失败' },
         { status: 403 }
+      );
+    }
+    
+    // 2. 速率限制检查（签名验证通过后）
+    const clientIP = getClientIP(request);
+    const rateLimitResult = await checkRateLimit(clientIP, RateLimitPresets.UPLOAD_HOMEWORK);
+    
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { 
+          error: `请求过于频繁，请在 ${rateLimitResult.retryAfter} 秒后重试`,
+          retryAfter: rateLimitResult.retryAfter
+        },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': rateLimitResult.retryAfter?.toString() || '60',
+            'X-RateLimit-Limit': RateLimitPresets.UPLOAD_HOMEWORK.maxRequests.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': new Date(rateLimitResult.resetTime).toISOString()
+          }
+        }
       );
     }
     
