@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { getTokenPayload } from '@/utils/jwtDecode';
 import { compressImages, formatFileSize } from '@/utils/imageCompression';
 import { smartUpload } from '@/utils/uploadWithRetry';
+import { generateUploadSignature, addSignatureToUrl } from '@/utils/signatureHelper';
 
 interface HomeworkUploadProps {
   stageId: string;
@@ -94,7 +95,7 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
           maxHeight: 1920,
           quality: 0.75,        // 75%质量，高压缩
           targetSizeKB: 500,    // 超过500KB就压缩
-          maxSizeKB: 3072,      // 最大3MB
+          maxSizeKB: 5120,      // 最大5MB
           convertToWebP: true,  // 转换为WebP格式
           webpQuality: 0.75,    // WebP质量75%
         },
@@ -126,9 +127,23 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
         data.append('images', result.file);
       });
 
+      const imageNames = compressionResults.map(r => r.file.name);
+      const { signature, timestamp, nonce } = await generateUploadSignature(
+        stageId,
+        formData.nickname.trim(),
+        imageNames
+      );
+
+      const signedUrl = addSignatureToUrl(
+        '/api/homework/upload',
+        signature,
+        timestamp,
+        nonce
+      );
+
       setCompressionStatus('');
       const uploadResult = await smartUpload({
-        url: '/api/homework/upload',
+        url: signedUrl,
         data,
         maxRetries: 3,
         retryDelay: 2000,

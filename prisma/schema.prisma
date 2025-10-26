@@ -15,7 +15,7 @@ datasource db {
 model User {
   id              String   @id @default(cuid())
   email           String   @unique // 邮箱（唯一）
-  password        String   // 密码（应该是加密后的）
+  password        String   // 密码（加密后的）
   nickname        String   // 昵称
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

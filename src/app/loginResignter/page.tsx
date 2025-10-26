@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { generateRegisterSignature, addSignatureToUrl } from "@/utils/signatureHelper";
 
 // 分离出使用 useSearchParams 的组件
 function LoginRegisterForm() {
@@ -81,7 +82,22 @@ function LoginRegisterForm() {
           return;
         }
 
-        const response = await fetch('/api/user/register', {
+        // 生成请求签名
+        const { signature, timestamp, nonce } = await generateRegisterSignature(
+          email,
+          nickname,
+          password
+        );
+
+        // 添加签名参数到URL
+        const signedUrl = addSignatureToUrl(
+          '/api/user/register',
+          signature,
+          timestamp,
+          nonce
+        );
+
+        const response = await fetch(signedUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

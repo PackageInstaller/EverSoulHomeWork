@@ -2,11 +2,25 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { generateToken } from '@/lib/jwt';
+import { 
+  extractSignatureFromRequest, 
+  verifySignature, 
+  generateRegisterSource 
+} from '@/lib/signatureAuth';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
+    // 签名验证（替代速率限制）
+    const signatureData = extractSignatureFromRequest(request);
+    if (!signatureData) {
+      return NextResponse.json(
+        { success: false, message: '缺少签名参数' },
+        { status: 400 }
+      );
+    }
+
     const body = await request.json();
     const { email, password, nickname } = body;
 
@@ -15,6 +29,22 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { success: false, message: '请填写所有必填字段' },
         { status: 400 }
+      );
+    }
+
+    // 验证签名
+    const source = generateRegisterSource(email, nickname, password);
+    const signatureResult = verifySignature(
+      signatureData.signature,
+      source,
+      signatureData.timestamp,
+      signatureData.nonce
+    );
+
+    if (!signatureResult.valid) {
+      return NextResponse.json(
+        { success: false, message: signatureResult.error || '签名验证失败' },
+        { status: 403 }
       );
     }
 

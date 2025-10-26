@@ -5,6 +5,7 @@ import * as crypto from 'crypto';
 interface AppConfig {
   adminPassword: string;
   jwtSecret: string;
+  appKey: string;
 }
 
 const CONFIG_FILE_PATH = path.join(process.cwd(), 'admin-secret.json');
@@ -13,6 +14,14 @@ const CONFIG_FILE_PATH = path.join(process.cwd(), 'admin-secret.json');
  * 生成随机JWT密钥
  */
 function generateJwtSecret(): string {
+  return crypto.randomBytes(64).toString('hex');
+}
+
+/**
+ * 生成强随机 AppKey（用于请求签名）
+ * 128位强密钥，用于防止API被脚本批量调用
+ */
+function generateAppKey(): string {
   return crypto.randomBytes(64).toString('hex');
 }
 
@@ -57,7 +66,8 @@ export function loadConfig(): AppConfig {
         console.log('⚠️ 配置文件为空，重新生成...');
         const newConfig: AppConfig = {
           adminPassword: generateSecurePassword(),
-          jwtSecret: generateJwtSecret()
+          jwtSecret: generateJwtSecret(),
+          appKey: generateAppKey()
         };
         saveConfig(newConfig);
         console.log('✅ 已生成新的配置文件');
@@ -78,6 +88,12 @@ export function loadConfig(): AppConfig {
           console.log('✅ 已自动生成JWT密钥');
         }
 
+        if (!config.appKey) {
+          config.appKey = generateAppKey();
+          needsSave = true;
+          console.log('✅ 已自动生成AppKey（请求签名密钥）');
+        }
+
         if (!config.adminPassword) {
           config.adminPassword = generateSecurePassword();
           needsSave = true;
@@ -94,7 +110,8 @@ export function loadConfig(): AppConfig {
         console.error('⚠️ 配置文件JSON格式错误，重新生成...');
         const newConfig: AppConfig = {
           adminPassword: generateSecurePassword(),
-          jwtSecret: generateJwtSecret()
+          jwtSecret: generateJwtSecret(),
+          appKey: generateAppKey()
         };
         saveConfig(newConfig);
         console.log('✅ 已生成新的配置文件');
@@ -110,7 +127,8 @@ export function loadConfig(): AppConfig {
       const adminPassword = fs.readFileSync(oldConfigPath, 'utf-8').trim();
       const config: AppConfig = {
         adminPassword,
-        jwtSecret: generateJwtSecret()
+        jwtSecret: generateJwtSecret(),
+        appKey: generateAppKey()
       };
 
       // 保存为新格式
@@ -131,7 +149,8 @@ export function loadConfig(): AppConfig {
     // 如果都不存在，创建默认配置
     const defaultConfig: AppConfig = {
       adminPassword: generateSecurePassword(),
-      jwtSecret: generateJwtSecret()
+      jwtSecret: generateJwtSecret(),
+      appKey: generateAppKey()
     };
 
     saveConfig(defaultConfig);
@@ -148,7 +167,8 @@ export function loadConfig(): AppConfig {
     try {
       const emergencyConfig: AppConfig = {
         adminPassword: generateSecurePassword(),
-        jwtSecret: generateJwtSecret()
+        jwtSecret: generateJwtSecret(),
+        appKey: generateAppKey()
       };
       saveConfig(emergencyConfig);
       console.log('✅ 已生成紧急配置文件');
@@ -160,7 +180,8 @@ export function loadConfig(): AppConfig {
       // 最后的fallback
       return {
         adminPassword: generateSecurePassword(),
-        jwtSecret: process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex')
+        jwtSecret: process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex'),
+        appKey: generateAppKey()
       };
     }
   }
@@ -192,6 +213,14 @@ export function getAdminPassword(): string {
 export function getJwtSecret(): string {
   const config = loadConfig();
   return config.jwtSecret;
+}
+
+/**
+ * 获取AppKey（请求签名密钥）
+ */
+export function getAppKey(): string {
+  const config = loadConfig();
+  return config.appKey;
 }
 
 /**

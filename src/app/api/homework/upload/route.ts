@@ -4,6 +4,11 @@ import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import { randomUUID } from 'crypto'
 import sharp from 'sharp'
+import {
+  extractSignatureFromRequest,
+  verifySignature,
+  generateUploadSource
+} from '@/lib/signatureAuth'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,6 +37,15 @@ function sanitizeDescription(description: string): string {
 
 export async function POST(request: NextRequest) {
   try {
+    // 签名验证（替代速率限制）
+    const signatureData = extractSignatureFromRequest(request);
+    if (!signatureData) {
+      return NextResponse.json(
+        { error: '缺少签名参数' },
+        { status: 400 }
+      );
+    }
+
     const formData = await request.formData()
     
     // 获取表单数据
@@ -69,6 +83,23 @@ export async function POST(request: NextRequest) {
 
     // 获取图片文件
     const images = formData.getAll('images') as File[]
+    
+    // 验证签名
+    const imageNames = images.map(img => img.name);
+    const source = generateUploadSource(stageId, cleanNickname, imageNames);
+    const signatureResult = verifySignature(
+      signatureData.signature,
+      source,
+      signatureData.timestamp,
+      signatureData.nonce
+    );
+
+    if (!signatureResult.valid) {
+      return NextResponse.json(
+        { error: signatureResult.error || '签名验证失败' },
+        { status: 403 }
+      );
+    }
     
     // 验证图片数量
     if (images.length < teamCount || images.length > (teamCount * 2) + 5) {

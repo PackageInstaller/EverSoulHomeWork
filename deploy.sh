@@ -12,7 +12,7 @@ if [ $? -eq 0 ]; then
     if [ $? -ne 0 ]; then
         pm2 start ecosystem.config.js
     fi
-    pm2 monit
+    pm2 log
 else
     echo -e "${RED}构建失败${NC}"
     exit 1

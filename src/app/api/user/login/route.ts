@@ -2,11 +2,26 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { generateToken } from '@/lib/jwt';
+import { checkRateLimit, RateLimitPresets, formatResetTime } from '@/lib/rateLimiter';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
+    // 速率限制检查
+    const rateLimit = checkRateLimit(request, RateLimitPresets.LOGIN);
+    if (rateLimit.limited) {
+      const resetTimeStr = formatResetTime(rateLimit.resetTime);
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: `${rateLimit.message}（${resetTimeStr}后重置）`,
+          resetTime: rateLimit.resetTime
+        },
+        { status: 429 } // 429 Too Many Requests
+      );
+    }
+
     const body = await request.json();
     const { email, password } = body;
 

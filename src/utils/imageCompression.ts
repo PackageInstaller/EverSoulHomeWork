@@ -46,7 +46,7 @@ export async function compressImage(
     maxHeight = 1920,
     quality = 0.75,        // 75%质量，高压缩
     targetSizeKB = 500,    // 超过500KB才压缩
-    maxSizeKB = 3072,      // 最大3MB
+    maxSizeKB = 5120,      // 最大5MB
     convertToWebP = true,  // 默认转换为WebP
     webpQuality = 0.75,    // WebP质量75%
   } = options;
