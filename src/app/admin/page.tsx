@@ -487,7 +487,6 @@ export default function AdminHomeworkPage() {
       return;
     }
 
-    // 乐观更新：如果状态变化会导致作业从当前列表移除，先从UI中移除
     const shouldRemoveFromList =
       (selectedStatus === 'pending' && newStatus !== 'pending') ||
       (selectedStatus === 'approved' && newStatus !== 'approved') ||
@@ -545,7 +544,6 @@ export default function AdminHomeworkPage() {
       return;
     }
 
-    // 乐观更新：立即从UI中移除
     setHomeworks(prev => prev.filter(hw => !selectedHomeworks.has(hw.id)));
 
     setBatchLoading(true);
@@ -724,8 +722,8 @@ export default function AdminHomeworkPage() {
               <button
                 onClick={() => setActiveTab("homework")}
                 className={`px-6 py-3 rounded-lg transition-colors ${activeTab === "homework"
-                    ? "bg-blue-500 text-white"
-                    : "bg-white/10 text-white/70 hover:bg-white/20"
+                  ? "bg-blue-500 text-white"
+                  : "bg-white/10 text-white/70 hover:bg-white/20"
                   }`}
               >
                 📝 作业管理
@@ -733,8 +731,8 @@ export default function AdminHomeworkPage() {
               <button
                 onClick={() => setActiveTab("points")}
                 className={`px-6 py-3 rounded-lg transition-colors ${activeTab === "points"
-                    ? "bg-blue-500 text-white"
-                    : "bg-white/10 text-white/70 hover:bg-white/20"
+                  ? "bg-blue-500 text-white"
+                  : "bg-white/10 text-white/70 hover:bg-white/20"
                   }`}
               >
                 💎 积分结算
@@ -742,8 +740,8 @@ export default function AdminHomeworkPage() {
               <button
                 onClick={() => setActiveTab("messages")}
                 className={`px-6 py-3 rounded-lg transition-colors ${activeTab === "messages"
-                    ? "bg-blue-500 text-white"
-                    : "bg-white/10 text-white/70 hover:bg-white/20"
+                  ? "bg-blue-500 text-white"
+                  : "bg-white/10 text-white/70 hover:bg-white/20"
                   }`}
               >
                 📬 消息发送
@@ -755,8 +753,8 @@ export default function AdminHomeworkPage() {
               onClick={handleRefreshCache}
               disabled={cacheRefreshing}
               className={`px-6 py-3 rounded-lg transition-colors flex items-center gap-2 ${cacheRefreshing
-                  ? "bg-gray-500 cursor-not-allowed"
-                  : "bg-purple-600 hover:bg-purple-700"
+                ? "bg-gray-500 cursor-not-allowed"
+                : "bg-purple-600 hover:bg-purple-700"
                 } text-white font-medium shadow-lg`}
               title="刷新游戏数据缓存（游戏更新后使用）"
             >
@@ -791,8 +789,8 @@ export default function AdminHomeworkPage() {
                     key={option.value}
                     onClick={() => setSelectedStatus(option.value)}
                     className={`px-4 py-2 rounded-lg transition-colors ${selectedStatus === option.value
-                        ? "bg-blue-500 text-white"
-                        : "bg-white/10 text-white/70 hover:bg-white/20"
+                      ? "bg-blue-500 text-white"
+                      : "bg-white/10 text-white/70 hover:bg-white/20"
                       }`}
                   >
                     {option.label}
@@ -1251,8 +1249,8 @@ export default function AdminHomeworkPage() {
                         setSelectedImage(image.url);
                       }}
                       className={`flex-shrink-0 w-14 h-14 rounded-md overflow-hidden border-2 transition-all duration-200 ${index === currentImageIndex
-                          ? 'border-white scale-110'
-                          : 'border-transparent hover:border-white/50'
+                        ? 'border-white scale-110'
+                        : 'border-transparent hover:border-white/50'
                         }`}
                     >
                       <img

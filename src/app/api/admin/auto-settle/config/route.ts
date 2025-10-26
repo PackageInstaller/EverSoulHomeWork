@@ -69,12 +69,12 @@ export async function POST(request: NextRequest) {
     // 保存配置
     const result = await prisma.systemConfig.upsert({
       where: { key: 'auto_settle_hour' },
-      update: { 
+      update: {
         value: autoSettleHour.toString(),
         description: '每月最后一天自动结算的小时数'
       },
-      create: { 
-        key: 'auto_settle_hour', 
+      create: {
+        key: 'auto_settle_hour',
         value: autoSettleHour.toString(),
         description: '每月最后一天自动结算的小时数'
       }

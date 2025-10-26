@@ -24,7 +24,7 @@ const nextConfig = {
         }
       ];
     }
-    
+
     if (!dev && !isServer) {
       config.optimization = {
         ...config.optimization,
@@ -34,25 +34,25 @@ const nextConfig = {
         if (plugin.constructor.name === 'TerserPlugin') {
           const newOptions = {
             ...plugin.options,
-              terserOptions: {
-                ...plugin.options.terserOptions,
-                compress: {
-                  ...plugin.options.terserOptions?.compress,
-                  drop_console: !process.env.NEXT_PUBLIC_ENABLE_CONSOLE,
-                  drop_debugger: true,
-                  pure_funcs: process.env.NEXT_PUBLIC_ENABLE_CONSOLE ? [] : ['console.log', 'console.info', 'console.debug'],
-                  passes: 3,
-                  dead_code: true,
-                  conditionals: true,
-                  evaluate: true,
-                  booleans: true,
-                  loops: true,
-                  unused: true,
-                  hoist_funs: true,
-                  if_return: true,
-                  join_vars: true,
-                  side_effects: true,
-                },
+            terserOptions: {
+              ...plugin.options.terserOptions,
+              compress: {
+                ...plugin.options.terserOptions?.compress,
+                drop_console: !process.env.NEXT_PUBLIC_ENABLE_CONSOLE,
+                drop_debugger: true,
+                pure_funcs: process.env.NEXT_PUBLIC_ENABLE_CONSOLE ? [] : ['console.log', 'console.info', 'console.debug'],
+                passes: 3,
+                dead_code: true,
+                conditionals: true,
+                evaluate: true,
+                booleans: true,
+                loops: true,
+                unused: true,
+                hoist_funs: true,
+                if_return: true,
+                join_vars: true,
+                side_effects: true,
+              },
               mangle: {
                 ...plugin.options.terserOptions?.mangle,
                 toplevel: true,
@@ -69,7 +69,7 @@ const nextConfig = {
             },
             extractComments: false,
           };
-          
+
           plugin.options = newOptions;
         }
         return plugin;
@@ -78,10 +78,10 @@ const nextConfig = {
         new webpack.optimize.ModuleConcatenationPlugin()
       );
     }
-    
+
     return config;
   },
-  
+
   // 实验性功能
   experimental: {
     // 优化包导入

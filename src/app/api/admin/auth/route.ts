@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     if (isValid) {
       // 生成 JWT 会话 token（1小时有效期）
       const sessionToken = generateAdminSessionToken('1h');
-      
+
       const response = NextResponse.json({
         success: true,
         message: '登录成功'

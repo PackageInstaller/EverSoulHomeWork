@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     // 验证请求来源（可选：添加密钥验证）
     const authHeader = request.headers.get('authorization')
     const cronSecret = process.env.CRON_SECRET || 'your-secret-key'
-    
+
     // 如果设置了密钥，需要验证
     if (process.env.CRON_SECRET && authHeader !== `Bearer ${cronSecret}`) {
       console.log('❌ [自动结算] 未授权的请求')
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
     // 执行结算
     console.log(`💰 [自动结算] 开始执行 ${currentYearMonth} 的自动结算...`)
     const result = await settleMonthlyPrizePool(currentYearMonth)
-    
+
     const duration = Date.now() - startTime
     console.log(`✅ [自动结算] ${currentYearMonth} 结算完成！耗时: ${duration}ms`)
     console.log(`💰 [自动结算] 总积分: ${result.totalPoints}, 总奖池: ${result.totalPool}, 发放: ${result.distributed}, 累加: ${result.nextCarryOver}`)

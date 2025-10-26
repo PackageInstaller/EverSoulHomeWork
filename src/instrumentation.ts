@@ -9,7 +9,6 @@ export async function register() {
   }
   if (process.env.NEXT_RUNTIME === 'nodejs' || !process.env.NEXT_RUNTIME) {
     try {
-      console.log('\n🚀 [服务器启动] 执行数据库健康检查...');
 
       const result = await performDatabaseHealthCheck();
 
@@ -27,7 +26,6 @@ export async function register() {
       console.warn('⚠️  应用将继续启动，建议手动检查数据库状态');
     }
     try {
-      console.log('🎮 [服务器启动] 开始并行预加载游戏数据...');
       const startTime = Date.now();
       let successCount = 0;
       let failureCount = 0;
