@@ -48,7 +48,14 @@ export default function PointsSettlement() {
 
   const fetchMonths = async () => {
     try {
-      const response = await fetch('/api/points/months');
+      const cacheBuster = Date.now();
+      const response = await fetch(`/api/points/months?_t=${cacheBuster}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
       const data = await response.json();
       if (data.success) {
         setAvailableMonths(data.months);
@@ -60,7 +67,14 @@ export default function PointsSettlement() {
 
   const fetchBasePool = async () => {
     try {
-      const response = await fetch('/api/points/base-pool');
+      const cacheBuster = Date.now();
+      const response = await fetch(`/api/points/base-pool?_t=${cacheBuster}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
       const data = await response.json();
       if (data.success) {
         setBasePool(data.basePool);

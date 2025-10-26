@@ -17,6 +17,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       basePool
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'CDN-Cache-Control': 'no-store',
+        'Cloudflare-CDN-Cache-Control': 'no-store',
+        'Surrogate-Control': 'no-store'
+      }
     })
 
   } catch (error) {
@@ -68,6 +77,12 @@ export async function POST(request: NextRequest) {
       success: true,
       message: '基础奖池配置已更新',
       basePool
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     })
 
   } catch (error: any) {
