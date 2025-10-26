@@ -52,7 +52,15 @@ export default function PointsLeaderboard({ initialYearMonth }: PointsLeaderboar
   // 获取可用月份列表
   const fetchMonths = async () => {
     try {
-      const response = await fetch('/api/points/months');
+      // 添加时间戳参数破坏缓存，并设置 no-cache
+      const cacheBuster = Date.now();
+      const response = await fetch(`/api/points/months?_t=${cacheBuster}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
       const result = await response.json();
 
       if (result.success) {
@@ -81,15 +89,21 @@ export default function PointsLeaderboard({ initialYearMonth }: PointsLeaderboar
     }
   };
 
-  // 获取排行榜数据
   const fetchLeaderboard = async () => {
     try {
       setLoading(true);
+      const cacheBuster = Date.now();
       const url = selectedMonth
-        ? `/api/points/leaderboard?yearMonth=${selectedMonth}`
-        : '/api/points/leaderboard';
+        ? `/api/points/leaderboard?yearMonth=${selectedMonth}&_t=${cacheBuster}`
+        : `/api/points/leaderboard?_t=${cacheBuster}`;
 
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
       const result = await response.json();
 
       if (result.success) {
