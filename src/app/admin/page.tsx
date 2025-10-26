@@ -63,11 +63,7 @@ export default function AdminHomeworkPage() {
   const [cacheRefreshing, setCacheRefreshing] = useState(false);
   const isRefreshingRef = useRef(false); // 用于立即防止重复点击
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
-  
-  // 自动刷新相关
-  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
-  const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null);
-  const autoRefreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const autoRefreshIntervalRef = useRef<NodeJS.Timeout | null>(null); // 自动刷新定时器
 
   // 检查认证状态
   const checkAuth = async () => {
@@ -128,11 +124,9 @@ export default function AdminHomeworkPage() {
     }
   };
 
-  const fetchHomeworks = async (status = selectedStatus, page = 1, silent = false) => {
+  const fetchHomeworks = async (status = selectedStatus, page = 1) => {
     try {
-      if (!silent) {
-        setLoading(true);
-      }
+      setLoading(true);
       // 添加时间戳防止CDN缓存
       const timestamp = Date.now();
       const response = await fetch(
@@ -156,16 +150,13 @@ export default function AdminHomeworkPage() {
       if (result.success) {
         setHomeworks(result.homeworks);
         setPagination(result.pagination);
-        setLastRefreshTime(new Date());
       } else {
         setError("获取作业列表失败");
       }
     } catch (error) {
       setError("网络错误");
     } finally {
-      if (!silent) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
   };
 
@@ -179,7 +170,7 @@ export default function AdminHomeworkPage() {
     }
   }, [selectedStatus, isAuthenticated]);
 
-  // 自动刷新逻辑
+  // 自动刷新作业列表（只在作业审核标签页激活时）
   useEffect(() => {
     // 清除旧的定时器
     if (autoRefreshIntervalRef.current) {
@@ -187,30 +178,55 @@ export default function AdminHomeworkPage() {
       autoRefreshIntervalRef.current = null;
     }
 
-    // 如果启用自动刷新且在作业审核标签页
-    if (autoRefreshEnabled && isAuthenticated && activeTab === 'homework') {
-      console.log('🔄 [自动刷新] 已启用，每30秒检查一次新作业');
-      
-      // 设置定时器，每30秒刷新一次
-      autoRefreshIntervalRef.current = setInterval(() => {
-        console.log('🔄 [自动刷新] 执行后台刷新...');
-        fetchHomeworks(selectedStatus, pagination.page, true); // silent = true，不显示加载状态
-      }, 30000); // 30秒
+    // 只在已认证且在作业审核标签页时启用自动刷新
+    if (!isAuthenticated || activeTab !== 'homework') {
+      return;
     }
+
+    // 启动自动刷新
+    const startAutoRefresh = () => {
+      autoRefreshIntervalRef.current = setInterval(() => {
+        if (!document.hidden && isAuthenticated && activeTab === 'homework') {
+          console.log('🔄 [自动刷新] 刷新作业列表...');
+          fetchHomeworks(selectedStatus, pagination.page);
+        }
+      }, 1000); // 每 1 秒刷新一次
+    };
+
+    // 页面可见性变化处理
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // 页面不可见，停止轮询
+        if (autoRefreshIntervalRef.current) {
+          console.log('📱 [自动刷新] 页面不可见，停止轮询');
+          clearInterval(autoRefreshIntervalRef.current);
+          autoRefreshIntervalRef.current = null;
+        }
+      } else {
+        // 页面可见，恢复轮询
+        if (!autoRefreshIntervalRef.current && isAuthenticated && activeTab === 'homework') {
+          console.log('📱 [自动刷新] 页面可见，启动轮询');
+          startAutoRefresh();
+        }
+      }
+    };
+
+    console.log('✅ [自动刷新] 启用作业列表自动刷新（1秒间隔）');
+    startAutoRefresh();
+
+    // 监听页面可见性变化
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // 清理函数
     return () => {
       if (autoRefreshIntervalRef.current) {
+        console.log('🛑 [自动刷新] 停止作业列表自动刷新');
         clearInterval(autoRefreshIntervalRef.current);
         autoRefreshIntervalRef.current = null;
       }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [autoRefreshEnabled, isAuthenticated, activeTab, selectedStatus, pagination.page]);
-
-  // 切换自动刷新
-  const toggleAutoRefresh = () => {
-    setAutoRefreshEnabled(prev => !prev);
-  };
+  }, [isAuthenticated, activeTab, selectedStatus, pagination.page]);
 
   const handleStatusChange = async (homeworkId: string, newStatus: string) => {
     // 如果是拒绝操作，先打开拒绝原因弹窗
@@ -793,7 +809,7 @@ export default function AdminHomeworkPage() {
 
           {/* 作业管理的状态筛选 */}
           {activeTab === "homework" && (
-            <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
               <div className="flex space-x-4">
                 {[
                   { value: "pending", label: "待审核" },
@@ -815,37 +831,10 @@ export default function AdminHomeworkPage() {
                 ))}
               </div>
               
-              {/* 自动刷新控制 */}
-              <div className="flex items-center gap-4">
-                {lastRefreshTime && (
-                  <div className="text-white/60 text-sm">
-                    最后更新: {lastRefreshTime.toLocaleTimeString('zh-CN')}
-                  </div>
-                )}
-                <button
-                  onClick={toggleAutoRefresh}
-                  className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
-                    autoRefreshEnabled
-                      ? "bg-green-500 text-white shadow-lg shadow-green-500/50"
-                      : "bg-white/10 text-white/70 hover:bg-white/20"
-                  }`}
-                  title={autoRefreshEnabled ? "点击关闭自动刷新" : "点击开启自动刷新（每30秒）"}
-                >
-                  <svg
-                    className={`w-5 h-5 ${autoRefreshEnabled ? "animate-spin" : ""}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                    />
-                  </svg>
-                  <span>{autoRefreshEnabled ? "自动刷新中" : "自动刷新"}</span>
-                </button>
+              {/* 自动刷新指示器 */}
+              <div className="flex items-center space-x-2 px-3 py-1.5 bg-green-500/20 border border-green-500/30 rounded-lg">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-xs text-green-300">自动刷新已启用</span>
               </div>
             </div>
           )}
