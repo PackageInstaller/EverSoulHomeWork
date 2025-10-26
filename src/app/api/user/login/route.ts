@@ -2,23 +2,32 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { generateToken } from '@/lib/jwt';
-import { checkRateLimit, RateLimitPresets, formatResetTime } from '@/lib/rateLimiter';
+import { getClientIP, checkRateLimit, RateLimitPresets } from '@/lib/rateLimiter';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
     // 速率限制检查
-    const rateLimit = checkRateLimit(request, RateLimitPresets.LOGIN);
-    if (rateLimit.limited) {
-      const resetTimeStr = formatResetTime(rateLimit.resetTime);
+    const clientIP = getClientIP(request);
+    const rateLimitResult = await checkRateLimit(clientIP, RateLimitPresets.LOGIN);
+    
+    if (!rateLimitResult.allowed) {
       return NextResponse.json(
         { 
           success: false, 
-          message: `${rateLimit.message}（${resetTimeStr}后重置）`,
-          resetTime: rateLimit.resetTime
+          message: `请求过于频繁，请在 ${rateLimitResult.retryAfter} 秒后重试`,
+          retryAfter: rateLimitResult.retryAfter
         },
-        { status: 429 } // 429 Too Many Requests
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': rateLimitResult.retryAfter?.toString() || '60',
+            'X-RateLimit-Limit': RateLimitPresets.LOGIN.maxRequests.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': new Date(rateLimitResult.resetTime).toISOString()
+          }
+        }
       );
     }
 

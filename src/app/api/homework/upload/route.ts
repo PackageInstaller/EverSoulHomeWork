@@ -9,6 +9,7 @@ import {
   verifySignature,
   generateUploadSource
 } from '@/lib/signatureAuth'
+import { getClientIP, checkRateLimit, RateLimitPresets } from '@/lib/rateLimiter'
 import { headers } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
@@ -38,7 +39,29 @@ function sanitizeDescription(description: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    // 签名验证（替代速率限制）
+    // 1. 速率限制检查
+    const clientIP = getClientIP(request);
+    const rateLimitResult = await checkRateLimit(clientIP, RateLimitPresets.UPLOAD_HOMEWORK);
+    
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { 
+          error: `请求过于频繁，请在 ${rateLimitResult.retryAfter} 秒后重试`,
+          retryAfter: rateLimitResult.retryAfter
+        },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': rateLimitResult.retryAfter?.toString() || '60',
+            'X-RateLimit-Limit': RateLimitPresets.UPLOAD_HOMEWORK.maxRequests.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': new Date(rateLimitResult.resetTime).toISOString()
+          }
+        }
+      );
+    }
+    
+    // 2. 签名验证
     const signatureData = extractSignatureFromRequest(request);
     if (!signatureData) {
       return NextResponse.json(
