@@ -45,6 +45,15 @@ export async function GET() {
         sessionId, // 返回 sessionId，用于服务器端重建派生密钥
         derivedKey // 派生密钥，可以安全地暴露给客户端
       }
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'CDN-Cache-Control': 'no-store',
+        'Cloudflare-CDN-Cache-Control': 'no-store',
+        'Surrogate-Control': 'no-store'
+      }
     });
   } catch (error) {
     console.error('生成Challenge失败:', error);
