@@ -10,6 +10,7 @@ interface Homework {
   teamCount: number;
   createdAt: string;
   isAfterSettlement?: boolean; // 是否在结算后提交
+  isHalved?: boolean; // 是否减半
   thumbnail: string | null;
 }
 
@@ -230,11 +231,18 @@ export default function UserHomeworkModal({ nickname, onClose }: UserHomeworkMod
                               {homework.description}
                             </p>
                           )}
-                          {homework.isAfterSettlement && (
-                            <div className="mb-2">
-                              <span className="inline-flex items-center gap-1 text-xs text-yellow-300 bg-yellow-500/20 px-2 py-0.5 rounded">
-                                ⏰ 结算后提交 · 仅计入总榜
-                              </span>
+                          {(homework.isAfterSettlement || homework.isHalved) && (
+                            <div className="flex flex-wrap gap-2 mb-2">
+                              {homework.isAfterSettlement && (
+                                <span className="inline-flex items-center gap-1 text-xs text-yellow-300 bg-yellow-500/20 px-2 py-0.5 rounded">
+                                  ⏰ 结算后提交 · 仅计入总榜
+                                </span>
+                              )}
+                              {homework.isHalved && (
+                                <span className="inline-flex items-center gap-1 text-xs text-orange-300 bg-orange-500/20 px-2 py-0.5 rounded">
+                                  ⚡ 非首发作业 · 积分减半
+                                </span>
+                              )}
                             </div>
                           )}
                           <div className="flex items-center justify-between text-xs">

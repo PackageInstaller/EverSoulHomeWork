@@ -18,6 +18,7 @@ interface Homework {
   teamCount: number;
   createdAt: string;
   isAfterSettlement?: boolean; // 是否在结算后提交
+  isHalved?: boolean; // 是否减半
   images: HomeworkImage[];
 }
 
@@ -149,11 +150,18 @@ export default function HomeworkSection({ stageId, teamCount }: HomeworkSectionP
                       <h3 className="text-lg font-semibold text-white">
                         {homework.nickname}
                       </h3>
-                      {homework.isAfterSettlement && (
-                        <span className="inline-flex items-center gap-1 text-xs text-yellow-300 bg-yellow-500/20 px-2 py-0.5 rounded mt-1">
-                          ⏰ 结算后提交 · 仅计入总榜
-                        </span>
-                      )}
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {homework.isAfterSettlement && (
+                          <span className="inline-flex items-center gap-1 text-xs text-yellow-300 bg-yellow-500/20 px-2 py-0.5 rounded">
+                            ⏰ 结算后提交 · 仅计入总榜
+                          </span>
+                        )}
+                        {homework.isHalved && (
+                          <span className="inline-flex items-center gap-1 text-xs text-orange-300 bg-orange-500/20 px-2 py-0.5 rounded">
+                            ⚡ 非首发作业 · 积分减半
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <span className="text-white/50 text-sm">

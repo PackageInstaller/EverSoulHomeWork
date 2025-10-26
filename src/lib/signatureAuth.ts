@@ -1,10 +1,14 @@
 /**
  * 请求签名验证系统
  * 基于 SHA-512 和时间戳的请求签名机制，防止脚本批量调用API
+ * 
+ * 安全改进：
+ * - 使用派生密钥（Derived Key）而不是直接暴露主密钥
+ * - 支持基于用户上下文的密钥派生
  */
 
 import * as crypto from 'crypto';
-import { getAppKey } from './config';
+import { getAppKey, deriveKey } from './config';
 
 interface SignatureValidationResult {
   valid: boolean;
@@ -32,9 +36,15 @@ setInterval(() => {
  * @param source 原始数据源（如：email + nickname + password）
  * @param timestamp 时间戳
  * @param nonce 随机值（防重放攻击）
+ * @param customKey 自定义密钥（如派生密钥），不提供则使用主密钥
  */
-export function generateSignature(source: string, timestamp: number, nonce: string): string {
-  const appKey = getAppKey();
+export function generateSignature(
+  source: string, 
+  timestamp: number, 
+  nonce: string,
+  customKey?: string
+): string {
+  const appKey = customKey || getAppKey();
   
   // 复杂的时间戳算法：基础时间戳 + (nonce的前8位转为数字)
   const nonceNum = parseInt(nonce.substring(0, 8), 16) % 3600000; // 限制在1小时内
@@ -57,13 +67,17 @@ export function generateSignature(source: string, timestamp: number, nonce: stri
  * @param timestamp 时间戳
  * @param nonce 随机值
  * @param windowMs 时间窗口（毫秒），默认5分钟
+ * @param sessionId 会话ID（用于重建派生密钥）
+ * @param userAgent 用户代理（用于重建派生密钥）
  */
 export function verifySignature(
   signature: string,
   source: string,
   timestamp: number,
   nonce: string,
-  windowMs: number = 5 * 60 * 1000
+  windowMs: number = 5 * 60 * 1000,
+  sessionId?: string,
+  userAgent?: string
 ): SignatureValidationResult {
   const now = Date.now();
   
@@ -83,10 +97,19 @@ export function verifySignature(
     };
   }
   
-  // 3. 生成预期的签名
-  const expectedSignature = generateSignature(source, timestamp, nonce);
+  // 3. 如果提供了 sessionId 和 userAgent，重建派生密钥
+  let keyToUse: string | undefined;
+  if (sessionId && userAgent) {
+    const masterKey = getAppKey();
+    const userAgentHash = crypto.createHash('sha256').update(userAgent).digest('hex').slice(0, 16);
+    const context = `${sessionId}:${nonce}:${timestamp}:${userAgentHash}`;
+    keyToUse = deriveKey(masterKey, context);
+  }
   
-  // 4. 对比签名
+  // 4. 生成预期的签名
+  const expectedSignature = generateSignature(source, timestamp, nonce, keyToUse);
+  
+  // 5. 对比签名
   if (signature !== expectedSignature) {
     return {
       valid: false,
@@ -94,7 +117,7 @@ export function verifySignature(
     };
   }
   
-  // 5. 标记nonce为已使用
+  // 6. 标记nonce为已使用
   usedNonces.set(nonce, now);
   
   return { valid: true };
@@ -123,6 +146,7 @@ export interface SignatureData {
   signature: string;
   timestamp: number;
   nonce: string;
+  sessionId?: string; // 会话ID（用于派生密钥）
 }
 
 export function extractSignatureFromRequest(request: Request): SignatureData | null {
@@ -130,6 +154,7 @@ export function extractSignatureFromRequest(request: Request): SignatureData | n
   const signature = url.searchParams.get('s');
   const timestampStr = url.searchParams.get('t');
   const nonce = url.searchParams.get('n');
+  const sessionId = url.searchParams.get('sid'); // 会话ID参数
   
   if (!signature || !timestampStr || !nonce) {
     return null;
@@ -140,7 +165,12 @@ export function extractSignatureFromRequest(request: Request): SignatureData | n
     return null;
   }
   
-  return { signature, timestamp, nonce };
+  return { 
+    signature, 
+    timestamp, 
+    nonce,
+    sessionId: sessionId || undefined
+  };
 }
 
 /**

@@ -83,7 +83,7 @@ function LoginRegisterForm() {
         }
 
         // 生成请求签名
-        const { signature, timestamp, nonce } = await generateRegisterSignature(
+        const { signature, timestamp, nonce, sessionId } = await generateRegisterSignature(
           email,
           nickname,
           password
@@ -94,7 +94,8 @@ function LoginRegisterForm() {
           '/api/user/register',
           signature,
           timestamp,
-          nonce
+          nonce,
+          sessionId
         );
 
         const response = await fetch(signedUrl, {

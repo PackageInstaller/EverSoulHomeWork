@@ -61,6 +61,24 @@ export async function GET(
       })
     }
 
+    // 获取作业的积分历史记录（包含 isHalved 信息）
+    const homeworkIds = homeworks.map(hw => hw.id)
+    const pointsHistoryMap = new Map()
+    
+    if (homeworkIds.length > 0) {
+      const pointsHistories = await prisma.pointsHistory.findMany({
+        where: {
+          homeworkId: {
+            in: homeworkIds
+          }
+        }
+      })
+      
+      pointsHistories.forEach(history => {
+        pointsHistoryMap.set(history.homeworkId, history)
+      })
+    }
+
     return NextResponse.json({
       success: true,
       homeworks: homeworks.map((homework: { id: any; nickname: any; description: any; teamCount: any; createdAt: any; updatedAt: any; images: any[]; }) => {
@@ -69,6 +87,10 @@ export async function GET(
         const isAfterSettlement = prizePool?.isSettled && prizePool.settledAt && 
                                  new Date(homework.createdAt) > new Date(prizePool.settledAt)
         
+        // 获取积分历史记录中的 isHalved 信息
+        const pointsHistory = pointsHistoryMap.get(homework.id)
+        const isHalved = pointsHistory?.isHalved || false
+        
         return {
           id: homework.id,
           nickname: homework.nickname,
@@ -76,6 +98,7 @@ export async function GET(
           teamCount: homework.teamCount,
           createdAt: homework.createdAt,
           isAfterSettlement, // 是否在结算后提交
+          isHalved, // 是否减半
           images: homework.images.map((img: { id: any; filename: any; originalName: any; order: any; }) => ({
             id: img.id,
             filename: img.filename,

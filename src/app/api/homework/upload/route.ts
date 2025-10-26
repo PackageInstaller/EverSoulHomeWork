@@ -9,6 +9,7 @@ import {
   verifySignature,
   generateUploadSource
 } from '@/lib/signatureAuth'
+import { headers } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 
@@ -84,14 +85,20 @@ export async function POST(request: NextRequest) {
     // 获取图片文件
     const images = formData.getAll('images') as File[]
     
-    // 验证签名
+    // 验证签名（使用派生密钥）
+    const headersList = headers();
+    const userAgent = headersList.get('user-agent') || '';
+    
     const imageNames = images.map(img => img.name);
     const source = generateUploadSource(stageId, cleanNickname, imageNames);
     const signatureResult = verifySignature(
       signatureData.signature,
       source,
       signatureData.timestamp,
-      signatureData.nonce
+      signatureData.nonce,
+      5 * 60 * 1000, // windowMs
+      signatureData.sessionId, // 会话ID用于重建派生密钥
+      userAgent // User-Agent 用于重建派生密钥
     );
 
     if (!signatureResult.valid) {

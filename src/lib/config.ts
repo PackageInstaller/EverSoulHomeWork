@@ -20,9 +20,24 @@ function generateJwtSecret(): string {
 /**
  * 生成强随机 AppKey（用于请求签名）
  * 128位强密钥，用于防止API被脚本批量调用
+ * 注意：这个密钥永远不应该直接发送给客户端！
  */
 function generateAppKey(): string {
   return crypto.randomBytes(64).toString('hex');
+}
+
+/**
+ * 生成派生密钥（Derived Key）
+ * 基于主 AppKey 和用户信息生成，即使泄露也无法推导出主密钥
+ * 
+ * @param masterKey - 主密钥（永远不暴露给客户端）
+ * @param context - 上下文信息（如 sessionId, nonce, userAgent 等）
+ * @returns 派生密钥（可以安全地发送给客户端）
+ */
+export function deriveKey(masterKey: string, context: string): string {
+  const hmac = crypto.createHmac('sha256', masterKey);
+  hmac.update(context);
+  return hmac.digest('hex');
 }
 
 /**

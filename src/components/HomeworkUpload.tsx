@@ -128,7 +128,7 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
       });
 
       const imageNames = compressionResults.map(r => r.file.name);
-      const { signature, timestamp, nonce } = await generateUploadSignature(
+      const { signature, timestamp, nonce, sessionId } = await generateUploadSignature(
         stageId,
         formData.nickname.trim(),
         imageNames
@@ -138,7 +138,8 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
         '/api/homework/upload',
         signature,
         timestamp,
-        nonce
+        nonce,
+        sessionId
       );
 
       setCompressionStatus('');

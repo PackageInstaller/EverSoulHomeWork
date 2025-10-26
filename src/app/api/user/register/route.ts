@@ -7,6 +7,7 @@ import {
   verifySignature, 
   generateRegisterSource 
 } from '@/lib/signatureAuth';
+import { headers } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,13 +33,19 @@ export async function POST(request: Request) {
       );
     }
 
-    // 验证签名
+    // 验证签名（使用派生密钥）
+    const headersList = headers();
+    const userAgent = headersList.get('user-agent') || '';
+    
     const source = generateRegisterSource(email, nickname, password);
     const signatureResult = verifySignature(
       signatureData.signature,
       source,
       signatureData.timestamp,
-      signatureData.nonce
+      signatureData.nonce,
+      5 * 60 * 1000, // windowMs
+      signatureData.sessionId, // 会话ID用于重建派生密钥
+      userAgent // User-Agent 用于重建派生密钥
     );
 
     if (!signatureResult.valid) {
