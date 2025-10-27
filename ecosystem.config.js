@@ -16,8 +16,6 @@ module.exports = {
         NODE_OPTIONS: '--no-warnings',
         NEXT_PUBLIC_ENABLE_CONSOLE: 'true'
       },
-      error_file: './logs/err.log',
-      out_file: './logs/out.log',
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
       merge_logs: true,
       combine_logs: true,

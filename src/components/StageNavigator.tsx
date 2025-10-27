@@ -105,13 +105,6 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
             <h3 className="font-bold text-base sm:text-lg">第 {currentArea} 章关卡</h3>
             <div className="flex items-center gap-1.5 sm:gap-2">
               <button
-                onClick={togglePosition}
-                className="p-1 sm:p-1.5 hover:bg-blue-700 rounded transition-colors text-sm sm:text-base"
-                title="切换位置"
-              >
-                {position === 'right' ? '←' : '→'}
-              </button>
-              <button
                 onClick={() => setIsExpanded(false)}
                 className="p-1 sm:p-1.5 hover:bg-blue-700 rounded transition-colors text-sm sm:text-base"
                 title="关闭"
@@ -165,7 +158,6 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
                 </span>
               )}
               {' '}点击关卡编号快速跳转
-              <span className="hidden sm:inline">，点击箭头切换位置</span>
             </p>
           </div>
         </div>
