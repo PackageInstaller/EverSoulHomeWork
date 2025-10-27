@@ -225,7 +225,7 @@ export default function PointsSettlement() {
         const savedValue = data.saved ? parseInt(data.saved.value) : autoSettleHour;
         setAutoSettleHour(savedValue);
 
-        alert(`✅ 自动结算配置已更新\n\n系统将在每月最后一天的 ${savedValue}:00 自动执行结算`);
+        alert(`✅ 自动结算配置已更新`);
       } else {
         alert(`❌ 更新失败\n\n${data.message || '未知错误'}`);
       }

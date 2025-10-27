@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import HomeworkUpload from './HomeworkUpload';
+import ImagePreviewModal from './ImagePreviewModal';
 
 interface HomeworkImage {
   id: string;
@@ -58,43 +59,6 @@ export default function HomeworkSection({ stageId, teamCount }: HomeworkSectionP
   useEffect(() => {
     fetchHomeworks();
   }, [stageId]);
-
-  // 键盘导航支持
-  useEffect(() => {
-    if (!selectedImage) return;
-
-    const handleKeyPress = (e: KeyboardEvent) => {
-      switch (e.key) {
-        case 'ArrowLeft':
-          e.preventDefault();
-          if (currentHomeworkImages.length > 1 && currentImageIndex > 0) {
-            const newIndex = currentImageIndex - 1;
-            setCurrentImageIndex(newIndex);
-            setSelectedImage(currentHomeworkImages[newIndex].url);
-          }
-          break;
-        case 'ArrowRight':
-          e.preventDefault();
-          if (currentHomeworkImages.length > 1 && currentImageIndex < currentHomeworkImages.length - 1) {
-            const newIndex = currentImageIndex + 1;
-            setCurrentImageIndex(newIndex);
-            setSelectedImage(currentHomeworkImages[newIndex].url);
-          }
-          break;
-        case 'Escape':
-          e.preventDefault();
-          setSelectedImage(null);
-          setCurrentHomeworkImages([]);
-          setCurrentImageIndex(0);
-          break;
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyPress);
-    return () => {
-      document.removeEventListener('keydown', handleKeyPress);
-    };
-  }, [selectedImage, currentImageIndex, currentHomeworkImages]);
 
   const handleUploadSuccess = () => {
     fetchHomeworks();
@@ -217,114 +181,21 @@ export default function HomeworkSection({ stageId, teamCount }: HomeworkSectionP
         </div>
       )}
 
-      {/* 使用 React Portal 将模态框渲染到 body 中，避免层级干扰 */}
+      {/* 图片预览模态框 */}
       {selectedImage && currentHomeworkImages.length > 0 && (
-        <div 
-          className="fixed z-[999999]"
-          style={{ 
-            position: 'fixed',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            zIndex: 999999,
-            pointerEvents: 'auto'
+        <ImagePreviewModal
+          images={currentHomeworkImages}
+          currentIndex={currentImageIndex}
+          onClose={() => {
+            setSelectedImage(null);
+            setCurrentHomeworkImages([]);
+            setCurrentImageIndex(0);
           }}
-        >
-          {/* 背景遮罩 */}
-          <div 
-            className="fixed inset-0"
-            style={{
-              position: 'fixed',
-              top: '-50vh',
-              left: '-50vw',
-              width: '200vw',
-              height: '200vh',
-              backgroundColor: 'transparent',
-              zIndex: -1
-            }}
-            onClick={() => {
-              setSelectedImage(null);
-              setCurrentHomeworkImages([]);
-              setCurrentImageIndex(0);
-            }}
-          />
-
-          {/* 主图片 - 使用transform居中 */}
-          <img
-            src={selectedImage}
-            alt={`作业预览 ${currentImageIndex + 1}/${currentHomeworkImages.length}`}
-            className="rounded-xl shadow-2xl"
-            style={{ 
-              maxWidth: '90vw', 
-              maxHeight: '90vh',
-              display: 'block'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          />
-
-          {/* 关闭按钮 - 相对于图片定位 */}
-          <button
-            onClick={() => {
-              setSelectedImage(null);
-              setCurrentHomeworkImages([]);
-              setCurrentImageIndex(0);
-            }}
-            className="absolute bg-black/80 hover:bg-black/90 text-white rounded-full w-12 h-12 flex items-center justify-center transition-all duration-200 shadow-lg"
-            style={{
-              top: '-20px',
-              right: '-20px'
-            }}
-          >
-            <span className="text-xl font-bold">✕</span>
-          </button>
-
-          {/* 图片计数器 - 相对于图片定位 */}
-          {currentHomeworkImages.length > 1 && (
-            <div 
-              className="absolute bg-black/80 text-white px-4 py-2 rounded-lg text-sm shadow-lg"
-              style={{
-                top: '-20px',
-                left: '0px'
-              }}
-            >
-              {currentImageIndex + 1} / {currentHomeworkImages.length}
-            </div>
-          )}
-
-          {/* 缩略图导航 - 相对于图片定位 */}
-          {currentHomeworkImages.length > 1 && (
-            <div 
-              className="absolute flex space-x-2 bg-black/80 rounded-lg p-3 shadow-lg"
-              style={{
-                bottom: '-60px',
-                left: '50%',
-                transform: 'translateX(-50%)'
-              }}
-            >
-              {currentHomeworkImages.map((image, index) => (
-                <button
-                  key={image.id}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setCurrentImageIndex(index);
-                    setSelectedImage(image.url);
-                  }}
-                  className={`w-14 h-14 rounded-md overflow-hidden border-2 transition-all duration-200 ${
-                    index === currentImageIndex 
-                      ? 'border-white scale-110' 
-                      : 'border-transparent hover:border-white/50'
-                  }`}
-                >
-                  <img
-                    src={image.url}
-                    alt={`缩略图 ${index + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+          onIndexChange={(index) => {
+            setCurrentImageIndex(index);
+            setSelectedImage(currentHomeworkImages[index].url);
+          }}
+        />
       )}
     </div>
   );

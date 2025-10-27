@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import PointsSettlement from "@/components/PointsSettlement";
 import MessageSender from "@/components/MessageSender";
+import ImagePreviewModal from "@/components/ImagePreviewModal";
 
 interface HomeworkImage {
   id: string;
@@ -369,7 +370,7 @@ export default function AdminHomeworkPage() {
       return;
     }
 
-    if (!confirm("确定要强制刷新游戏数据缓存吗？\n\n这会清除旧缓存并从GitHub并行下载所有数据，大约需要10-20秒。")) {
+    if (!confirm("确定要强制刷新游戏数据缓存吗？")) {
       return;
     }
 
@@ -399,7 +400,7 @@ export default function AdminHomeworkPage() {
       console.error("❌ [前端] 刷新缓存失败:", error);
 
       if (error.name === 'AbortError') {
-        alert("❌ 请求超时\n\n前端请求已超时（超过2分钟），但服务器可能还在继续处理。\n\n建议：\n1. 等待 30 秒后重试\n2. 如果持续失败，可能是 GitHub 访问受限");
+        alert("❌ 请求超时");
       } else {
         alert(`❌ 刷新缓存失败\n\n错误信息: ${error.message || '网络错误'}`);
       }
@@ -1187,83 +1188,20 @@ export default function AdminHomeworkPage() {
         )}
 
         {/* 图片预览模态框 */}
-        {selectedImage && (
-          <div 
-            className="fixed inset-0 bg-black/90 z-[999999] flex items-center justify-center p-4"
-            onClick={() => setSelectedImage(null)}
-          >
-            <div className="relative" onClick={(e) => e.stopPropagation()}>
-              {/* 关闭按钮 */}
-              <button
-                onClick={() => setSelectedImage(null)}
-                className="absolute bg-black/80 hover:bg-black/90 text-white rounded-full w-12 h-12 flex items-center justify-center transition-all duration-200 shadow-lg z-10"
-                style={{
-                  top: '-60px',
-                  right: '0px'
-                }}
-              >
-                <span className="text-xl font-bold">✕</span>
-              </button>
-
-              {/* 大图 */}
-              <img
-                src={selectedImage}
-                alt="作业预览"
-                className="rounded-xl shadow-2xl"
-                style={{
-                  maxWidth: '90vw',
-                  maxHeight: '80vh',
-                  display: 'block',
-                }}
-              />
-
-              {/* 图片计数器 */}
-              {currentHomeworkImages.length > 1 && (
-                <div 
-                  className="absolute bg-black/80 text-white px-4 py-2 rounded-lg text-sm shadow-lg"
-                  style={{
-                    top: '-60px',
-                    left: '0px'
-                  }}
-                >
-                  {currentImageIndex + 1} / {currentHomeworkImages.length}
-                </div>
-              )}
-
-              {/* 缩略图导航 */}
-              {currentHomeworkImages.length > 1 && (
-                <div 
-                  className="absolute flex space-x-2 bg-black/80 rounded-lg p-3 shadow-lg max-w-[90vw] overflow-x-auto"
-                  style={{
-                    bottom: '-80px',
-                    left: '50%',
-                    transform: 'translateX(-50%)'
-                  }}
-                >
-                  {currentHomeworkImages.map((image, index) => (
-                    <button
-                      key={image.id}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCurrentImageIndex(index);
-                        setSelectedImage(image.url);
-                      }}
-                      className={`flex-shrink-0 w-14 h-14 rounded-md overflow-hidden border-2 transition-all duration-200 ${index === currentImageIndex
-                          ? 'border-white scale-110' 
-                          : 'border-transparent hover:border-white/50'
-                      }`}
-                    >
-                      <img
-                        src={image.url}
-                        alt={`缩略图 ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+        {selectedImage && currentHomeworkImages.length > 0 && (
+          <ImagePreviewModal
+            images={currentHomeworkImages}
+            currentIndex={currentImageIndex}
+            onClose={() => {
+              setSelectedImage(null);
+              setCurrentHomeworkImages([]);
+              setCurrentImageIndex(0);
+            }}
+            onIndexChange={(index) => {
+              setCurrentImageIndex(index);
+              setSelectedImage(currentHomeworkImages[index].url);
+            }}
+          />
         )}
 
         {/* 拒绝原因模态框 */}
