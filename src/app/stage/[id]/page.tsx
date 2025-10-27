@@ -172,8 +172,8 @@ export default function StageDetailPage() {
                     <a
                       href={`/stage/${areaNo}-${stageNo}?source=live&returnSource=${returnSource}`}
                       className={`px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-medium rounded-full transition-all duration-300 ${dataSource === 'live'
-                          ? 'bg-white text-gray-900 shadow-lg'
-                          : 'text-white/70 hover:text-white hover:bg-white/10'
+                        ? 'bg-white text-gray-900 shadow-lg'
+                        : 'text-white/70 hover:text-white hover:bg-white/10'
                         }`}
                     >
                       正式服
@@ -181,8 +181,8 @@ export default function StageDetailPage() {
                     <a
                       href={`/stage/${areaNo}-${stageNo}?source=review&returnSource=${returnSource}`}
                       className={`px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-medium rounded-full transition-all duration-300 ${dataSource === 'review'
-                          ? 'bg-white text-gray-900 shadow-lg'
-                          : 'text-white/70 hover:text-white hover:bg-white/10'
+                        ? 'bg-white text-gray-900 shadow-lg'
+                        : 'text-white/70 hover:text-white hover:bg-white/10'
                         }`}
                     >
                       测试服

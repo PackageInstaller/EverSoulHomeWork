@@ -163,8 +163,8 @@ function LoginRegisterForm() {
           <div className="flex border-b border-gray-200 mb-6">
             <button
               className={`flex-1 py-2 px-4 text-center font-medium ${isLogin
-                  ? "border-b-2 border-blue-500 text-blue-600"
-                  : "text-gray-500 hover:text-gray-700"
+                ? "border-b-2 border-blue-500 text-blue-600"
+                : "text-gray-500 hover:text-gray-700"
                 }`}
               onClick={() => {
                 setIsLogin(true);
@@ -175,8 +175,8 @@ function LoginRegisterForm() {
             </button>
             <button
               className={`flex-1 py-2 px-4 text-center font-medium ${!isLogin
-                  ? "border-b-2 border-blue-500 text-blue-600"
-                  : "text-gray-500 hover:text-gray-700"
+                ? "border-b-2 border-blue-500 text-blue-600"
+                : "text-gray-500 hover:text-gray-700"
                 }`}
               onClick={() => {
                 setIsLogin(false);

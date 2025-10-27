@@ -95,25 +95,25 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
       {isExpanded && (
         <div
           className={`
-            fixed z-50 w-80 max-h-[80vh] bg-white/95 backdrop-blur-md rounded-lg shadow-xl border border-gray-200
+            fixed z-50 w-[90vw] sm:w-80 max-h-[85vh] sm:max-h-[80vh] bg-white/95 backdrop-blur-md rounded-lg shadow-xl border border-gray-200
             transition-all duration-300 ease-out top-1/2 -translate-y-1/2
-            ${position === 'right' ? 'right-2' : 'left-2'}
+            ${position === 'right' ? 'right-2 sm:right-2' : 'left-2 sm:left-2'}
           `}
         >
           {/* 头部 */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-blue-600 text-white rounded-t-lg">
-            <h3 className="font-bold text-lg">第 {currentArea} 章关卡</h3>
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between px-3 py-2.5 sm:p-4 border-b border-gray-200 bg-blue-600 text-white rounded-t-lg">
+            <h3 className="font-bold text-base sm:text-lg">第 {currentArea} 章关卡</h3>
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <button
                 onClick={togglePosition}
-                className="p-1 hover:bg-blue-700 rounded transition-colors"
+                className="p-1 sm:p-1.5 hover:bg-blue-700 rounded transition-colors text-sm sm:text-base"
                 title="切换位置"
               >
                 {position === 'right' ? '←' : '→'}
               </button>
               <button
                 onClick={() => setIsExpanded(false)}
-                className="p-1 hover:bg-blue-700 rounded transition-colors"
+                className="p-1 sm:p-1.5 hover:bg-blue-700 rounded transition-colors text-sm sm:text-base"
                 title="关闭"
               >
                 ✕
@@ -122,25 +122,25 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
           </div>
 
           {/* 关卡网格 */}
-          <div className="p-4 overflow-y-auto max-h-[calc(80vh-60px)]">
+          <div className="p-3 sm:p-4 overflow-y-auto max-h-[calc(85vh-120px)] sm:max-h-[calc(80vh-120px)]">
             {loading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <span className="ml-3 text-gray-600">加载关卡列表...</span>
+                <span className="ml-3 text-gray-600 text-sm">加载关卡列表...</span>
               </div>
             ) : stages.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-500 text-sm">
                 暂无关卡数据
               </div>
             ) : (
-              <div className="grid grid-cols-6 gap-2">
+              <div className="grid grid-cols-6 gap-1.5 sm:gap-2">
                 {stages.map((stage) => (
                   <button
                     key={stage.id}
                     onClick={() => handleStageClick(stage.id)}
                     disabled={stage.isCurrent}
                     className={`
-                      aspect-square rounded-lg font-medium text-sm transition-all
+                      aspect-square rounded-lg font-medium text-xs sm:text-sm transition-all
                       ${stage.isCurrent
                         ? 'bg-blue-600 text-white ring-2 ring-blue-400 cursor-default'
                         : 'bg-gray-100 hover:bg-blue-100 text-gray-700 hover:text-blue-600 hover:ring-2 hover:ring-blue-300'
@@ -157,14 +157,15 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
           </div>
 
           {/* 底部说明 */}
-          <div className="p-3 border-t border-gray-200 bg-gray-50 rounded-b-lg">
-            <p className="text-xs text-gray-600 text-center">
+          <div className="px-3 py-2 sm:p-3 border-t border-gray-200 bg-gray-50 rounded-b-lg">
+            <p className="text-[10px] sm:text-xs text-gray-600 text-center leading-tight sm:leading-normal">
               {!loading && stages.length > 0 && (
                 <span className="font-medium text-blue-600">
                   本章共 {stages.length} 关 ·
                 </span>
               )}
-              {' '}点击关卡编号快速跳转，点击箭头切换位置
+              {' '}点击关卡编号快速跳转
+              <span className="hidden sm:inline">，点击箭头切换位置</span>
             </p>
           </div>
         </div>

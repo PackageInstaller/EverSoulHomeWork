@@ -206,8 +206,8 @@ export default function MailboxPage() {
                     <button
                       onClick={() => setFilter('all')}
                       className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === 'all'
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-white/10 text-white/70 hover:bg-white/20'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-white/10 text-white/70 hover:bg-white/20'
                         }`}
                     >
                       全部
@@ -215,8 +215,8 @@ export default function MailboxPage() {
                     <button
                       onClick={() => setFilter('unread')}
                       className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === 'unread'
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-white/10 text-white/70 hover:bg-white/20'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-white/10 text-white/70 hover:bg-white/20'
                         }`}
                     >
                       未读 {unreadCount > 0 && `(${unreadCount})`}
@@ -224,8 +224,8 @@ export default function MailboxPage() {
                     <button
                       onClick={() => setFilter('read')}
                       className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === 'read'
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-white/10 text-white/70 hover:bg-white/20'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-white/10 text-white/70 hover:bg-white/20'
                         }`}
                     >
                       已读

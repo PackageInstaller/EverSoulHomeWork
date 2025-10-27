@@ -80,9 +80,9 @@ export default function HomeworkSection({ stageId, teamCount }: HomeworkSectionP
     <div className="stage-card">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold text-white">玩家作业分享</h2>
-        <HomeworkUpload 
-          stageId={stageId} 
-          teamCount={teamCount} 
+        <HomeworkUpload
+          stageId={stageId}
+          teamCount={teamCount}
           onUploadSuccess={handleUploadSuccess}
         />
       </div>
@@ -150,8 +150,8 @@ export default function HomeworkSection({ stageId, teamCount }: HomeworkSectionP
               {/* 作业图片 */}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {homework.images.map((image, index) => (
-                  <div 
-                    key={image.id} 
+                  <div
+                    key={image.id}
                     className="relative group cursor-pointer"
                     onClick={() => {
                       setSelectedImage(image.url);
