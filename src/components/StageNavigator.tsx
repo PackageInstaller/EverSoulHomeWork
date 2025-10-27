@@ -66,14 +66,11 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
   };
 
   const handleOpen = () => {
-    setIsAnimating(true);
     setIsExpanded(true);
-    if (animationTimerRef.current) {
-      clearTimeout(animationTimerRef.current);
-    }
-    animationTimerRef.current = setTimeout(() => {
+    // 立即开始动画，稍后标记为完成
+    setTimeout(() => {
       setIsAnimating(false);
-    }, 500);
+    }, 10);
   };
 
   const handleClose = () => {
@@ -81,10 +78,11 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
     if (animationTimerRef.current) {
       clearTimeout(animationTimerRef.current);
     }
+    // 等待动画完成后再隐藏
     animationTimerRef.current = setTimeout(() => {
       setIsExpanded(false);
       setIsAnimating(false);
-    }, 400);
+    }, 350);
   };
 
   // 清理定时器
@@ -108,35 +106,40 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
         />
       )}
 
-      {/* 悬浮球形按钮 / 展开的选择框 */}
+      {/* 悬浮球形按钮 / 展开的选择框 - Container Transform */}
       <div
         className={`
           fixed z-50 
           ${!isExpanded 
-            ? 'bottom-6 right-6 w-14 h-14 sm:w-16 sm:h-16' 
-            : 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] sm:w-[440px] h-[85vh] sm:h-[600px]'
+            ? 'top-1/2 -translate-y-1/2 right-6 w-14 h-14 sm:w-16 sm:h-16 rounded-full' 
+            : 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] sm:w-[440px] h-[85vh] sm:h-[600px] rounded-3xl'
           }
-          ${isAnimating && !isExpanded ? 'scale-0 opacity-0 rotate-180' : ''}
-          ${isAnimating && isExpanded ? 'scale-90 opacity-0 rotate-12' : 'scale-100 opacity-100 rotate-0'}
+          bg-blue-600
+          overflow-hidden
+          transition-all duration-350 ease-out
         `}
         style={{
-          transitionProperty: 'all',
-          transitionDuration: '500ms',
-          transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)'
+          transitionTimingFunction: !isExpanded 
+            ? 'cubic-bezier(0.4, 0.0, 0.2, 1)' // 打开：先快后慢（标准缓动）
+            : 'cubic-bezier(0.0, 0.0, 0.2, 1)', // 关闭：加速缓动（先慢后快）
+          boxShadow: !isExpanded 
+            ? '0 8px 24px rgba(37, 99, 235, 0.4)'
+            : '0 20px 60px rgba(0, 0, 0, 0.2)'
         }}
       >
-        {/* 球形按钮状态 */}
+        {/* 球形按钮状态 - 涟漪效果背景 */}
         {!isExpanded && (
           <button
             onClick={handleOpen}
-            className="w-full h-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-full shadow-xl flex items-center justify-center transition-colors duration-200 group"
-            style={{
-              boxShadow: '0 8px 24px rgba(37, 99, 235, 0.4)'
-            }}
+            className="relative w-full h-full flex items-center justify-center group overflow-hidden"
             title="打开关卡导航"
           >
+            {/* 涟漪效果层 */}
+            <div className="absolute inset-0 bg-blue-700 opacity-0 group-active:opacity-100 group-active:scale-150 transition-all duration-200 rounded-full"></div>
+            
+            {/* 图标 - 点击时淡出 */}
             <svg 
-              className="w-6 h-6 sm:w-7 sm:h-7 group-hover:scale-110 transition-transform" 
+              className="w-6 h-6 sm:w-7 sm:h-7 text-white group-hover:scale-110 transition-transform relative z-10" 
               fill="none" 
               stroke="currentColor" 
               viewBox="0 0 24 24"
@@ -151,16 +154,23 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
           </button>
         )}
 
-        {/* 展开的选择框状态 */}
+        {/* 展开的选择框状态 - 内容淡入 */}
         {isExpanded && (
           <div 
-            className="w-full h-full bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col"
-            style={{
-              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.2)'
-            }}
+            className={`
+              w-full h-full bg-white flex flex-col
+              transition-opacity duration-300
+              ${isAnimating ? 'opacity-0' : 'opacity-100'}
+            `}
           >
-            {/* 头部 */}
-            <div className="flex items-center justify-between px-4 py-3 sm:px-5 sm:py-4 bg-white border-b border-gray-100 flex-shrink-0">
+            {/* 头部 - 向下滑入 */}
+            <div 
+              className={`
+                flex items-center justify-between px-4 py-3 sm:px-5 sm:py-4 bg-white border-b border-gray-100 flex-shrink-0
+                transition-all duration-300 delay-100
+                ${isAnimating ? 'opacity-0 -translate-y-4' : 'opacity-100 translate-y-0'}
+              `}
+            >
               <h3 className="font-semibold text-base sm:text-lg text-gray-900">第 {currentArea} 章关卡</h3>
               
               <button
@@ -174,8 +184,15 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
               </button>
             </div>
 
-            {/* 关卡网格 - 固定高度可滚动 */}
-            <div className="flex-1 overflow-y-auto p-4" style={{ minHeight: 0 }}>
+            {/* 关卡网格 - 放大淡入 */}
+            <div 
+              className={`
+                flex-1 overflow-y-auto p-4
+                transition-all duration-300 delay-150
+                ${isAnimating ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}
+              `}
+              style={{ minHeight: 0 }}
+            >
               {loading ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-3 border-blue-600 border-t-transparent"></div>
@@ -216,8 +233,14 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
               )}
             </div>
 
-            {/* 底部说明 */}
-            <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex-shrink-0">
+            {/* 底部说明 - 向上滑入 */}
+            <div 
+              className={`
+                px-4 py-3 bg-gray-50 border-t border-gray-100 flex-shrink-0
+                transition-all duration-300 delay-100
+                ${isAnimating ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'}
+              `}
+            >
               <p className="text-xs text-gray-600 text-center">
                 {!loading && stages.length > 0 && (
                   <span className="font-medium text-gray-700">

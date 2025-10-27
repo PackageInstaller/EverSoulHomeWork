@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import TotalPointsRanking from "@/components/TotalPointsRanking";
 
 type ActiveTab = "stage" | "guild" | "arena" | "strategy" | "totalRank";
@@ -17,6 +17,8 @@ export default function HomePage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const menuCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // 页面加载时检查是否有登录用户
   useEffect(() => {
@@ -89,12 +91,60 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [currentUser]);
 
+  // 点击外部区域关闭用户菜单
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+
+    if (showUserMenu) {
+      document.addEventListener('mousedown', handleClickOutside as EventListener);
+      document.addEventListener('touchstart', handleClickOutside as EventListener);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside as EventListener);
+      document.removeEventListener('touchstart', handleClickOutside as EventListener);
+    };
+  }, [showUserMenu]);
+
+  // 清理定时器
+  useEffect(() => {
+    return () => {
+      if (menuCloseTimerRef.current) {
+        clearTimeout(menuCloseTimerRef.current);
+      }
+    };
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem("Token");
     setCurrentUser(null);
     setShowUserMenu(false);
     // 如果需要跳转到登录页可以取消下面的注释
     // window.location.href = '/loginResignter';
+  };
+
+  // 鼠标进入用户菜单区域
+  const handleMouseEnterMenu = () => {
+    if (menuCloseTimerRef.current) {
+      clearTimeout(menuCloseTimerRef.current);
+      menuCloseTimerRef.current = null;
+    }
+    setShowUserMenu(true);
+  };
+
+  // 鼠标离开用户菜单区域
+  const handleMouseLeaveMenu = () => {
+    if (menuCloseTimerRef.current) {
+      clearTimeout(menuCloseTimerRef.current);
+    }
+    // 延迟关闭，给鼠标移动到菜单的时间
+    menuCloseTimerRef.current = setTimeout(() => {
+      setShowUserMenu(false);
+    }, 150);
   };
 
   const menuItems = [
@@ -203,9 +253,11 @@ export default function HomePage() {
                 <span className="md:hidden">🔐</span>
               </a>
               {currentUser ? (
-                <div className="relative">
+                <div className="relative" ref={userMenuRef}>
                   <button
-                    onMouseEnter={() => setShowUserMenu(true)}
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                    onMouseEnter={handleMouseEnterMenu}
+                    onMouseLeave={handleMouseLeaveMenu}
                     className="flex items-center gap-1.5 sm:gap-2 bg-blue-500 hover:bg-blue-600 text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm transition-colors duration-300"
                   >
                     <div className="relative w-5 h-5 sm:w-6 sm:h-6 bg-white rounded-full flex items-center justify-center text-blue-500 font-bold text-xs sm:text-sm">
@@ -222,14 +274,19 @@ export default function HomePage() {
                   {showUserMenu && (
                     <div
                       className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200"
-                      onMouseEnter={() => setShowUserMenu(true)}
-                      onMouseLeave={() => setShowUserMenu(false)}
+                      onMouseEnter={handleMouseEnterMenu}
+                      onMouseLeave={handleMouseLeaveMenu}
                     >
                       <a
                         href="/mailbox"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         📬 我的邮箱
+                        {unreadCount > 0 && (
+                          <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                          </span>
+                        )}
                       </a>
                       <a
                         href="/profile"
