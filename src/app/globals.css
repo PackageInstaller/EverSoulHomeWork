@@ -28,11 +28,30 @@ body {
   height: 100%;
   margin: 0;
   padding: 0;
+  /* 移动端视口高度修复 */
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+}
+
+/* 移动端视口高度修复 */
+html {
+  height: -webkit-fill-available;
+}
+
+/* 防止移动端滚动时出现白边 */
+body {
+  overflow-x: hidden;
+  position: relative;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  
+  .min-h-screen-fill {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
   }
 }
 

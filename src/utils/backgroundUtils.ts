@@ -42,10 +42,9 @@ export function getBackgroundStyle(backgroundUrl: string) {
     backgroundImage: `url(${backgroundUrl})`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
-    // 使用 fixed 确保背景固定，但在移动端可能有兼容性问题
-    // 如果遇到问题，可以尝试使用 absolute 定位的方案
-    backgroundAttachment: 'fixed'
+    backgroundRepeat: 'no-repeat'
+    // 移除 backgroundAttachment: 'fixed' 以提高移动端兼容性
+    // 现在使用 fixed 定位的 div 来实现固定背景效果
   };
 }
 

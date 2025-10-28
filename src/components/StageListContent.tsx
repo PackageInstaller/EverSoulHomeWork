@@ -171,15 +171,18 @@ export default function StageListContent({ initialStages = [] }: StageListConten
   }
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative min-h-screen-fill">
       {/* 固定背景 */}
       <div
-        className="fixed inset-0 z-0"
-        style={getBackgroundStyle(backgroundImage)}
+        className="fixed inset-0 z-0 min-h-screen-fill"
+        style={{
+          ...getBackgroundStyle(backgroundImage),
+          height: '100%'
+        }}
       />
 
       {/* 内容层 */}
-      <div className="relative z-10 min-h-screen">
+      <div className="relative z-10 min-h-screen-fill">
         {/* 导航栏 */}
         <div className="bg-black/20 backdrop-blur-sm border-b border-white/10 sticky top-0 z-20">
           <div className="max-w-7xl mx-auto px-4 py-4">

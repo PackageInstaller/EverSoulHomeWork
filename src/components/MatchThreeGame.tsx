@@ -74,7 +74,8 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
     if (draggingTile) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
-      document.addEventListener('touchmove', handleTouchMove);
+      // 使用passive: false以便可以调用preventDefault阻止滚动
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
       document.addEventListener('touchend', handleTouchEnd);
     }
 
@@ -188,7 +189,6 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
 
   const handleTileTouchStart = (e: React.TouchEvent, row: number, col: number) => {
     if (isAnimating) return;
-    e.preventDefault();
     e.stopPropagation();
     resetHintTimer();
 
@@ -209,6 +209,7 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
 
   const handleTouchMove = (e: TouchEvent) => {
     if (!draggingTile || !dragPosition) return;
+    e.preventDefault(); // 阻止页面滚动
     const touch = e.touches[0];
     setDragPosition({ x: touch.clientX, y: touch.clientY });
   };
@@ -1451,8 +1452,8 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
         }
       `}} />
 
-      <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-2 sm:p-4">
-        <div className="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl sm:rounded-3xl shadow-2xl p-3 sm:p-6 max-w-4xl w-full">
+      <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-2 sm:p-4" style={{ touchAction: 'none' }}>
+        <div className="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl sm:rounded-3xl shadow-2xl p-3 sm:p-6 max-w-4xl w-full" style={{ touchAction: 'none' }}>
           {/* 头部 */}
           <div className="flex items-center justify-between mb-2 sm:mb-4 flex-wrap gap-2">
             <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
@@ -1483,7 +1484,8 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
               maxWidth: GRID_SIZE * 70 + 'px',
               maxHeight: GRID_SIZE * 70 + 'px',
               WebkitUserSelect: 'none',
-              userSelect: 'none'
+              userSelect: 'none',
+              touchAction: 'none' // 禁用所有默认触摸行为（缩放、滚动等）
             }}
             onDragStart={(e) => e.preventDefault()}
           >

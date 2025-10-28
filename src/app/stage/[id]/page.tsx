@@ -61,16 +61,19 @@ export default function StageDetailPage() {
         {/* 固定背景层 */}
         {backgroundImage && (
           <div
-            className="fixed inset-0 z-0"
-            style={getBackgroundStyle(backgroundImage)}
+            className="fixed inset-0 z-0 min-h-screen-fill"
+            style={{
+              ...getBackgroundStyle(backgroundImage),
+              height: '100%'
+            }}
           />
         )}
 
         {/* 半透明覆盖层 */}
-        <div className="fixed inset-0 z-10 bg-black/50"></div>
+        <div className="fixed inset-0 z-10 bg-black/50 min-h-screen-fill"></div>
 
         {/* 内容区域 */}
-        <div className="relative z-20 min-h-screen flex items-center justify-center">
+        <div className="relative z-20 flex items-center justify-center min-h-screen-fill">
           <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 sm:p-8 shadow-2xl border border-white/20 max-w-xs sm:max-w-md w-full">
             <div className="flex items-center justify-center">
               <div className="animate-spin rounded-full h-6 sm:h-8 w-6 sm:w-8 border-b-2 border-blue-500"></div>
@@ -89,16 +92,19 @@ export default function StageDetailPage() {
         {/* 固定背景层 */}
         {backgroundImage && (
           <div
-            className="fixed inset-0 z-0"
-            style={getBackgroundStyle(backgroundImage)}
+            className="fixed inset-0 z-0 min-h-screen-fill"
+            style={{
+              ...getBackgroundStyle(backgroundImage),
+              height: '100%'
+            }}
           />
         )}
 
         {/* 半透明覆盖层 */}
-        <div className="fixed inset-0 z-10 bg-black/50"></div>
+        <div className="fixed inset-0 z-10 bg-black/50 min-h-screen-fill"></div>
 
         {/* 内容区域 */}
-        <div className="relative z-20 min-h-screen flex items-center justify-center p-4">
+        <div className="relative z-20 flex items-center justify-center p-4 min-h-screen-fill">
           <div className="bg-white/95 backdrop-blur-sm rounded-xl p-4 sm:p-8 shadow-2xl border border-white/20 max-w-xs sm:max-w-md w-full text-center">
             <div className="text-3xl sm:text-4xl mb-2 sm:mb-4">⚠️</div>
             <h2 className="text-base sm:text-xl font-bold text-red-800 mb-2 sm:mb-4">加载失败</h2>
@@ -130,16 +136,19 @@ export default function StageDetailPage() {
         {/* 固定背景层 */}
         {backgroundImage && (
           <div
-            className="fixed inset-0 z-0"
-            style={getBackgroundStyle(backgroundImage)}
+            className="fixed inset-0 z-0 min-h-screen-fill"
+            style={{
+              ...getBackgroundStyle(backgroundImage),
+              height: '100%'
+            }}
           />
         )}
 
         {/* 半透明覆盖层 */}
-        <div className="fixed inset-0 z-10 bg-black/50"></div>
+        <div className="fixed inset-0 z-10 bg-black/50 min-h-screen-fill"></div>
 
         {/* 内容区域 */}
-        <div className="relative z-20 min-h-screen">
+        <div className="relative z-20 min-h-screen-fill">
           {/* 导航栏 */}
           <div className="bg-black/20 backdrop-blur-sm border-b border-white/10">
             <div className="mx-auto px-4 sm:px-6 py-3 sm:py-4">
