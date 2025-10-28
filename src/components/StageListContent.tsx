@@ -195,7 +195,6 @@ export default function StageListContent({ initialStages = [] }: StageListConten
               </button>
 
               <div className="flex items-center space-x-4">
-                <span className="text-white/80 text-sm font-medium">数据源:</span>
                 <div className="relative inline-flex bg-white/10 backdrop-blur-sm rounded-full p-1 border border-white/20">
                   <button
                     onClick={() => router.push('/stage?source=live')}
@@ -205,9 +204,6 @@ export default function StageListContent({ initialStages = [] }: StageListConten
                       }`}
                   >
                     正式服
-                    {liveStages.length > 0 && (
-                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full"></span>
-                    )}
                   </button>
                   <button
                     onClick={() => router.push('/stage?source=review')}
@@ -217,9 +213,6 @@ export default function StageListContent({ initialStages = [] }: StageListConten
                       }`}
                   >
                     测试服
-                    {reviewStages.length > 0 && (
-                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full"></span>
-                    )}
                   </button>
                 </div>
               </div>
