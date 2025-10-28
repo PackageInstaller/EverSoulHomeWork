@@ -175,6 +175,7 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
   const handleTileMouseDown = (e: React.MouseEvent, row: number, col: number) => {
     if (isAnimating) return;
     e.preventDefault();
+    e.stopPropagation();
     resetHintTimer();
 
     const tile = grid[row]?.[col];
@@ -187,6 +188,8 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
 
   const handleTileTouchStart = (e: React.TouchEvent, row: number, col: number) => {
     if (isAnimating) return;
+    e.preventDefault();
+    e.stopPropagation();
     resetHintTimer();
 
     const tile = grid[row]?.[col];
@@ -846,7 +849,7 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
 
       // 等待特殊方块出现动画完成
       if (specialTilePositions.size > 0) {
-        await new Promise(resolve => setTimeout(resolve, 800)); // 特殊方块出现动画时长
+        await new Promise(resolve => setTimeout(resolve, 400)); // 特殊方块出现动画时长
         setAppearingSpecials(new Set());
         // 标记这些特殊方块已经出现过（通过ID）
         const specialTileIds = Array.from(specialTilePositions)
@@ -1278,29 +1281,21 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
           0% {
             transform: scale(0) rotate(0deg);
             opacity: 0;
-            filter: brightness(3) blur(4px);
+            filter: brightness(3) blur(3px);
           }
-          25% {
-            transform: scale(0.5) rotate(90deg);
-            opacity: 0.5;
-            filter: brightness(2.5) blur(3px);
+          30% {
+            transform: scale(0.6) rotate(120deg);
+            opacity: 0.6;
+            filter: brightness(2.5) blur(2px);
           }
-          50% {
-            transform: scale(1.3) rotate(180deg);
+          60% {
+            transform: scale(1.3) rotate(270deg);
             opacity: 1;
-            filter: brightness(2) blur(2px);
-          }
-          65% {
-            transform: scale(1.5) rotate(270deg);
-            filter: brightness(1.8) blur(1px);
+            filter: brightness(2) blur(1px);
           }
           80% {
-            transform: scale(0.9) rotate(360deg);
-            filter: brightness(1.3) blur(0px);
-          }
-          90% {
-            transform: scale(1.05) rotate(360deg);
-            filter: brightness(1.1);
+            transform: scale(0.95) rotate(360deg);
+            filter: brightness(1.2) blur(0px);
           }
           100% {
             transform: scale(1) rotate(360deg);
@@ -1416,7 +1411,7 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
         }
         
         .animate-special-appear {
-          animation: special-appear 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards !important;
+          animation: special-appear 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards !important;
         }
         
         .animate-swap-left {
@@ -1456,23 +1451,23 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
         }
       `}} />
 
-      <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center">
-        <div className="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-3xl shadow-2xl p-6 max-w-4xl">
+      <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-2 sm:p-4">
+        <div className="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl sm:rounded-3xl shadow-2xl p-3 sm:p-6 max-w-4xl w-full">
           {/* 头部 */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-4">
-              <h2 className="text-3xl font-bold text-white">永恒爆爆乐</h2>
-              <div className="bg-yellow-500/20 px-4 py-2 rounded-full border-2 border-yellow-400">
-                <span className="text-yellow-300 font-bold text-xl">分数: {score}</span>
+          <div className="flex items-center justify-between mb-2 sm:mb-4 flex-wrap gap-2">
+            <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">永恒爆爆乐</h2>
+              <div className="bg-yellow-500/20 px-2 sm:px-4 py-1 sm:py-2 rounded-full border-2 border-yellow-400">
+                <span className="text-yellow-300 font-bold text-sm sm:text-lg md:text-xl">分数: {score}</span>
               </div>
             </div>
 
             <button
               onClick={onClose}
-              className="p-3 bg-red-500/20 hover:bg-red-500/30 rounded-full transition-colors"
+              className="p-2 sm:p-3 bg-red-500/20 hover:bg-red-500/30 rounded-full transition-colors"
               title="关闭"
             >
-              <svg className="w-6 h-6 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -1481,11 +1476,16 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
           {/* 游戏区域 */}
           <div
             ref={gridRef}
-            className="relative bg-black/30 rounded-2xl p-4 backdrop-blur-sm"
+            className="relative bg-black/30 rounded-xl sm:rounded-2xl p-2 sm:p-4 backdrop-blur-sm mx-auto overflow-x-auto select-none"
             style={{
-              width: GRID_SIZE * 70 + 'px',
-              height: GRID_SIZE * 70 + 'px'
+              width: 'min(100%, ' + (GRID_SIZE * 70) + 'px)',
+              height: 'min(calc(100vh - 120px), ' + (GRID_SIZE * 70) + 'px)',
+              maxWidth: GRID_SIZE * 70 + 'px',
+              maxHeight: GRID_SIZE * 70 + 'px',
+              WebkitUserSelect: 'none',
+              userSelect: 'none'
             }}
+            onDragStart={(e) => e.preventDefault()}
           >
             {!isInitialized ? (
               <div className="flex items-center justify-center w-full h-full">
@@ -1546,15 +1546,30 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
                     const tileId = tile?.id?.toString() || '';
                     const isSpecialAndNew = tile?.special !== 'none' && tileId && !appearedSpecials.has(tileId);
 
+                    // 确定方块的内联样式 - 避免样式突变导致的过渡效果
+                    let inlineStyle: React.CSSProperties | undefined = undefined;
+                    if (isAppearing) {
+                      inlineStyle = {
+                        animation: 'special-appear 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards'
+                      };
+                    } else if (isSpecialAndNew) {
+                      inlineStyle = {
+                        transform: 'scale(0) rotate(0deg)',
+                        opacity: 0,
+                        transition: 'none' // 禁用过渡，防止从scale(0)到scale(1)的过渡
+                      };
+                    }
+
                     return (
                       <div
                         key={`${rowIndex}-${colIndex}`}
                         onClick={() => handleTileClick(rowIndex, colIndex)}
                         onMouseDown={(e) => handleTileMouseDown(e, rowIndex, colIndex)}
                         onTouchStart={(e) => handleTileTouchStart(e, rowIndex, colIndex)}
+                        onDragStart={(e) => e.preventDefault()}
                         className={`
-                      relative w-16 h-16 m-0.5 cursor-pointer
-                      ${!isAppearing && !isCrushing && !isFalling && !swapClass ? 'transition-all duration-300' : ''}
+                      relative w-16 h-16 m-0.5 cursor-pointer select-none
+                      ${!isAppearing && !isCrushing && !isFalling && !swapClass && !isSpecialAndNew ? 'transition-all duration-300' : ''}
                       ${selectedTile?.row === rowIndex && selectedTile?.col === colIndex ? 'ring-4 ring-yellow-400 scale-110' : ''}
                       ${isHinted ? 'animate-jelly' : ''}
                       ${isAnimating ? 'pointer-events-none' : 'hover:scale-105'}
@@ -1563,12 +1578,7 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
                       ${swapClass}
                       ${fallClass}
                     `}
-                        style={isAppearing ? {
-                          animation: 'special-appear 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards'
-                        } : (isSpecialAndNew ? {
-                          transform: 'scale(0) rotate(0deg)',
-                          opacity: 0
-                        } : undefined)}
+                        style={inlineStyle}
                       >
                         {tile && (
                           <img
@@ -1576,6 +1586,12 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
                             alt={tile.color}
                             className="w-full h-full object-contain pointer-events-none select-none"
                             draggable={false}
+                            onDragStart={(e) => e.preventDefault()}
+                            style={{
+                              WebkitUserDrag: 'none',
+                              userSelect: 'none',
+                              WebkitTouchCallout: 'none'
+                            } as React.CSSProperties}
                           />
                         )}
                       </div>

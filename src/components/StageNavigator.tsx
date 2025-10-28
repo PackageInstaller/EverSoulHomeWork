@@ -24,7 +24,7 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
   const [availableStages, setAvailableStages] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const animationTimerRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   // 拖拽相关状态
   const getInitialPosition = () => {
     if (typeof window === 'undefined') {
@@ -38,14 +38,14 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
       y: window.innerHeight - buttonSize - padding
     };
   };
-  
+
   const [position, setPosition] = useState(getInitialPosition());
   const [isDragging, setIsDragging] = useState(false);
   const [hasDragged, setHasDragged] = useState(false); // 记录是否真的拖动了
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [dragStartPos, setDragStartPos] = useState({ x: 0, y: 0 }); // 记录拖拽起始位置
   const dragRef = useRef<HTMLDivElement>(null);
-  
+
   // 彩蛋相关状态
   const [totalDragTime, setTotalDragTime] = useState(0); // 累计拖动时间（秒）
   const [currentDragTime, setCurrentDragTime] = useState(0); // 当前这次拖动的时间（用于实时显示）
@@ -53,6 +53,7 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
   const dragTimerRef = useRef<NodeJS.Timeout | null>(null);
   const dragStartTimeRef = useRef<number>(0);
   const totalDragTimeRef = useRef<number>(0); // 用ref存储实时累计时间
+  const resetTimerRef = useRef<NodeJS.Timeout | null>(null); // 重置计时器
 
   // 确保初始位置正确（客户端渲染后）
   useEffect(() => {
@@ -130,7 +131,7 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
 
   // 拖拽处理函数
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (isExpanded || showEasterEgg) return; // 展开时或已触发彩蛋时不允许拖拽
+    if (isExpanded || showEasterEgg) return;
     e.preventDefault();
     setIsDragging(true);
     setHasDragged(false);
@@ -142,21 +143,21 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
       x: e.clientX,
       y: e.clientY
     });
-    // 记录拖动开始时间
+
+    if (resetTimerRef.current) {
+      clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = null;
+    }
     dragStartTimeRef.current = Date.now();
-    
-    // 启动定时器，实时检查累计拖动时间
     dragTimerRef.current = setInterval(() => {
       if (dragStartTimeRef.current > 0) {
         const currentDragDuration = (Date.now() - dragStartTimeRef.current) / 1000;
         const newTotalTime = totalDragTimeRef.current + currentDragDuration;
-        
-        // 更新当前拖动时间（用于显示）
+
         setCurrentDragTime(currentDragDuration);
-        
-        // 检查是否达到10秒
+
+        // 是否达到10秒
         if (newTotalTime >= 10) {
-          // 触发彩蛋
           if (dragTimerRef.current) {
             clearInterval(dragTimerRef.current);
           }
@@ -166,7 +167,7 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
           dragStartTimeRef.current = 0;
         }
       }
-    }, 100); // 每100ms检查一次
+    }, 100);
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -182,21 +183,21 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
       x: touch.clientX,
       y: touch.clientY
     });
-    // 记录拖动开始时间
+
+    if (resetTimerRef.current) {
+      clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = null;
+    }
+
     dragStartTimeRef.current = Date.now();
-    
-    // 启动定时器，实时检查累计拖动时间
     dragTimerRef.current = setInterval(() => {
       if (dragStartTimeRef.current > 0) {
         const currentDragDuration = (Date.now() - dragStartTimeRef.current) / 1000;
         const newTotalTime = totalDragTimeRef.current + currentDragDuration;
-        
-        // 更新当前拖动时间（用于显示）
+
         setCurrentDragTime(currentDragDuration);
-        
-        // 检查是否达到10秒
+
         if (newTotalTime >= 10) {
-          // 触发彩蛋
           if (dragTimerRef.current) {
             clearInterval(dragTimerRef.current);
           }
@@ -211,63 +212,69 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
 
   const handleMouseMove = (e: MouseEvent) => {
     if (!isDragging) return;
-    
+
     const newX = e.clientX - dragStart.x;
     const newY = e.clientY - dragStart.y;
-    
+
     // 计算移动距离，超过5px就认为是拖拽
     const deltaX = Math.abs(e.clientX - dragStartPos.x);
     const deltaY = Math.abs(e.clientY - dragStartPos.y);
     if (deltaX > 5 || deltaY > 5) {
       setHasDragged(true);
     }
-    
+
     setPosition({ x: newX, y: newY });
   };
 
   const handleTouchMove = (e: TouchEvent) => {
     if (!isDragging) return;
     const touch = e.touches[0];
-    
+
     const newX = touch.clientX - dragStart.x;
     const newY = touch.clientY - dragStart.y;
-    
+
     // 计算移动距离，超过5px就认为是拖拽
     const deltaX = Math.abs(touch.clientX - dragStartPos.x);
     const deltaY = Math.abs(touch.clientY - dragStartPos.y);
     if (deltaX > 5 || deltaY > 5) {
       setHasDragged(true);
     }
-    
+
     setPosition({ x: newX, y: newY });
   };
 
   const handleMouseUp = () => {
     if (!isDragging) return;
-    
+
     // 清除定时器（必须在setIsDragging之前）
     if (dragTimerRef.current) {
       clearInterval(dragTimerRef.current);
       dragTimerRef.current = null;
     }
-    
+
     // 累计拖动时间
     if (dragStartTimeRef.current > 0) {
       const dragDuration = (Date.now() - dragStartTimeRef.current) / 1000; // 转换为秒
       const newTotalTime = totalDragTimeRef.current + dragDuration;
       totalDragTimeRef.current = newTotalTime;
       setTotalDragTime(newTotalTime);
-      
+
       dragStartTimeRef.current = 0;
     }
-    
-    // 清除当前拖动时间显示
+
     setCurrentDragTime(0);
-    
     setIsDragging(false);
+
+    if (resetTimerRef.current) {
+      clearTimeout(resetTimerRef.current);
+    }
+    resetTimerRef.current = setTimeout(() => {
+      totalDragTimeRef.current = 0;
+      setTotalDragTime(0);
+      resetTimerRef.current = null;
+    }, 50); // 松开就重置
   };
 
-  // 拖拽事件监听
   useEffect(() => {
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove);
@@ -284,14 +291,12 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
     };
   }, [isDragging, dragStart, position]);
 
-  // 窗口大小变化时调整位置
   useEffect(() => {
     const handleResize = () => {
       const windowWidth = window.innerWidth;
       const windowHeight = window.innerHeight;
       const buttonSize = window.innerWidth < 640 ? 56 : 64;
-      
-      // 限制在可见范围内
+
       setPosition(prev => {
         return {
           x: Math.max(0, Math.min(windowWidth - buttonSize, prev.x)),
@@ -304,7 +309,6 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // 清理定时器
   useEffect(() => {
     return () => {
       if (animationTimerRef.current) {
@@ -312,6 +316,9 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
       }
       if (dragTimerRef.current) {
         clearInterval(dragTimerRef.current);
+      }
+      if (resetTimerRef.current) {
+        clearTimeout(resetTimerRef.current);
       }
     };
   }, []);
@@ -331,31 +338,70 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
 
       {/* 背景遮罩 - 仅在展开时显示 */}
       {isExpanded && (
-        <div 
-          className={`fixed inset-0 bg-black/30 z-40 transition-opacity duration-300 ${
-            isAnimating ? 'opacity-0' : 'opacity-100'
-          }`}
+        <div
+          className={`fixed inset-0 bg-black/30 z-40 transition-opacity duration-300 ${isAnimating ? 'opacity-0' : 'opacity-100'
+            }`}
           onClick={handleClose}
         />
       )}
 
-      {/* 拖动进度提示 - 只有拖动超过5秒才显示 */}
+      {/* 拖动进度提示 - 只有拖动超过5秒才显示 - 像素风格 */}
       {isDragging && (totalDragTime + currentDragTime >= 5) && (
-        <div 
-          className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[60] pointer-events-none"
+        <div
+          className="fixed top-1/2 left-1/2 z-[60] pointer-events-none"
+          style={{
+            transform: 'translate(-50%, -50%)'
+          }}
         >
-          <div className="bg-black/80 text-white px-6 py-3 rounded-full shadow-2xl animate-pulse">
-            <p className="text-lg font-bold">
-              🎮 拖动进度: {Math.min(totalDragTime + currentDragTime, 10).toFixed(1)}/10.0 秒
+          <div
+            className="bg-black text-white px-6 py-4 shadow-2xl"
+            style={{
+              border: '4px solid #fff',
+              boxShadow: '0 0 0 4px #000, 8px 8px 0 0 rgba(0,0,0,0.3)',
+              imageRendering: 'pixelated'
+            }}
+          >
+            <p
+              className="text-lg font-bold text-center mb-3"
+              style={{
+                fontFamily: 'monospace',
+                textShadow: '2px 2px 0 #000',
+                letterSpacing: '0.1em'
+              }}
+            >
+              永恒爆爆乐加载中
             </p>
-            <div className="mt-2 w-48 h-2 bg-gray-700 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-100"
-                style={{ width: `${Math.min((totalDragTime + currentDragTime) / 10 * 100, 100)}%` }}
+
+            {/* 像素风进度条外框 */}
+            <div
+              className="w-64 mx-auto"
+              style={{
+                border: '3px solid #fff',
+                background: '#333',
+                boxShadow: 'inset 0 0 0 2px #000'
+              }}
+            >
+              {/* 进度条填充 */}
+              <div
+                className="h-6 transition-all duration-100"
+                style={{
+                  width: `${Math.min((totalDragTime + currentDragTime) / 10 * 100, 100)}%`,
+                  background: 'linear-gradient(180deg, #ffd700 0%, #ff8c00 50%, #ff6347 100%)',
+                  boxShadow: 'inset 2px 2px 0 rgba(255,255,255,0.3), inset -2px -2px 0 rgba(0,0,0,0.3)',
+                  imageRendering: 'pixelated'
+                }}
               />
             </div>
-            <p className="text-xs text-gray-300 mt-1 text-center">
-              继续拖动 {(10 - (totalDragTime + currentDragTime)).toFixed(1)} 秒解锁彩蛋！
+
+            <p
+              className="text-sm mt-3 text-center"
+              style={{
+                fontFamily: 'monospace',
+                color: '#ffff00',
+                textShadow: '1px 1px 0 #000',
+                letterSpacing: '0.05em'
+              }}
+            >
             </p>
           </div>
         </div>
@@ -372,30 +418,30 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
           // 位置
           left: !isExpanded ? `${position.x}px` : '50%',
           top: !isExpanded ? `${position.y}px` : '50%',
-          transform: !isExpanded 
+          transform: !isExpanded
             ? (isAnimating ? 'scale(0.8) rotate(-90deg)' : 'none')
             : 'translate(-50%, -50%)',
-          
+
           // 尺寸和圆角
-          width: !isExpanded 
+          width: !isExpanded
             ? (window.innerWidth < 640 ? '56px' : '64px')
             : (window.innerWidth < 640 ? '90vw' : '440px'),
-          height: !isExpanded 
+          height: !isExpanded
             ? (window.innerWidth < 640 ? '56px' : '64px')
             : (window.innerWidth < 640 ? '85vh' : '600px'),
           borderRadius: !isExpanded ? '50%' : '24px',
-          
+
           // 透明度
           opacity: (isAnimating && !isExpanded) ? 0 : 1,
-          
+
           // 阴影
-          boxShadow: !isExpanded 
+          boxShadow: !isExpanded
             ? (isDragging ? '0 12px 32px rgba(37, 99, 235, 0.5)' : '0 8px 24px rgba(37, 99, 235, 0.4)')
             : '0 20px 60px rgba(0, 0, 0, 0.2)',
-          
+
           // 过渡动画
-          transition: isDragging 
-            ? 'none' 
+          transition: isDragging
+            ? 'none'
             : 'all 400ms cubic-bezier(0.4, 0.0, 0.2, 1)',
         }}
       >
@@ -410,19 +456,19 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
           >
             {/* 涟漪效果层 */}
             <div className="absolute inset-0 bg-blue-700 opacity-0 group-active:opacity-100 group-active:scale-150 transition-all duration-200 rounded-full pointer-events-none"></div>
-            
+
             {/* 图标 - 点击时淡出 */}
-            <svg 
-              className="w-6 h-6 sm:w-7 sm:h-7 text-white group-hover:scale-110 transition-transform relative z-10 pointer-events-none" 
-              fill="none" 
-              stroke="currentColor" 
+            <svg
+              className="w-6 h-6 sm:w-7 sm:h-7 text-white group-hover:scale-110 transition-transform relative z-10 pointer-events-none"
+              fill="none"
+              stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" 
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
               />
             </svg>
           </button>
@@ -430,7 +476,7 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
 
         {/* 展开的选择框状态 - 内容淡入 */}
         {isExpanded && (
-          <div 
+          <div
             className="w-full h-full bg-white flex flex-col"
             style={{
               opacity: isAnimating ? 0 : 1,
@@ -438,7 +484,7 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
             }}
           >
             {/* 头部 - 向下滑入 */}
-            <div 
+            <div
               className="flex items-center justify-between px-4 py-3 sm:px-5 sm:py-4 bg-white border-b border-gray-100 flex-shrink-0"
               style={{
                 opacity: isAnimating ? 0 : 1,
@@ -447,7 +493,7 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
               }}
             >
               <h3 className="font-semibold text-base sm:text-lg text-gray-900">第 {currentArea} 章关卡</h3>
-              
+
               <button
                 onClick={handleClose}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors active:bg-gray-200"
@@ -460,9 +506,9 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
             </div>
 
             {/* 关卡网格 - 放大淡入 */}
-            <div 
+            <div
               className="flex-1 overflow-y-auto p-4"
-              style={{ 
+              style={{
                 minHeight: 0,
                 opacity: isAnimating ? 0 : 1,
                 transform: isAnimating ? 'scale(0.95)' : 'scale(1)',
@@ -510,7 +556,7 @@ export default function StageNavigator({ currentStageId, dataSource }: StageNavi
             </div>
 
             {/* 底部说明 - 向上滑入 */}
-            <div 
+            <div
               className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex-shrink-0"
               style={{
                 opacity: isAnimating ? 0 : 1,
