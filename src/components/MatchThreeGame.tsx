@@ -36,7 +36,7 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
   const [isInitialized, setIsInitialized] = useState(false); // 标记游戏是否已经初始化完成
   const [crushingTiles, setCrushingTiles] = useState<Set<string>>(new Set()); // 正在粉碎的方块
   const [fallingTiles, setFallingTiles] = useState<Map<string, number>>(new Map()); // 正在下落的方块及其起始位置
-  const [appearingSpecials, setAppearingSpecials] = useState<Set<string>>(new Set()); // 正在出现的特殊方块
+  const [appearingSpecials, setAppearingSpecials] = useState<Set<number>>(new Set()); // 正在出现的特殊方块（使用ID）
   const [appearedSpecials, setAppearedSpecials] = useState<Set<string>>(new Set()); // 已经出现过的特殊方块
   const [swappingTiles, setSwappingTiles] = useState<{ from: { row: number; col: number }, to: { row: number; col: number } } | null>(null); // 正在交换的方块
 
@@ -896,14 +896,21 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
       // 等待一帧后设置动画状态，触发动画
       if (specialTilePositions.size > 0) {
         await new Promise(resolve => requestAnimationFrame(resolve));
-        setAppearingSpecials(specialTilePositions);
+        // 收集特殊方块的ID（而不是位置）
+        const specialTileIds = Array.from(specialTilePositions)
+          .map(pos => {
+            const [row, col] = pos.split(',').map(Number);
+            return grid[row]?.[col]?.id;
+          })
+          .filter((id): id is number => id !== undefined);
+        setAppearingSpecials(new Set(specialTileIds));
       }
 
       // 等待特殊方块出现动画完成
       if (specialTilePositions.size > 0) {
         await new Promise(resolve => setTimeout(resolve, 400)); // 特殊方块出现动画时长
         setAppearingSpecials(new Set());
-        // 标记这些特殊方块已经出现过（通过ID）
+        // 标记这些特殊方块已经出现过（通过ID字符串）
         const specialTileIds = Array.from(specialTilePositions)
           .map(pos => {
             const [row, col] = pos.split(',').map(Number);
@@ -1581,7 +1588,7 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
                     const isHinted = hint.some(h => h.row === rowIndex && h.col === colIndex);
                     const fallDistance = fallingTiles.get(`${rowIndex},${colIndex}`);
                     const isFalling = fallDistance !== undefined;
-                    const isAppearing = appearingSpecials.has(`${rowIndex},${colIndex}`);
+                    const isAppearing = tile ? appearingSpecials.has(tile.id) : false;
 
                     // 检查是否在交换动画中
                     let swapClass = '';
