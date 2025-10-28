@@ -20,7 +20,10 @@ interface Tile {
 
 const COLORS: TileColor[] = ['Blue', 'Green', 'Purple', 'Red', 'Yellow'];
 const GRID_SIZE = 8;
-const TILE_SIZE = 130;
+const TILE_SIZE_PX = 64; // 方块实际尺寸（对应 w-16 h-16）
+const TILE_MARGIN_PX = 2; // 方块间距（对应 m-0.5）
+const TILE_TOTAL_SIZE = TILE_SIZE_PX + TILE_MARGIN_PX * 2; // 68px
+const GRID_PADDING = 16; // 网格内边距（对应 p-4）
 const NO_ACTION_TIMEOUT = 5000; // 5秒无操作提示
 
 export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
@@ -39,7 +42,9 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
 
   // 拖动相关状态
   const [draggingTile, setDraggingTile] = useState<{ row: number; col: number } | null>(null);
-  const [dragPosition, setDragPosition] = useState<{ x: number; y: number } | null>(null);
+  const [dragStartPosition, setDragStartPosition] = useState<{ x: number; y: number } | null>(null); // 起始位置
+  const [dragCurrentPosition, setDragCurrentPosition] = useState<{ x: number; y: number } | null>(null); // 当前位置（用于视觉反馈）
+  const [debugInfo, setDebugInfo] = useState<string>(''); // 调试信息
 
   const lastActionRef = useRef<number>(Date.now());
   const hintTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -85,7 +90,7 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
       document.removeEventListener('touchmove', handleTouchMove);
       document.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [draggingTile, dragPosition]);
+  }, [draggingTile, dragStartPosition, dragCurrentPosition]);
 
   // 重置提示计时器
   const resetHintTimer = () => {
@@ -184,7 +189,8 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
 
     setDraggingTile({ row, col });
     setSelectedTile({ row, col });
-    setDragPosition({ x: e.clientX, y: e.clientY });
+    setDragStartPosition({ x: e.clientX, y: e.clientY });
+    setDragCurrentPosition({ x: e.clientX, y: e.clientY });
   };
 
   const handleTileTouchStart = (e: React.TouchEvent, row: number, col: number) => {
@@ -196,40 +202,52 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
     if (!tile) return;
 
     const touch = e.touches[0];
+    const startPos = { x: touch.clientX, y: touch.clientY };
     setDraggingTile({ row, col });
     setSelectedTile({ row, col });
-    setDragPosition({ x: touch.clientX, y: touch.clientY });
+    setDragStartPosition(startPos);
+    setDragCurrentPosition(startPos);
+    
+    // 计算实际方块大小用于调试
+    if (gridRef.current) {
+      const rect = gridRef.current.getBoundingClientRect();
+      const containerWidth = rect.width - GRID_PADDING * 2;
+      const actualTileSize = containerWidth / GRID_SIZE;
+    }
   };
 
   // 拖动中
   const handleMouseMove = (e: MouseEvent) => {
-    if (!draggingTile || !dragPosition) return;
-    setDragPosition({ x: e.clientX, y: e.clientY });
+    if (!draggingTile || !dragStartPosition) return;
+    setDragCurrentPosition({ x: e.clientX, y: e.clientY });
   };
 
   const handleTouchMove = (e: TouchEvent) => {
-    if (!draggingTile || !dragPosition) return;
+    if (!draggingTile || !dragStartPosition) return;
     e.preventDefault(); // 阻止页面滚动
     const touch = e.touches[0];
-    setDragPosition({ x: touch.clientX, y: touch.clientY });
+    // 更新当前位置（用于可能的视觉反馈）
+    setDragCurrentPosition({ x: touch.clientX, y: touch.clientY });
   };
 
   // 拖动结束
   const handleMouseUp = (e: MouseEvent) => {
     if (!draggingTile || !gridRef.current) {
       setDraggingTile(null);
-      setDragPosition(null);
+      setDragStartPosition(null);
+      setDragCurrentPosition(null);
       return;
     }
 
     // 获取鼠标位置对应的格子
     const rect = gridRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const x = e.clientX - rect.left - GRID_PADDING;
+    const y = e.clientY - rect.top - GRID_PADDING;
 
-    const tileSize = 68; // 64px + 4px margin
-    const col = Math.floor(x / tileSize);
-    const row = Math.floor(y / tileSize);
+    const containerWidth = rect.width - GRID_PADDING * 2;
+    const actualTileSize = containerWidth / GRID_SIZE;
+    const col = Math.floor(x / actualTileSize);
+    const row = Math.floor(y / actualTileSize);
 
     // 检查是否在有效范围内且相邻
     if (row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE) {
@@ -242,38 +260,73 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
     }
 
     setDraggingTile(null);
-    setDragPosition(null);
+    setDragStartPosition(null);
+    setDragCurrentPosition(null);
     setSelectedTile(null);
   };
 
   const handleTouchEnd = (e: TouchEvent) => {
-    if (!draggingTile || !gridRef.current) {
+    if (!draggingTile || !dragStartPosition || !gridRef.current) {
       setDraggingTile(null);
-      setDragPosition(null);
+      setDragStartPosition(null);
+      setDragCurrentPosition(null);
+      setSelectedTile(null);
       return;
     }
 
     const touch = e.changedTouches[0];
+    // 关键修复：使用起始位置计算总滑动距离
+    const deltaX = touch.clientX - dragStartPosition.x;
+    const deltaY = touch.clientY - dragStartPosition.y;
+    
+    // 获取游戏容器的实际尺寸，计算实际方块大小
     const rect = gridRef.current.getBoundingClientRect();
-    const x = touch.clientX - rect.left;
-    const y = touch.clientY - rect.top;
-
-    const tileSize = 68;
-    const col = Math.floor(x / tileSize);
-    const row = Math.floor(y / tileSize);
-
-    if (row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE) {
-      const rowDiff = Math.abs(draggingTile.row - row);
-      const colDiff = Math.abs(draggingTile.col - col);
-
-      if ((rowDiff === 1 && colDiff === 0) || (rowDiff === 0 && colDiff === 1)) {
-        swapTiles(draggingTile.row, draggingTile.col, row, col);
+    const containerWidth = rect.width - GRID_PADDING * 2;
+    const actualTileSize = containerWidth / GRID_SIZE;
+    
+    // 最小滑动距离阈值（像素） - 根据实际方块大小动态计算，设为方块大小的30%
+    const MIN_SWIPE_DISTANCE = Math.max(15, actualTileSize * 0.3);
+    
+    // 判断滑动方向
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+    
+    if (absX > MIN_SWIPE_DISTANCE || absY > MIN_SWIPE_DISTANCE) {
+      let targetRow = draggingTile.row;
+      let targetCol = draggingTile.col;
+      
+      // 确定主要滑动方向
+      if (absX > absY) {
+        // 水平滑动
+        if (deltaX > 0 && draggingTile.col < GRID_SIZE - 1) {
+          targetCol = draggingTile.col + 1; // 向右
+          console.log('[滑动方向] 向右');
+        } else if (deltaX < 0 && draggingTile.col > 0) {
+          targetCol = draggingTile.col - 1; // 向左
+          console.log('[滑动方向] 向左');
+        }
+      } else {
+        // 垂直滑动
+        if (deltaY > 0 && draggingTile.row < GRID_SIZE - 1) {
+          targetRow = draggingTile.row + 1; // 向下
+        } else if (deltaY < 0 && draggingTile.row > 0) {
+          targetRow = draggingTile.row - 1; // 向上
+        }
+      }
+      
+      // 如果目标位置改变了，执行交换
+      if (targetRow !== draggingTile.row || targetCol !== draggingTile.col) {
+        swapTiles(draggingTile.row, draggingTile.col, targetRow, targetCol);
       }
     }
 
     setDraggingTile(null);
-    setDragPosition(null);
+    setDragStartPosition(null);
+    setDragCurrentPosition(null);
     setSelectedTile(null);
+    
+    // 3秒后清除调试信息
+    setTimeout(() => setDebugInfo(''), 3000);
   };
 
   // 点击方块（仅用于重置提示计时器）
@@ -1452,15 +1505,36 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
         }
       `}} />
 
-      <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-2 sm:p-4" style={{ touchAction: 'none' }}>
-        <div className="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl sm:rounded-3xl shadow-2xl p-3 sm:p-6 max-w-4xl w-full" style={{ touchAction: 'none' }}>
+      <div 
+        className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-2 sm:p-4 overflow-y-auto" 
+        style={{ 
+          touchAction: 'pan-y', // 允许垂直滚动，但禁用其他手势
+          WebkitUserSelect: 'none',
+          userSelect: 'none'
+        }}
+      >
+        <div 
+          className="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl sm:rounded-3xl shadow-2xl p-3 sm:p-6 w-full my-auto" 
+          style={{ 
+            touchAction: 'none',
+            WebkitUserSelect: 'none',
+            userSelect: 'none',
+            maxWidth: `${GRID_SIZE * TILE_TOTAL_SIZE + GRID_PADDING * 2 + 100}px` // 游戏区域 + 额外空间
+          }}
+        >
           {/* 头部 */}
           <div className="flex items-center justify-between mb-2 sm:mb-4 flex-wrap gap-2">
-            <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 flex-1">
               <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">永恒爆爆乐</h2>
               <div className="bg-yellow-500/20 px-2 sm:px-4 py-1 sm:py-2 rounded-full border-2 border-yellow-400">
                 <span className="text-yellow-300 font-bold text-sm sm:text-lg md:text-xl">分数: {score}</span>
               </div>
+              {/* 调试信息 */}
+              {debugInfo && (
+                <div className="bg-blue-500/20 px-3 py-1 rounded-lg border border-blue-400/50">
+                  <span className="text-blue-200 font-mono text-xs sm:text-sm">{debugInfo}</span>
+                </div>
+              )}
             </div>
 
             <button
@@ -1477,17 +1551,21 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
           {/* 游戏区域 */}
           <div
             ref={gridRef}
-            className="relative bg-black/30 rounded-xl sm:rounded-2xl p-2 sm:p-4 backdrop-blur-sm mx-auto overflow-x-auto select-none"
+            className="relative bg-black/30 rounded-xl sm:rounded-2xl p-4 backdrop-blur-sm mx-auto select-none overflow-hidden flex flex-col"
             style={{
-              width: 'min(100%, ' + (GRID_SIZE * 70) + 'px)',
-              height: 'min(calc(100vh - 120px), ' + (GRID_SIZE * 70) + 'px)',
-              maxWidth: GRID_SIZE * 70 + 'px',
-              maxHeight: GRID_SIZE * 70 + 'px',
+              // 计算游戏区域大小：8个方块 * 68px + 内边距 32px = 576px
+              width: `min(calc(100vw - 2rem), ${GRID_SIZE * TILE_TOTAL_SIZE + GRID_PADDING * 2}px)`,
+              height: `min(calc(100vw - 2rem), ${GRID_SIZE * TILE_TOTAL_SIZE + GRID_PADDING * 2}px)`,
+              maxWidth: `${GRID_SIZE * TILE_TOTAL_SIZE + GRID_PADDING * 2}px`,
+              maxHeight: `${GRID_SIZE * TILE_TOTAL_SIZE + GRID_PADDING * 2}px`,
+              aspectRatio: '1 / 1', // 强制保持正方形
               WebkitUserSelect: 'none',
               userSelect: 'none',
-              touchAction: 'none' // 禁用所有默认触摸行为（缩放、滚动等）
+              touchAction: 'none', // 禁用所有默认触摸行为（缩放、滚动等）
+              WebkitTouchCallout: 'none' // 禁用iOS长按菜单
             }}
             onDragStart={(e) => e.preventDefault()}
+            onContextMenu={(e) => e.preventDefault()}
           >
             {!isInitialized ? (
               <div className="flex items-center justify-center w-full h-full">
@@ -1498,7 +1576,7 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
               </div>
             ) : (
               grid.map((row, rowIndex) => (
-                <div key={rowIndex} className="flex">
+                <div key={rowIndex} className="flex" style={{ height: `${100 / GRID_SIZE}%` }}>
                   {row.map((tile, colIndex) => {
                     const isDragging = draggingTile?.row === rowIndex && draggingTile?.col === colIndex;
                     const isCrushing = crushingTiles.has(`${rowIndex},${colIndex}`);
@@ -1549,13 +1627,21 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
                     const isSpecialAndNew = tile?.special !== 'none' && tileId && !appearedSpecials.has(tileId);
 
                     // 确定方块的内联样式 - 避免样式突变导致的过渡效果
-                    let inlineStyle: React.CSSProperties | undefined = undefined;
+                    let inlineStyle: React.CSSProperties = {
+                      touchAction: 'none',
+                      width: `calc(${100 / GRID_SIZE}% - 4px)`, // 8分之一宽度减去margin
+                      aspectRatio: '1 / 1', // 保持正方形
+                      margin: '2px'
+                    };
+                    
                     if (isAppearing) {
                       inlineStyle = {
+                        ...inlineStyle,
                         animation: 'special-appear 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards'
                       };
                     } else if (isSpecialAndNew) {
                       inlineStyle = {
+                        ...inlineStyle,
                         transform: 'scale(0) rotate(0deg)',
                         opacity: 0,
                         transition: 'none' // 禁用过渡，防止从scale(0)到scale(1)的过渡
@@ -1570,7 +1656,7 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
                         onTouchStart={(e) => handleTileTouchStart(e, rowIndex, colIndex)}
                         onDragStart={(e) => e.preventDefault()}
                         className={`
-                      relative w-16 h-16 m-0.5 cursor-pointer select-none
+                      relative cursor-pointer select-none flex-shrink-0
                       ${!isAppearing && !isCrushing && !isFalling && !swapClass && !isSpecialAndNew ? 'transition-all duration-300' : ''}
                       ${selectedTile?.row === rowIndex && selectedTile?.col === colIndex ? 'ring-4 ring-yellow-400 scale-110' : ''}
                       ${isHinted ? 'animate-jelly' : ''}
