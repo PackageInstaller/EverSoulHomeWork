@@ -300,10 +300,8 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
         // 水平滑动
         if (deltaX > 0 && draggingTile.col < GRID_SIZE - 1) {
           targetCol = draggingTile.col + 1; // 向右
-          console.log('[滑动方向] 向右');
         } else if (deltaX < 0 && draggingTile.col > 0) {
           targetCol = draggingTile.col - 1; // 向左
-          console.log('[滑动方向] 向左');
         }
       } else {
         // 垂直滑动
@@ -1363,7 +1361,7 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
             transform: translateX(0);
           }
           100% {
-            transform: translateX(-68px);
+            transform: translateX(calc(-100% - 4px));
           }
         }
         
@@ -1372,7 +1370,7 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
             transform: translateX(0);
           }
           100% {
-            transform: translateX(68px);
+            transform: translateX(calc(100% + 4px));
           }
         }
         
@@ -1381,7 +1379,7 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
             transform: translateY(0);
           }
           100% {
-            transform: translateY(-68px);
+            transform: translateY(calc(-100% - 4px));
           }
         }
         
@@ -1390,13 +1388,13 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
             transform: translateY(0);
           }
           100% {
-            transform: translateY(68px);
+            transform: translateY(calc(100% + 4px));
           }
         }
         
         @keyframes fall-1 {
           0% {
-            transform: translateY(-68px);
+            transform: translateY(calc(-100% - 4px));
             opacity: 0;
           }
           100% {
@@ -1407,7 +1405,7 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
         
         @keyframes fall-2 {
           0% {
-            transform: translateY(-136px);
+            transform: translateY(calc(-200% - 8px));
             opacity: 0;
           }
           100% {
@@ -1418,7 +1416,7 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
         
         @keyframes fall-3 {
           0% {
-            transform: translateY(-204px);
+            transform: translateY(calc(-300% - 12px));
             opacity: 0;
           }
           100% {
@@ -1429,7 +1427,7 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
         
         @keyframes fall-4 {
           0% {
-            transform: translateY(-272px);
+            transform: translateY(calc(-400% - 16px));
             opacity: 0;
           }
           100% {
@@ -1440,15 +1438,15 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
         
         @keyframes fall-new {
           0% {
-            transform: translateY(-100px) scale(0.8);
+            transform: translateY(-150%) scale(0.8);
             opacity: 0;
           }
           70% {
-            transform: translateY(5px) scale(1.05);
+            transform: translateY(5%) scale(1.05);
             opacity: 1;
           }
           85% {
-            transform: translateY(-2px) scale(0.98);
+            transform: translateY(-2%) scale(0.98);
           }
           100% {
             transform: translateY(0) scale(1);
