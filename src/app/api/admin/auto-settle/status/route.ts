@@ -29,12 +29,9 @@ export async function GET(request: NextRequest) {
         startTime: serviceStatus.startTime,
         lastCheckTime: serviceStatus.lastCheckTime,
         message: likelyRunning
-          ? '自动结算服务已启动（通过 instrumentation.ts）' 
+          ? '自动结算服务已启动' 
           : '自动结算服务可能未启动',
-        note: '服务在应用启动时通过 instrumentation.ts 自动启动，每小时检查一次，在每月最后一天的指定时间执行结算',
-        processUptime: `${processUptime}秒`,
-        timestamp: new Date().toISOString(),
-        debug: `当前进程: ${serviceStatus.isRunning ? '有定时器' : '无定时器'}, 运行时长: ${processUptime}秒`
+        processUptime: `${processUptime}秒`
       }
     }, {
       headers: {
