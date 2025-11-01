@@ -1,5 +1,6 @@
 import { performDatabaseHealthCheck } from './lib/migration';
 import { getCacheStats, preloadGameData } from './utils/dataUtils';
+import { startAutoSettleService } from './lib/autoSettleService';
 
 export async function register() {
   const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build';
@@ -63,6 +64,14 @@ export async function register() {
 
     } catch (error) {
       console.error('❌ [服务器启动] 游戏数据缓存加载失败:', error);
+    }
+
+    // 启动自动结算服务
+    try {
+      startAutoSettleService();
+      console.log('✅ [服务器启动] 自动结算服务已启动');
+    } catch (error) {
+      console.error('❌ [服务器启动] 自动结算服务启动失败:', error);
     }
   }
 }

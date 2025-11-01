@@ -31,6 +31,9 @@ export default function PointsSettlement() {
   // 自动结算配置
   const [autoSettleHour, setAutoSettleHour] = useState(23); // 默认23点
   const [autoSettleLoading, setAutoSettleLoading] = useState(false);
+  
+  // 自动结算服务状态
+  const [serviceStatus, setServiceStatus] = useState<any>(null);
 
   useEffect(() => {
     // 初始化为当前年月
@@ -44,6 +47,8 @@ export default function PointsSettlement() {
     fetchBasePool();
     // 获取自动结算配置
     fetchAutoSettleConfig();
+    // 获取服务状态
+    fetchServiceStatus();
   }, []);
 
   const fetchMonths = async () => {
@@ -100,6 +105,23 @@ export default function PointsSettlement() {
       }
     } catch (error) {
       console.error('❌ [前端] 获取自动结算配置失败:', error);
+    }
+  };
+
+  const fetchServiceStatus = async () => {
+    try {
+      const response = await fetch('/api/admin/auto-settle/status', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setServiceStatus(data.status);
+      }
+    } catch (error) {
+      console.error('❌ [前端] 获取服务状态失败:', error);
     }
   };
 
@@ -347,6 +369,29 @@ export default function PointsSettlement() {
                   📝 说明：结算后提交的作业，积分将计入总榜，但不计入当月奖池活动
                 </p>
               </div>
+
+              {/* 服务状态 */}
+              {serviceStatus && (
+                <div className="bg-blue-500/20 border border-blue-500/50 rounded-lg p-3 space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <span className={`inline-block w-2 h-2 rounded-full ${serviceStatus.isRunning ? 'bg-green-400' : 'bg-red-400'}`}></span>
+                    <span className="text-blue-200 text-sm font-medium">{serviceStatus.message}</span>
+                  </div>
+                  {serviceStatus.startTime && (
+                    <p className="text-blue-200 text-xs">
+                      启动时间: {new Date(serviceStatus.startTime).toLocaleString('zh-CN')}
+                    </p>
+                  )}
+                  {serviceStatus.lastCheckTime && (
+                    <p className="text-blue-200 text-xs">
+                      最后检查: {new Date(serviceStatus.lastCheckTime).toLocaleString('zh-CN')}
+                    </p>
+                  )}
+                  <p className="text-blue-200 text-xs">
+                    运行时长: {serviceStatus.processUptime}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>

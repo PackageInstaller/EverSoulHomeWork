@@ -313,6 +313,16 @@ function getPreviousYearMonth(yearMonth: string): string {
 }
 
 /**
+ * 获取下个月的年月标识
+ */
+function getNextYearMonth(yearMonth: string): string {
+  const [year, month] = yearMonth.split('-').map(Number)
+  const date = new Date(year, month - 1, 1)
+  date.setMonth(date.getMonth() + 1)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+}
+
+/**
  * 月度结算
  */
 export async function settleMonthlyPrizePool(yearMonth: string) {
@@ -362,6 +372,26 @@ export async function settleMonthlyPrizePool(yearMonth: string) {
       settledAt: new Date()
     }
   })
+
+  // 如果有剩余金额，更新下个月的奖池（如果已存在）
+  if (nextCarryOver > 0) {
+    const nextYearMonth = getNextYearMonth(yearMonth)
+    const nextMonthPool = await prisma.monthlyPrizePool.findUnique({
+      where: { yearMonth: nextYearMonth }
+    })
+
+    if (nextMonthPool && !nextMonthPool.isSettled) {
+      // 下个月奖池已存在且未结算，更新累加金额
+      await prisma.monthlyPrizePool.update({
+        where: { yearMonth: nextYearMonth },
+        data: {
+          carryOver: nextCarryOver,
+          totalPool: nextMonthPool.basePool + nextCarryOver
+        }
+      })
+      console.log(`✅ [结算] 已将 ${nextCarryOver} 元累加到 ${nextYearMonth} 奖池`)
+    }
+  }
 
   // 计算并返回每个用户的奖励
   const rewards = userPoints.map(up => {

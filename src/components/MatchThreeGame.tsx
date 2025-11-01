@@ -50,7 +50,67 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
   const hintTimerRef = useRef<NodeJS.Timeout | null>(null);
   const tileIdCounter = useRef(0);
   const gridRef = useRef<HTMLDivElement>(null);
+  
+  // 音效引用
+  const bgmRef = useRef<HTMLAudioElement | null>(null);
+  const soundsRef = useRef<{
+    swap: HTMLAudioElement | null;
+    clear: HTMLAudioElement | null;
+    special: HTMLAudioElement | null;
+    fill: HTMLAudioElement | null;
+    boom: HTMLAudioElement | null;
+    rainbow: HTMLAudioElement | null;
+  }>({
+    swap: null,
+    clear: null,
+    special: null,
+    fill: null,
+    boom: null,
+    rainbow: null
+  });
 
+  // 初始化音效
+  useEffect(() => {
+    // 初始化背景音乐
+    const bgm = new Audio('/sounds/BGM_EverMatch.wav');
+    bgm.loop = true;
+    bgm.volume = 0.3; // 背景音乐音量降低
+    bgmRef.current = bgm;
+    
+    // 初始化音效
+    soundsRef.current = {
+      swap: new Audio('/sounds/FxUI_Evermatch_Tile_Spawn_00.wav'),
+      clear: new Audio('/sounds/FxUI_Evermatch_Clear_00.wav'),
+      special: new Audio('/sounds/FXUI_Evermatch_Color_00.wav'),
+      fill: new Audio('/sounds/FxUI_Evermatch_Fail_00.wav'),
+      boom: new Audio('/sounds/FxUI_Evermatch_Tile_Boom_00.wav'),
+      rainbow: new Audio('/sounds/FxUI_Evermatch_Tile_SP_Horizontal_00.wav')
+    };
+    
+    // 设置音效音量
+    Object.values(soundsRef.current).forEach(sound => {
+      if (sound) sound.volume = 0.5;
+    });
+    
+    // 播放背景音乐（需要用户交互后才能播放）
+    const playBGM = () => {
+      bgmRef.current?.play().catch(() => {
+        // 如果自动播放失败，在第一次用户交互时再尝试
+      });
+    };
+    
+    // 尝试播放BGM
+    playBGM();
+    
+    // 清理函数
+    return () => {
+      bgmRef.current?.pause();
+      Object.values(soundsRef.current).forEach(sound => {
+        sound?.pause();
+      });
+    };
+  }, []);
+  
   // 初始化网格
   useEffect(() => {
     initializeGrid();
@@ -96,6 +156,17 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
   const resetHintTimer = () => {
     lastActionRef.current = Date.now();
     setHint([]);
+  };
+  
+  // 播放音效的辅助函数
+  const playSound = (soundType: 'swap' | 'clear' | 'special' | 'fill' | 'boom' | 'rainbow') => {
+    const sound = soundsRef.current[soundType];
+    if (sound) {
+      sound.currentTime = 0; // 重置音效到开始
+      sound.play().catch(() => {
+        // 忽略播放失败错误
+      });
+    }
   };
 
   // 生成随机颜色
@@ -336,6 +407,9 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
   // 交换两个方块
   const swapTiles = async (row1: number, col1: number, row2: number, col2: number) => {
     setIsAnimating(true);
+    
+    // 播放交换音效
+    playSound('swap');
 
     // 设置交换动画状态
     setSwappingTiles({ from: { row: row1, col: col1 }, to: { row: row2, col: col2 } });
@@ -420,6 +494,9 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
 
     // 特殊情况：两个彩虹方块交换 = 全屏清除！
     if (tile1?.special === 'rainbow' && tile2?.special === 'rainbow') {
+      // 播放全屏清除音效
+      playSound('rainbow');
+      
       const tilesToRemove: { row: number; col: number }[] = [];
 
       // 收集所有方块
@@ -590,6 +667,9 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
 
     // 特殊情况：两个彩虹方块交换 = 全屏清除！
     if (tile1?.special === 'rainbow' && tile2?.special === 'rainbow') {
+      // 播放全屏清除音效
+      playSound('rainbow');
+      
       const tilesToRemove: { row: number; col: number }[] = [];
 
       // 收集所有方块
@@ -671,6 +751,8 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
       let affected: { row: number; col: number }[] = [];
 
       if (tile.special === 'rainbow') {
+        // 播放彩虹方块爆炸音效
+        playSound('boom');
         // 彩虹方块：消除与交换的另一个方块相同颜色的所有方块
         const otherTile = (row === row1 && col === col1) ? tile2 : tile1;
         if (otherTile) {
@@ -683,6 +765,8 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
           }
         }
       } else {
+        // 播放特殊方块音效（横向、纵向、炸弹）
+        playSound('special');
         affected = getSpecialEffectTiles(grid, row, col, tile);
       }
 
@@ -850,6 +934,15 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
         });
 
       if (uniqueTiles.length === 0) break;
+      
+      // 播放消除音效
+      if (specialEffects.length > 0) {
+        // 有特殊效果
+        playSound('special');
+      } else if (matches.length > 0) {
+        // 普通消除
+        playSound('clear');
+      }
 
       // 计算得分（特殊效果额外加分）
       totalNewScore += uniqueTiles.length * 10;
@@ -1182,6 +1275,7 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
   const fillGrid = (grid: (Tile | null)[][]): (Tile | null)[][] => {
     const newGrid = grid.map(row => [...row]);
     const newFallingTiles = new Map<string, number>();
+    let hasNewTiles = false;
 
     for (let row = 0; row < GRID_SIZE; row++) {
       for (let col = 0; col < GRID_SIZE; col++) {
@@ -1189,8 +1283,14 @@ export default function MatchThreeGame({ onClose }: MatchThreeGameProps) {
           newGrid[row][col] = createTile(row, col);
           // 标记为新填充的方块（distance = 0 表示新生成）
           newFallingTiles.set(`${row},${col}`, 0);
+          hasNewTiles = true;
         }
       }
+    }
+    
+    // 如果有新方块填充，播放填充音效
+    if (hasNewTiles) {
+      playSound('fill');
     }
 
     // 设置下落动画
