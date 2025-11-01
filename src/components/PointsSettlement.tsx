@@ -110,10 +110,13 @@ export default function PointsSettlement() {
 
   const fetchServiceStatus = async () => {
     try {
-      const response = await fetch('/api/admin/auto-settle/status', {
+      const cacheBuster = Date.now();
+      const response = await fetch(`/api/admin/auto-settle/status?_t=${cacheBuster}`, {
         cache: 'no-store',
         headers: {
-          'Cache-Control': 'no-cache',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
         }
       });
       const data = await response.json();
@@ -374,12 +377,12 @@ export default function PointsSettlement() {
               {serviceStatus && (
                 <div className="bg-blue-500/20 border border-blue-500/50 rounded-lg p-3 space-y-1">
                   <div className="flex items-center space-x-2">
-                    <span className={`inline-block w-2 h-2 rounded-full ${serviceStatus.isRunning ? 'bg-green-400' : 'bg-red-400'}`}></span>
+                    <span className={`inline-block w-2 h-2 rounded-full ${serviceStatus.isRunning ? 'bg-green-400' : 'bg-yellow-400'}`}></span>
                     <span className="text-blue-200 text-sm font-medium">{serviceStatus.message}</span>
                   </div>
                   {serviceStatus.startTime && (
                     <p className="text-blue-200 text-xs">
-                      启动时间: {new Date(serviceStatus.startTime).toLocaleString('zh-CN')}
+                      定时器启动时间: {new Date(serviceStatus.startTime).toLocaleString('zh-CN')}
                     </p>
                   )}
                   {serviceStatus.lastCheckTime && (
@@ -388,8 +391,19 @@ export default function PointsSettlement() {
                     </p>
                   )}
                   <p className="text-blue-200 text-xs">
-                    运行时长: {serviceStatus.processUptime}
+                    进程运行时长: {serviceStatus.processUptime}
                   </p>
+                  {serviceStatus.debug && (
+                    <p className="text-blue-300 text-xs opacity-70">
+                      {serviceStatus.debug}
+                    </p>
+                  )}
+                  <button
+                    onClick={fetchServiceStatus}
+                    className="mt-2 px-3 py-1 bg-blue-500/30 hover:bg-blue-500/50 text-blue-100 rounded text-xs transition-colors"
+                  >
+                    刷新状态
+                  </button>
                 </div>
               )}
             </div>
