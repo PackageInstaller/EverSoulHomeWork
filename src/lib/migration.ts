@@ -364,6 +364,55 @@ export async function testDatabaseConnection(): Promise<boolean> {
 }
 
 /**
+ * 检测schema与数据库的差异
+ */
+async function detectSchemaDrift(): Promise<{ hasDrift: boolean; details?: string }> {
+  try {
+    const { stdout, stderr } = await execAsync(
+      'npx prisma migrate status',
+      { cwd: process.cwd() }
+    );
+
+    // 检查是否有未应用的迁移
+    if (stdout.includes('Following migration have not yet been applied:') ||
+        stdout.includes('Database schema is not up to date')) {
+      return { hasDrift: true, details: 'has_pending_migrations' };
+    }
+
+    // 检查是否有drift
+    if (stderr && stderr.includes('drift detected')) {
+      return { hasDrift: true, details: 'schema_drift_detected' };
+    }
+
+    // 尝试使用 prisma migrate diff 检测差异
+    try {
+      const { stdout: diffOutput } = await execAsync(
+        'npx prisma migrate diff --from-schema-datamodel prisma/schema.prisma --to-schema-datasource prisma/schema.prisma --script',
+        { cwd: process.cwd() }
+      );
+
+      // 如果有输出且不是空的，说明有差异
+      if (diffOutput && diffOutput.trim().length > 0 && !diffOutput.includes('No difference detected')) {
+        return { hasDrift: true, details: 'schema_diff_detected' };
+      }
+    } catch (diffError: any) {
+      // migrate diff 失败不影响整体流程
+      console.log('migrate diff 检测跳过:', diffError.message);
+    }
+
+    return { hasDrift: false };
+  } catch (error: any) {
+    // 如果是 "not managed" 错误，返回 drift
+    if (error.stderr && error.stderr.includes('not managed by Prisma Migrate')) {
+      return { hasDrift: true, details: 'not_managed' };
+    }
+
+    console.log('schema drift 检测失败，假设无差异:', error.message);
+    return { hasDrift: false };
+  }
+}
+
+/**
  * 完整的数据库健康检查和自动修复
  */
 export async function performDatabaseHealthCheck(): Promise<{
@@ -385,7 +434,14 @@ export async function performDatabaseHealthCheck(): Promise<{
     }
     actions.push('数据库连接正常');
 
-    // 2. 检查 migrations 目录是否存在
+    // 2. 检测 schema 差异
+    const driftStatus = await detectSchemaDrift();
+    if (driftStatus.hasDrift) {
+      actions.push(`检测到schema差异: ${driftStatus.details}`);
+      console.log('🔍 检测到数据库与schema存在差异，准备同步...');
+    }
+
+    // 3. 检查 migrations 目录是否存在
     const migrationsDir = path.join(process.cwd(), 'prisma', 'migrations');
     let hasMigrations = false;
 
@@ -409,7 +465,7 @@ export async function performDatabaseHealthCheck(): Promise<{
       }
     }
 
-    // 3. 检查迁移状态
+    // 4. 检查迁移状态
     const migrationStatus = await checkMigrationStatus(true); // 使用静默模式
 
     // 如果是缓存的 db push 模式，直接返回成功
@@ -421,7 +477,7 @@ export async function performDatabaseHealthCheck(): Promise<{
       };
     }
 
-    if (!migrationStatus.needsMigration) {
+    if (!migrationStatus.needsMigration && !driftStatus.hasDrift) {
       return {
         success: true,
         message: '数据库状态正常，无需迁移',
@@ -429,8 +485,12 @@ export async function performDatabaseHealthCheck(): Promise<{
       };
     }
 
-    // 3. 如果需要迁移，自动应用
-    actions.push(`发现 ${migrationStatus.pendingMigrations.length} 个待应用迁移`);
+    // 5. 如果需要迁移或检测到drift，自动应用
+    if (migrationStatus.needsMigration) {
+      actions.push(`发现 ${migrationStatus.pendingMigrations.length} 个待应用迁移`);
+    } else if (driftStatus.hasDrift) {
+      actions.push('检测到schema变更，准备同步数据库结构');
+    }
 
     const migrationResult = await applyMigrations();
     actions.push(migrationResult.message);
@@ -443,10 +503,22 @@ export async function performDatabaseHealthCheck(): Promise<{
       };
     }
 
-    // 4. 最终验证
+    // 6. 最终验证
     // 如果使用了 db push（数据库未被 Prisma Migrate 管理），则不需要再检查迁移状态
     if (migrationResult.message.includes('db push')) {
       actions.push('数据库同步完成（db push 模式）');
+      
+      // 重新检测drift，确保同步成功
+      const finalDrift = await detectSchemaDrift();
+      if (finalDrift.hasDrift && finalDrift.details !== 'not_managed') {
+        actions.push('警告: 同步后仍存在schema差异');
+        return {
+          success: false,
+          message: '数据库同步可能不完整',
+          actions
+        };
+      }
+      
       return {
         success: true,
         message: '数据库健康检查和同步完成',
