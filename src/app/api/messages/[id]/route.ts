@@ -50,6 +50,12 @@ export async function PATCH(
     return NextResponse.json({
       success: true,
       message: updatedMessage,
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     });
   } catch (error) {
     console.error('标记消息已读失败:', error);
@@ -105,6 +111,12 @@ export async function DELETE(
     return NextResponse.json({
       success: true,
       message: '消息已删除',
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     });
   } catch (error) {
     console.error('删除消息失败:', error);

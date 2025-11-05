@@ -126,6 +126,7 @@ model Message {
   type        String   // 消息类型: system（系统消息）, admin（管理员消息）
   title       String   // 消息标题
   content     String   // 消息内容
+  images      String?  // 图片URL列表（JSON数组格式）
   isRead      Boolean  @default(false) // 是否已读
   createdAt   DateTime @default(now())
   

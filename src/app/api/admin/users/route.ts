@@ -16,6 +16,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // 检查是否需要包含待审核作业数量
+    const { searchParams } = new URL(request.url);
+    const includePendingCount = searchParams.get('includePendingCount') === 'true';
+
     const users = await prisma.user.findMany({
       select: {
         id: true,
@@ -27,6 +31,35 @@ export async function GET(request: NextRequest) {
         createdAt: 'desc',
       },
     });
+
+    // 如果需要包含待审核数量，为每个用户查询
+    if (includePendingCount) {
+      const usersWithPending = await Promise.all(
+        users.map(async (user) => {
+          const pendingCount = await prisma.userHomework.count({
+            where: {
+              nickname: user.nickname,
+              status: 'pending'
+            }
+          });
+          return {
+            ...user,
+            pendingCount
+          };
+        })
+      );
+
+      return NextResponse.json({
+        success: true,
+        users: usersWithPending,
+      }, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, private, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+    }
 
     return NextResponse.json({
       success: true,

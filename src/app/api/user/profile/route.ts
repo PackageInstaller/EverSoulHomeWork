@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
-import { getUserFromToken, generateToken } from '@/lib/jwt';
+import { getUserFromTokenWithPasswordCheck, generateToken } from '@/lib/jwt';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
   try {
     const authHeader = request.headers.get('authorization');
-    const userData = getUserFromToken(authHeader);
+    const userData = await getUserFromTokenWithPasswordCheck(authHeader);
 
     if (!userData) {
       return NextResponse.json(
@@ -60,7 +60,7 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const authHeader = request.headers.get('authorization');
-    const userData = getUserFromToken(authHeader);
+    const userData = await getUserFromTokenWithPasswordCheck(authHeader);
 
     if (!userData) {
       return NextResponse.json(
@@ -70,7 +70,7 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { nickname, oldPassword, newPassword } = body;
+    const { nickname, email, oldPassword, newPassword } = body;
 
     // 验证昵称
     if (!nickname || !nickname.trim()) {
@@ -78,6 +78,25 @@ export async function PATCH(request: Request) {
         { success: false, message: '昵称不能为空' },
         { status: 400 }
       );
+    }
+
+    // 验证邮箱
+    if (email !== undefined) {
+      if (!email || !email.trim()) {
+        return NextResponse.json(
+          { success: false, message: '邮箱不能为空' },
+          { status: 400 }
+        );
+      }
+
+      // 验证邮箱格式
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        return NextResponse.json(
+          { success: false, message: '邮箱格式不正确' },
+          { status: 400 }
+        );
+      }
     }
 
     // 验证昵称格式：不允许空格、制表符、换行符等空白字符
@@ -125,6 +144,26 @@ export async function PATCH(request: Request) {
     const updateData: any = {
       nickname: nickname.trim()
     };
+
+    // 如果修改邮箱
+    if (email !== undefined && email.trim() !== currentUser.email) {
+      // 检查邮箱是否已被其他用户使用
+      const existingUserWithEmail = await prisma.user.findFirst({
+        where: {
+          email: email.trim(),
+          NOT: { id: userData.id }
+        }
+      });
+
+      if (existingUserWithEmail) {
+        return NextResponse.json(
+          { success: false, message: '该邮箱已被其他用户使用' },
+          { status: 400 }
+        );
+      }
+
+      updateData.email = email.trim();
+    }
 
     // 如果要修改密码
     if (oldPassword && newPassword) {
@@ -259,6 +298,12 @@ export async function PATCH(request: Request) {
       message: '资料更新成功',
       token: newToken,
       user: updatedUser
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     });
 
   } catch (error) {

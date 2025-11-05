@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import ImagePreviewModal from '@/components/ImagePreviewModal';
 
 interface Message {
   id: string;
   type: 'system' | 'admin';
   title: string;
   content: string;
+  images?: string;
   isRead: boolean;
   createdAt: string;
 }
@@ -20,6 +22,8 @@ export default function MailboxPage() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [expandedTypes, setExpandedTypes] = useState<Set<string>>(new Set(['system', 'admin']));
+  const [previewImages, setPreviewImages] = useState<{ id: string; url: string }[]>([]);
+  const [previewIndex, setPreviewIndex] = useState(0);
 
   useEffect(() => {
     fetchMessages();
@@ -119,11 +123,13 @@ export default function MailboxPage() {
       if (!token) return;
 
       try {
-        await fetch(`/api/messages/${message.id}`, {
+        const timestamp = Date.now();
+        await fetch(`/api/messages/${message.id}?_t=${timestamp}`, {
           method: 'PATCH',
           headers: {
             'Authorization': `Bearer ${token}`,
           },
+          cache: 'no-store',
         });
 
         // 更新本地状态
@@ -144,11 +150,13 @@ export default function MailboxPage() {
     if (!token) return;
 
     try {
-      const response = await fetch(`/api/messages/${messageId}`, {
+      const timestamp = Date.now();
+      const response = await fetch(`/api/messages/${messageId}?_t=${timestamp}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
         },
+        cache: 'no-store',
       });
 
       const data = await response.json();
@@ -376,6 +384,50 @@ export default function MailboxPage() {
                     <p className="text-white/80 whitespace-pre-wrap leading-relaxed">
                       {selectedMessage.content}
                     </p>
+                    
+                    {/* 图片显示 */}
+                    {selectedMessage.images && (() => {
+                      try {
+                        const imageUrls = JSON.parse(selectedMessage.images);
+                        if (Array.isArray(imageUrls) && imageUrls.length > 0) {
+                          const validUrls = imageUrls.filter(url => url.trim());
+                          return (
+                            <div className="mt-4 space-y-2">
+                              <h4 className="text-white/70 text-sm font-medium">附件图片：</h4>
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                {validUrls.map((url: string, index: number) => (
+                                  <button
+                                    key={index}
+                                    onClick={() => {
+                                      // 转换为预览组件所需的格式
+                                      const previewData = validUrls.map((u: string, i: number) => ({
+                                        id: `${selectedMessage.id}-${i}`,
+                                        url: u
+                                      }));
+                                      setPreviewImages(previewData);
+                                      setPreviewIndex(index);
+                                    }}
+                                    className="block rounded-lg overflow-hidden border border-white/20 hover:border-blue-500/50 transition-colors cursor-pointer"
+                                  >
+                                    <img
+                                      src={url}
+                                      alt={`图片${index + 1}`}
+                                      className="w-full h-32 object-cover"
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect width="200" height="200" fill="%23333"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" fill="%23999" font-size="14"%3E图片加载失败%3C/text%3E%3C/svg%3E';
+                                      }}
+                                    />
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        }
+                      } catch (e) {
+                        console.error('解析图片数据失败:', e);
+                      }
+                      return null;
+                    })()}
                   </div>
                 </>
               ) : (
@@ -388,6 +440,16 @@ export default function MailboxPage() {
           </div>
         </div>
       </div>
+
+      {/* 图片预览模态框 */}
+      {previewImages.length > 0 && (
+        <ImagePreviewModal
+          images={previewImages}
+          currentIndex={previewIndex}
+          onClose={() => setPreviewImages([])}
+          onIndexChange={setPreviewIndex}
+        />
+      )}
     </div>
   );
 }

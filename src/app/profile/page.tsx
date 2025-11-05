@@ -69,6 +69,20 @@ export default function ProfilePage() {
       return;
     }
 
+    if (!email.trim()) {
+      setMessage({ type: "error", text: "邮箱不能为空" });
+      setLoading(false);
+      return;
+    }
+
+    // 验证邮箱格式
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setMessage({ type: "error", text: "邮箱格式不正确" });
+      setLoading(false);
+      return;
+    }
+
     // 如果要修改密码（填写了任一密码字段）
     const isChangingPassword = oldPassword || newPassword || confirmPassword;
 
@@ -105,19 +119,21 @@ export default function ProfilePage() {
         return;
       }
 
-      const requestBody: any = { nickname };
+      const requestBody: any = { nickname, email };
       if (isChangingPassword && oldPassword && newPassword) {
         requestBody.oldPassword = oldPassword;
         requestBody.newPassword = newPassword;
       }
 
-      const response = await fetch('/api/user/profile', {
+      const timestamp = Date.now();
+      const response = await fetch(`/api/user/profile?_t=${timestamp}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestBody),
+        cache: 'no-store',
       });
 
       const data = await response.json();

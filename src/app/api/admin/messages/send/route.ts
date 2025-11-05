@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { userIds, title, content, sendToAll } = body;
+    const { userIds, title, content, images, sendToAll } = body;
 
     if (!title || !content) {
       return NextResponse.json(
@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
       type: 'admin',
       title,
       content,
+      images: images || null, // 图片URL列表（JSON字符串格式）
       isRead: false,
     }));
 

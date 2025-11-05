@@ -226,14 +226,10 @@ export default function PointsLeaderboard({ initialYearMonth }: PointsLeaderboar
             </li>
             <li className="flex items-start gap-2">
               <span className="text-green-400 font-bold">•</span>
-              <span><strong className="text-white/90">总积分 &lt; {prizePool.basePool}：</strong>按1:1发放，<strong className="text-yellow-300">剩余累加至下月</strong></span>
+              <span><strong className="text-white/90">总积分 &lt; {prizePool.totalPool}：</strong>按1:1发放，<strong className="text-yellow-300">剩余累加至下月</strong></span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-yellow-400 font-bold">•</span>
-              <span><strong className="text-white/90">{prizePool.basePool} ≤ 总积分 &lt; 总奖池：</strong>按1:1发放，<strong className="text-yellow-300">剩余累加至下月</strong></span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-purple-400 font-bold">•</span>
               <span><strong className="text-white/90">总积分 ≥ 总奖池：</strong>按比例分配，全部发放</span>
             </li>
           </ul>
