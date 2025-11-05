@@ -238,10 +238,11 @@ export default function ProfilePage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg text-gray-500 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled
+                className="mt-1 block w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="请输入邮箱地址"
+                autoComplete="email"
               />
-              <p className="mt-1 text-sm text-gray-500">邮箱地址不可更改</p>
+              <p className="mt-1 text-sm text-gray-500">修改邮箱后需确保邮箱地址唯一</p>
             </div>
 
             <div>
