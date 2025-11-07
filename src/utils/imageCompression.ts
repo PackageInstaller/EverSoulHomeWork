@@ -1,6 +1,6 @@
 /**
  * 客户端图片压缩工具
- * 支持WebP格式转换和高压缩比，大幅节省流量和存储空间
+ * 支持WebP格式转换和高压缩比
  */
 
 interface CompressionOptions {

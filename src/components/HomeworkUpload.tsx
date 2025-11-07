@@ -26,7 +26,7 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
   const [retryStatus, setRetryStatus] = useState('');
 
   const minImages = teamCount;
-  const maxImages = (teamCount * 2) + 5;
+  const maxImages = (teamCount * 2) + 10;
 
   // 当弹窗打开时，检查登录状态并自动填充昵称
   useEffect(() => {
@@ -103,19 +103,6 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
           setCompressionStatus(`正在处理图片 ${current}/${total}: ${fileName}`);
         }
       );
-
-      // 计算压缩统计
-      const totalOriginal = compressionResults.reduce((sum, r) => sum + r.originalSize, 0);
-      const totalCompressed = compressionResults.reduce((sum, r) => sum + r.compressedSize, 0);
-      const savedSize = totalOriginal - totalCompressed;
-      const savedPercent = ((savedSize / totalOriginal) * 100).toFixed(1);
-      const webpCount = compressionResults.filter(r => r.format === 'webp').length;
-
-      let statusMessage = `处理完成：节省 ${formatFileSize(savedSize)} (${savedPercent}%)`;
-      if (webpCount > 0) {
-        statusMessage += ` - ${webpCount}张转为WebP`;
-      }
-      setCompressionStatus(statusMessage);
 
       const data = new FormData();
       data.append('stageId', stageId);
@@ -238,7 +225,7 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
                   placeholder="请描述您的通关策略、队伍配置、角色站位等信息"
                   className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   rows={3}
-                  maxLength={500}
+                  maxLength={1024}
                 />
               </div>
 

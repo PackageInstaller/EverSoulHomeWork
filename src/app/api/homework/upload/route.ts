@@ -132,9 +132,9 @@ export async function POST(request: NextRequest) {
     }
     
     // 验证图片数量
-    if (images.length < teamCount || images.length > (teamCount * 2) + 5) {
+    if (images.length < teamCount || images.length > (teamCount * 2) + 10) {
       return NextResponse.json(
-        { error: `图片数量必须在 ${teamCount} 到 ${teamCount * 2 + 5} 张之间` },
+        { error: `图片数量必须在 ${teamCount} 到 ${teamCount * 2 + 10} 张之间` },
         { status: 400 }
       )
     }
