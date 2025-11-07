@@ -91,12 +91,12 @@ export default function ImagePreviewModal({
         onClick={(e) => e.stopPropagation()}
       />
 
-      {/* 图片计数器 - 移到图片上方，避免手机端遮挡 */}
+      {/* 图片计数器 - 位于图片内部上方，半透明不遮挡 */}
       {images.length > 1 && (
         <div 
-          className="absolute bg-black/80 text-white px-4 py-2 rounded-lg text-sm shadow-lg"
+          className="absolute bg-black/30 backdrop-blur-sm text-white px-4 py-2 rounded-lg text-sm shadow-lg font-medium"
           style={{
-            top: '-50px',
+            top: '20px',
             left: '50%',
             transform: 'translateX(-50%)'
           }}
@@ -105,12 +105,12 @@ export default function ImagePreviewModal({
         </div>
       )}
 
-      {/* 缩略图导航 - 往下移动更多，避免手机端遮挡 */}
+      {/* 缩略图导航 - 位于图片内部下半部分，半透明不遮挡 */}
       {images.length > 1 && (
         <div 
-          className="absolute flex space-x-2 bg-black/80 rounded-lg p-3 shadow-lg overflow-x-auto max-w-[90vw]"
+          className="absolute flex space-x-2 bg-black/30 backdrop-blur-sm rounded-lg p-3 shadow-lg overflow-x-auto max-w-[85vw]"
           style={{
-            bottom: '-90px',
+            bottom: '20px',
             left: '50%',
             transform: 'translateX(-50%)'
           }}
@@ -124,14 +124,16 @@ export default function ImagePreviewModal({
               }}
               className={`flex-shrink-0 w-14 h-14 rounded-md overflow-hidden border-2 transition-all duration-200 ${
                 index === currentIndex 
-                  ? 'border-white scale-110' 
-                  : 'border-transparent hover:border-white/50'
+                  ? 'border-white/80 scale-110 shadow-md' 
+                  : 'border-white/30 hover:border-white/60'
               }`}
             >
               <img
                 src={image.url}
                 alt={`缩略图 ${index + 1}`}
-                className="w-full h-full object-cover"
+                className={`w-full h-full object-cover transition-opacity duration-200 ${
+                  index === currentIndex ? 'opacity-20' : 'opacity-20 hover:opacity-20'
+                }`}
               />
             </button>
           ))}
