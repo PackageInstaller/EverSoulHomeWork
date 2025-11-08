@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import HomeworkUpload from './HomeworkUpload';
 import ImagePreviewModal from './ImagePreviewModal';
+import MarkdownRenderer from './MarkdownRenderer';
 
 interface HomeworkImage {
   id: string;
@@ -141,9 +142,9 @@ export default function HomeworkSection({ stageId, teamCount }: HomeworkSectionP
                   </span>
                 </div>
                 {homework.description && (
-                  <p className="text-white/80 text-sm leading-relaxed ml-13">
-                    {homework.description}
-                  </p>
+                  <div className="text-white/80 text-sm leading-relaxed ml-13">
+                    <MarkdownRenderer content={homework.description} />
+                  </div>
                 )}
               </div>
 

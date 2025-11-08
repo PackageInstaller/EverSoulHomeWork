@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { compressImage } from '@/utils/imageCompression';
 import ImagePreviewModal from './ImagePreviewModal';
+import MarkdownRenderer from './MarkdownRenderer';
 
 interface User {
   id: string;
@@ -319,19 +320,31 @@ export default function UserManagement() {
 
       setBatchLoading(true);
       try {
-        const promises = Array.from(selectedHomeworks).map((homeworkId) =>
-          fetch(`/api/admin/homework/${homeworkId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              status: 'rejected',
-              rejectReason: rejectReason.trim() || undefined
-            }),
-          })
-        );
+        // 获取选中作业的详细信息，按创建时间排序
+        const selectedHomeworksList = userHomeworks.filter((hw: Homework) => selectedHomeworks.has(hw.id))
+          .sort((a: Homework, b: Homework) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
-        const results = await Promise.all(promises);
-        const successCount = results.filter((r) => r.ok).length;
+        let successCount = 0;
+        
+        // 串行处理，确保同一关卡的作业按时间顺序处理
+        for (const homework of selectedHomeworksList) {
+          try {
+            const response = await fetch(`/api/admin/homework/${homework.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                status: 'rejected',
+                rejectReason: rejectReason.trim() || undefined
+              }),
+            });
+            
+            if (response.ok) {
+              successCount++;
+            }
+          } catch (error) {
+            console.error(`拒绝作业 ${homework.id} 失败:`, error);
+          }
+        }
 
         if (successCount === selectedHomeworks.size) {
           alert(`成功拒绝 ${successCount} 个作业` + (rejectReason.trim() ? '，已发送拒绝原因通知' : ''));
@@ -436,16 +449,28 @@ export default function UserManagement() {
 
     setBatchLoading(true);
     try {
-      const promises = Array.from(selectedHomeworks).map((homeworkId) =>
-        fetch(`/api/admin/homework/${homeworkId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: newStatus }),
-        })
-      );
+      // 获取选中作业的详细信息，按创建时间排序
+      const selectedHomeworksList = userHomeworks.filter((hw: Homework) => selectedHomeworks.has(hw.id))
+        .sort((a: Homework, b: Homework) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
-      const results = await Promise.all(promises);
-      const successCount = results.filter((r) => r.ok).length;
+      let successCount = 0;
+      
+      // 串行处理，确保同一关卡的作业按时间顺序处理
+      for (const homework of selectedHomeworksList) {
+        try {
+          const response = await fetch(`/api/admin/homework/${homework.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus }),
+          });
+          
+          if (response.ok) {
+            successCount++;
+          }
+        } catch (error) {
+          console.error(`更新作业 ${homework.id} 失败:`, error);
+        }
+      }
 
       if (successCount === selectedHomeworks.size) {
         alert(`成功更新 ${successCount} 个作业`);
@@ -478,14 +503,26 @@ export default function UserManagement() {
 
     setBatchLoading(true);
     try {
-      const promises = Array.from(selectedHomeworks).map((homeworkId) =>
-        fetch(`/api/admin/homework/${homeworkId}`, {
-          method: 'DELETE',
-        })
-      );
+      // 获取选中作业的详细信息，按创建时间排序
+      const selectedHomeworksList = userHomeworks.filter((hw: Homework) => selectedHomeworks.has(hw.id))
+        .sort((a: Homework, b: Homework) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
-      const results = await Promise.all(promises);
-      const successCount = results.filter((r) => r.ok).length;
+      let successCount = 0;
+      
+      // 串行处理，确保同一关卡的作业按时间顺序处理
+      for (const homework of selectedHomeworksList) {
+        try {
+          const response = await fetch(`/api/admin/homework/${homework.id}`, {
+            method: 'DELETE',
+          });
+          
+          if (response.ok) {
+            successCount++;
+          }
+        } catch (error) {
+          console.error(`删除作业 ${homework.id} 失败:`, error);
+        }
+      }
 
       if (successCount === selectedHomeworks.size) {
         alert(`成功删除 ${successCount} 个作业`);
@@ -1065,7 +1102,9 @@ export default function UserManagement() {
                                 {homework.description && (
                                   <div className="mb-3">
                                     <label className="text-white/60 text-xs">说明</label>
-                                    <p className="text-white/80 text-sm">{homework.description}</p>
+                                    <div className="text-white/80 text-sm">
+                                      <MarkdownRenderer content={homework.description} />
+                                    </div>
                                   </div>
                                 )}
 

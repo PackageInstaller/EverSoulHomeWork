@@ -5,6 +5,7 @@ import { getTokenPayload } from '@/utils/jwtDecode';
 import { compressImages, formatFileSize } from '@/utils/imageCompression';
 import { smartUpload } from '@/utils/uploadWithRetry';
 import { generateUploadSignature, addSignatureToUrl } from '@/utils/signatureHelper';
+import MarkdownEditor from './MarkdownEditor';
 
 interface HomeworkUploadProps {
   stageId: string;
@@ -218,14 +219,13 @@ export default function HomeworkUpload({ stageId, teamCount, onUploadSuccess }: 
               <div>
                 <label className="block text-white text-sm font-medium mb-2">
                   作业说明 (可选)
+                  <span className="text-white/50 text-xs ml-2 font-normal">支持Markdown格式 · 点击展开大编辑器</span>
                 </label>
-                <textarea
+                <MarkdownEditor
                   value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="请描述您的通关策略、队伍配置、角色站位等信息"
-                  className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  rows={3}
+                  onChange={(value) => setFormData(prev => ({ ...prev, description: value }))}
                   maxLength={1024}
+                  placeholder="请描述您的通关策略、队伍配置、角色站位等信息"
                 />
               </div>
 

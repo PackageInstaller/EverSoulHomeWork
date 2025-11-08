@@ -167,10 +167,12 @@ async function isMonthSettled(yearMonth: string): Promise<boolean> {
 
 /**
  * 从用户扣除积分（当作业被取消通过时）
+ * @param shouldRecalculate 是否重新计算减半状态（删除/拒绝时为true，恢复待审核时为false）
  */
 export async function removePointsFromUser(
   nickname: string,
-  homeworkId: string
+  homeworkId: string,
+  shouldRecalculate: boolean = false
 ) {
   try {
     // 查找该作业的积分历史记录
@@ -186,7 +188,7 @@ export async function removePointsFromUser(
       return
     }
 
-    const { yearMonth, points } = pointsHistory
+    const { yearMonth, points, stageId } = pointsHistory
 
     // 删除积分历史记录
     await prisma.pointsHistory.delete({
@@ -246,9 +248,123 @@ export async function removePointsFromUser(
       })
     }
 
+    // 只有在删除或拒绝时才重新计算该关卡其他作业的减半状态
+    if (shouldRecalculate) {
+      console.log(`🔄 触发重新计算关卡 ${stageId} 的减半状态`)
+      await recalculateStageHomeworkHalved(stageId)
+    }
+
   } catch (error) {
     console.error('扣除积分失败:', error)
     throw error
+  }
+}
+
+/**
+ * 重新计算某个关卡所有作业的减半状态
+ * 当首发作业被删除后，需要重新判断新的首发
+ */
+export async function recalculateStageHomeworkHalved(stageId: string) {
+  try {
+    // 获取该关卡所有已通过的作业（按创建时间排序）
+    const approvedHomeworks = await prisma.userHomework.findMany({
+      where: {
+        stageId,
+        status: 'approved'
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    })
+
+    if (approvedHomeworks.length === 0) {
+      console.log(`关卡 ${stageId} 没有已通过的作业，无需重新计算`)
+      return
+    }
+
+    // 第一个作业应该是首发（不减半），其他作业减半
+    for (let i = 0; i < approvedHomeworks.length; i++) {
+      const homework = approvedHomeworks[i]
+      const shouldBeHalved = i > 0 // 第一个不减半，其他减半
+
+      // 查找该作业的积分历史记录
+      const pointsHistory = await prisma.pointsHistory.findFirst({
+        where: {
+          homeworkId: homework.id
+        }
+      })
+
+      if (!pointsHistory) {
+        console.log(`作业 ${homework.id} 没有积分历史记录，跳过`)
+        continue
+      }
+
+      // 如果当前的 isHalved 状态与应有状态不一致，需要更新
+      if (pointsHistory.isHalved !== shouldBeHalved) {
+        console.log(`🔄 更新作业 ${homework.id} 的减半状态: ${pointsHistory.isHalved} -> ${shouldBeHalved}`)
+
+        // 计算新的积分
+        const basePoints = homework.teamCount === 1 ? 0.1 : homework.teamCount === 2 ? 0.5 : 1.0
+        const oldPoints = pointsHistory.points
+        const newPoints = shouldBeHalved ? basePoints / 2 : basePoints
+        const pointsDiff = newPoints - oldPoints
+
+        // 更新积分历史记录
+        await prisma.pointsHistory.update({
+          where: {
+            id: pointsHistory.id
+          },
+          data: {
+            isHalved: shouldBeHalved,
+            points: newPoints
+          }
+        })
+
+        // 更新用户积分
+        if (pointsDiff !== 0) {
+          const userPoints = await prisma.userPoints.findUnique({
+            where: {
+              nickname_yearMonth: {
+                nickname: homework.nickname,
+                yearMonth: pointsHistory.yearMonth
+              }
+            }
+          })
+
+          if (userPoints) {
+            await prisma.userPoints.update({
+              where: {
+                id: userPoints.id
+              },
+              data: {
+                points: Math.max(0, userPoints.points + pointsDiff)
+              }
+            })
+            console.log(`✅ 用户 ${homework.nickname} 积分调整: ${pointsDiff > 0 ? '+' : ''}${pointsDiff}`)
+          }
+
+          // 更新月度奖池
+          const prizePool = await prisma.monthlyPrizePool.findUnique({
+            where: { yearMonth: pointsHistory.yearMonth }
+          })
+
+          if (prizePool && !prizePool.isSettled) {
+            await prisma.monthlyPrizePool.update({
+              where: { yearMonth: pointsHistory.yearMonth },
+              data: {
+                totalPoints: Math.max(0, prizePool.totalPoints + pointsDiff)
+              }
+            })
+          }
+        }
+      }
+    }
+
+    console.log(`✅ 关卡 ${stageId} 的作业减半状态重新计算完成`)
+
+  } catch (error) {
+    console.error('重新计算作业减半状态失败:', error)
+    // 不抛出错误，避免影响主流程
   }
 }
 

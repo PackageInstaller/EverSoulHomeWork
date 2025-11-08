@@ -34,7 +34,7 @@ function sanitizeDescription(description: string): string {
     .replace(/<[^>]*>/g, '') // 移除HTML标签
     .replace(/[<>"\\'&]/g, '') // 移除潜在危险字符
     .trim()
-    .slice(0, 500) // 限制长度
+    .slice(0, 1024) // 限制长度
 }
 
 export async function POST(request: NextRequest) {

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import MarkdownRenderer from './MarkdownRenderer';
 
 interface Homework {
   id: string;
@@ -227,9 +228,9 @@ export default function UserHomeworkModal({ nickname, onClose }: UserHomeworkMod
                             </span>
                           </div>
                           {homework.description && (
-                            <p className="text-white/70 text-sm line-clamp-2 mb-2">
-                              {homework.description}
-                            </p>
+                            <div className="text-white/70 text-sm mb-2 line-clamp-4 overflow-hidden">
+                              <MarkdownRenderer content={homework.description} />
+                            </div>
                           )}
                           {(homework.isAfterSettlement || homework.isHalved) && (
                             <div className="flex flex-wrap gap-2 mb-2">

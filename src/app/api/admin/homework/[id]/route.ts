@@ -94,9 +94,12 @@ export async function PATCH(
     // 如果从approved状态变为其他状态，扣除积分
     if (originalHomework.status === 'approved' && status !== 'approved') {
       try {
+        // 从approved变为任何其他状态都需要重新计算减半状态
+        // 因为这个作业不再占用"已通过"位置，其他作业的首发状态可能会改变
         await removePointsFromUser(
           homework.nickname,
-          homework.id
+          homework.id,
+          true // 总是重新计算
         )
 
         pointsInfo = {
@@ -229,9 +232,11 @@ export async function DELETE(
     // 如果作业是已通过状态，先扣除积分
     if (homework.status === 'approved') {
       try {
+        // 删除时需要重新计算减半状态
         await removePointsFromUser(
           homework.nickname,
-          homework.id
+          homework.id,
+          true
         )
         console.log(`删除已通过作业，已扣除 ${homework.nickname} 的积分`)
       } catch (error) {
