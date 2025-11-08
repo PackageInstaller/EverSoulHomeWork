@@ -37,7 +37,7 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
     del: ({ children }) => <del className="line-through text-white/60">{children}</del>,
     
     // 代码块
-    code: ({ inline, children }) => {
+    code: ({ node, inline, className, children, ...props }: any) => {
       if (inline) {
         return (
           <code className="bg-white/10 text-blue-300 px-1.5 py-0.5 rounded text-sm font-mono">
