@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { writeFile, mkdir } from 'fs/promises'
+import { writeFile, mkdir, unlink } from 'fs/promises'
 import path from 'path'
 import { randomUUID } from 'crypto'
 import sharp from 'sharp'
@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
     const nickname = formData.get('nickname') as string
     const description = formData.get('description') as string || ''
     const teamCount = parseInt(formData.get('teamCount') as string)
+    const oldHomeworkId = formData.get('oldHomeworkId') as string | null // 旧作业ID（编辑模式）
     
     // 基本验证
     if (!stageId || !nickname || !teamCount) {
@@ -216,6 +217,38 @@ export async function POST(request: NextRequest) {
       })
 
       savedImages.push(savedImage)
+    }
+
+    // 如果是编辑模式（提供了 oldHomeworkId），删除旧作业
+    if (oldHomeworkId) {
+      try {
+        // 验证旧作业属于当前用户且为被拒绝状态
+        const oldHomework = await prisma.userHomework.findUnique({
+          where: { id: oldHomeworkId },
+          include: { images: true }
+        });
+
+        if (oldHomework && oldHomework.nickname === cleanNickname && oldHomework.status === 'rejected') {
+          // 删除旧作业的图片文件
+          for (const img of oldHomework.images) {
+            const oldFilepath = path.join(UPLOAD_DIR, img.filename);
+            try {
+              await unlink(oldFilepath);
+            } catch (error) {
+              console.warn(`删除旧图片文件失败: ${img.filename}`, error);
+            }
+          }
+
+          // 删除旧作业记录（级联删除图片记录）
+          await prisma.userHomework.delete({
+            where: { id: oldHomeworkId }
+          });
+
+          console.log(`已删除旧作业: ${oldHomeworkId}`);
+        }
+      } catch (error) {
+        console.warn('删除旧作业失败（不影响新作业上传）:', error);
+      }
     }
 
     return NextResponse.json({

@@ -163,6 +163,7 @@ export default function HomeworkSection({ stageId, teamCount }: HomeworkSectionP
                     <img
                       src={image.url}
                       alt={`${homework.nickname}的作业 - 图片${index + 1}`}
+                      title={`点击查看 ${homework.nickname}的作业 - 图片${index + 1}`}
                       className="w-full h-32 object-cover rounded-lg transition-transform hover:scale-105"
                       onError={(e) => {
                         console.error('图片加载失败:', image.url);

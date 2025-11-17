@@ -206,7 +206,8 @@ export default function UserHomeworkModal({ nickname, onClose }: UserHomeworkMod
                           <div className="relative h-32 bg-black/20 overflow-hidden">
                             <img
                               src={homework.thumbnail}
-                              alt={`${homework.stageId}作业`}
+                              alt={`${nickname}的作业 - 图片1`}
+                              title={`点击查看 ${nickname}的作业 - 图片1`}
                               className="w-full h-full object-cover"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>

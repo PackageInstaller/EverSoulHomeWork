@@ -40,6 +40,7 @@ export default function MarkdownEditor({
   });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [mounted, setMounted] = useState(false);
+  const scrollYRef = useRef(0); // 保存滚动位置
 
   useEffect(() => {
     setMounted(true);
@@ -49,34 +50,50 @@ export default function MarkdownEditor({
     }
   }, []);
 
+  // 阻止body滚动并保持滚动位置
+  useEffect(() => {
+    if (isOpen) {
+      // 保存当前滚动位置
+      scrollYRef.current = window.scrollY;
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      
+      // 锁定body滚动
+      document.body.style.overflow = 'hidden';
+      document.body.style.paddingRight = `${scrollbarWidth}px`; // 防止页面跳动
+      
+      return () => {
+        // 恢复body滚动
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+        
+        // 恢复滚动位置（确保在下一帧执行）
+        requestAnimationFrame(() => {
+          window.scrollTo(0, scrollYRef.current);
+        });
+      };
+    }
+  }, [isOpen]);
+
   const handleOpen = () => {
     setTempValue(value);
     setIsOpen(true);
-    // 阻止body滚动
-    document.body.style.overflow = 'hidden';
   };
 
   const handleClose = () => {
     setIsOpen(false);
     setContextMenu({ ...contextMenu, show: false });
-    // 恢复body滚动
-    document.body.style.overflow = '';
   };
 
   const handleSave = () => {
     onChange(tempValue);
     setIsOpen(false);
     setContextMenu({ ...contextMenu, show: false });
-    // 恢复body滚动
-    document.body.style.overflow = '';
   };
 
   const handleCancel = () => {
     setTempValue(value);
     setIsOpen(false);
     setContextMenu({ ...contextMenu, show: false });
-    // 恢复body滚动
-    document.body.style.overflow = '';
   };
 
   // 按 ESC 关闭
@@ -223,9 +240,19 @@ export default function MarkdownEditor({
   const modalContent = isOpen ? (
         <div 
           className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[200] flex items-center justify-center p-4"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0
+          }}
           onKeyDown={handleKeyDown}
         >
-          <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col border border-white/10">
+          <div 
+            className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col border border-white/10"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* 头部 */}
             <div className="flex items-center justify-between p-4 border-b border-white/10">
               <div className="flex items-center gap-4">

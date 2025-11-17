@@ -314,6 +314,12 @@ export default function UserManagement() {
 
   // 确认拒绝作业
   const handleRejectConfirm = async () => {
+    // 验证拒绝原因是否填写
+    if (!rejectReason.trim()) {
+      alert('请填写拒绝原因');
+      return;
+    }
+
     // 批量拒绝
     if (isBatchReject) {
       if (selectedHomeworks.size === 0) return;
@@ -325,8 +331,10 @@ export default function UserManagement() {
           .sort((a: Homework, b: Homework) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
         let successCount = 0;
+        const rejectedStages: string[] = [];
         
         // 串行处理，确保同一关卡的作业按时间顺序处理
+        // 批量拒绝时，不在每个请求中发送邮件通知
         for (const homework of selectedHomeworksList) {
           try {
             const response = await fetch(`/api/admin/homework/${homework.id}`, {
@@ -334,20 +342,41 @@ export default function UserManagement() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 status: 'rejected',
-                rejectReason: rejectReason.trim() || undefined
+                rejectReason: '', // 批量拒绝时不发送单独通知
+                skipNotification: true // 标记跳过邮件通知
               }),
             });
             
             if (response.ok) {
               successCount++;
+              if (!rejectedStages.includes(homework.stageId)) {
+                rejectedStages.push(homework.stageId);
+              }
             }
           } catch (error) {
             console.error(`拒绝作业 ${homework.id} 失败:`, error);
           }
         }
 
+        // 批量拒绝完成后，发送一封合并的邮件通知
+        if (successCount > 0 && selectedUser) {
+          try {
+            await fetch(`/api/admin/messages/send`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userIds: [selectedUser.id],
+                title: `批量作业拒绝通知`,
+                content: `您有 ${successCount} 个作业被拒绝（涉及关卡：${rejectedStages.join(', ')}）。\n\n拒绝原因：\n${rejectReason.trim()}\n\n[HOMEWORK_LINK:batch]`
+              })
+            });
+          } catch (error) {
+            console.error('发送批量通知失败:', error);
+          }
+        }
+
         if (successCount === selectedHomeworks.size) {
-          alert(`成功拒绝 ${successCount} 个作业` + (rejectReason.trim() ? '，已发送拒绝原因通知' : ''));
+          alert(`成功拒绝 ${successCount} 个作业，已发送拒绝原因通知`);
         } else {
           alert(`操作完成：成功 ${successCount} 个，失败 ${selectedHomeworks.size - successCount} 个`);
         }
@@ -379,14 +408,14 @@ export default function UserManagement() {
         },
         body: JSON.stringify({
           status: 'rejected',
-          rejectReason: rejectReason.trim() || undefined
+          rejectReason: rejectReason.trim()
         })
       });
 
       const data = await response.json();
 
       if (data.success) {
-        alert('作业已拒绝' + (rejectReason.trim() ? '，已发送拒绝原因通知' : ''));
+        alert('作业已拒绝，已发送拒绝原因通知');
         setRejectModalOpen(false);
         setRejectHomeworkId(null);
         setRejectReason('');
@@ -1450,17 +1479,21 @@ export default function UserManagement() {
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                拒绝原因（可选）
+                拒绝原因 <span className="text-red-500">*</span>
               </label>
               <textarea
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
-                placeholder="请输入拒绝原因，如不填写则只拒绝不发送通知"
+                placeholder="请输入拒绝原因（必填）"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 resize-none text-gray-900 placeholder-gray-400"
                 rows={4}
+                required
               />
               <p className="text-xs text-gray-500 mt-1">
-                填写拒绝原因后，系统将发送邮件通知用户
+                {isBatchReject 
+                  ? '批量拒绝时将发送一封合并的邮件通知给该用户'
+                  : '系统将发送邮件通知用户作业被拒绝的原因'
+                }
               </p>
             </div>
 
@@ -1478,7 +1511,7 @@ export default function UserManagement() {
               </button>
               <button
                 onClick={handleRejectConfirm}
-                disabled={batchLoading}
+                disabled={batchLoading || !rejectReason.trim()}
                 className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white rounded-lg transition-colors font-medium"
               >
                 {batchLoading ? '处理中...' : '确认拒绝'}

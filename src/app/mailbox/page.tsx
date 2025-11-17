@@ -381,9 +381,39 @@ export default function MailboxPage() {
                     </p>
                   </div>
                   <div className="border-t border-white/10 pt-4 mt-4">
-                    <p className="text-white/80 whitespace-pre-wrap leading-relaxed">
-                      {selectedMessage.content}
-                    </p>
+                    {(() => {
+                      // 检测是否包含作业链接标记
+                      const homeworkLinkMatch = selectedMessage.content.match(/\[HOMEWORK_LINK:([^\]]+)\]/);
+                      let displayContent = selectedMessage.content;
+                      let homeworkId = null;
+                      
+                      if (homeworkLinkMatch) {
+                        homeworkId = homeworkLinkMatch[1];
+                        // 移除标记，只显示文本
+                        displayContent = selectedMessage.content.replace(/\n*\[HOMEWORK_LINK:[^\]]+\]/, '');
+                      }
+                      
+                      return (
+                        <>
+                          <p className="text-white/80 whitespace-pre-wrap leading-relaxed">
+                            {displayContent}
+                          </p>
+                          {homeworkId && (
+                            <div className="mt-4 pt-4 border-t border-white/10">
+                              <button
+                                onClick={() => router.push('/rejected-homeworks')}
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-lg transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:scale-105"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <span>查看并重新编辑作业</span>
+                              </button>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                     
                     {/* 图片显示 */}
                     {selectedMessage.images && (() => {
@@ -411,7 +441,8 @@ export default function MailboxPage() {
                                   >
                                     <img
                                       src={url}
-                                      alt={`图片${index + 1}`}
+                                      alt={`附件图片 ${index + 1}`}
+                                      title={`点击查看附件图片 ${index + 1}`}
                                       className="w-full h-32 object-cover"
                                       onError={(e) => {
                                         (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect width="200" height="200" fill="%23333"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" fill="%23999" font-size="14"%3E图片加载失败%3C/text%3E%3C/svg%3E';

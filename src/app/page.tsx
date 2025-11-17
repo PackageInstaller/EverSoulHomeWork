@@ -289,6 +289,12 @@ export default function HomePage() {
                         )}
                       </a>
                       <a
+                        href="/rejected-homeworks"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        📝 作业管理
+                      </a>
+                      <a
                         href="/profile"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
