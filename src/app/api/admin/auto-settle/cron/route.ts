@@ -94,17 +94,17 @@ export async function GET(request: NextRequest) {
 
     const duration = Date.now() - startTime
     console.log(`✅ [自动结算] ${currentYearMonth} 结算完成！耗时: ${duration}ms`)
-    console.log(`💰 [自动结算] 总积分: ${result.totalPoints}, 总奖池: ${result.totalPool}, 发放: ${result.distributed}, 累加: ${result.nextCarryOver}`)
+    console.log(`💰 [自动结算] 总积分: ${result.totalPoints.toFixed(2)}, 总奖池: ${result.totalPool.toFixed(2)}, 发放: ${result.distributed.toFixed(2)}, 累加: ${result.nextCarryOver.toFixed(2)}`)
 
     return NextResponse.json({
       success: true,
       settled: true,
       yearMonth: currentYearMonth,
       result: {
-        totalPoints: result.totalPoints,
-        totalPool: result.totalPool,
-        distributed: result.distributed,
-        nextCarryOver: result.nextCarryOver,
+        totalPoints: Math.round(result.totalPoints * 100) / 100,
+        totalPool: Math.round(result.totalPool * 100) / 100,
+        distributed: Math.round(result.distributed * 100) / 100,
+        nextCarryOver: Math.round(result.nextCarryOver * 100) / 100,
         rewardCount: result.rewards.length
       },
       duration: `${duration}ms`,

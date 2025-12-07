@@ -31,7 +31,7 @@ export default function PointsSettlement() {
   // 自动结算配置
   const [autoSettleHour, setAutoSettleHour] = useState(23); // 默认23点
   const [autoSettleLoading, setAutoSettleLoading] = useState(false);
-  
+
   // 自动结算服务状态
   const [serviceStatus, setServiceStatus] = useState<any>(null);
 
@@ -149,7 +149,7 @@ export default function PointsSettlement() {
       const data = await response.json();
 
       if (data.success) {
-        alert(`✅ 成功结算 ${yearMonth}！\n\n总积分：${data.result.totalPoints.toFixed(1)}\n总奖池：¥${data.result.totalPool.toFixed(1)}\n已发放：¥${data.result.distributed.toFixed(1)}\n累加到下月：¥${data.result.nextCarryOver.toFixed(1)}`);
+        alert(`✅ 成功结算 ${yearMonth}！\n\n总积分：${data.result.totalPoints.toFixed(2)}\n总奖池：¥${data.result.totalPool.toFixed(2)}\n已发放：¥${data.result.distributed.toFixed(2)}\n累加到下月：¥${data.result.nextCarryOver.toFixed(2)}`);
         setResult(data.result);
         fetchMonths(); // 刷新月份列表
       } else {
@@ -434,19 +434,19 @@ export default function PointsSettlement() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-white/5 rounded-lg p-3">
                     <div className="text-white/60 text-sm">总积分</div>
-                    <div className="text-white text-2xl font-bold">{result.totalPoints}</div>
+                    <div className="text-white text-2xl font-bold">{result.totalPoints.toFixed(2)}</div>
                   </div>
                   <div className="bg-white/5 rounded-lg p-3">
                     <div className="text-white/60 text-sm">总奖池</div>
-                    <div className="text-white text-2xl font-bold">¥{result.totalPool.toFixed(1)}</div>
+                    <div className="text-white text-2xl font-bold">¥{result.totalPool.toFixed(2)}</div>
                   </div>
                   <div className="bg-white/5 rounded-lg p-3">
                     <div className="text-white/60 text-sm">已发放</div>
-                    <div className="text-green-400 text-2xl font-bold">¥{result.distributed.toFixed(1)}</div>
+                    <div className="text-green-400 text-2xl font-bold">¥{result.distributed.toFixed(2)}</div>
                   </div>
                   <div className="bg-white/5 rounded-lg p-3">
                     <div className="text-white/60 text-sm">下月累加</div>
-                    <div className="text-yellow-400 text-2xl font-bold">¥{result.nextCarryOver.toFixed(1)}</div>
+                    <div className="text-yellow-400 text-2xl font-bold">¥{result.nextCarryOver.toFixed(2)}</div>
                   </div>
                 </div>
 
@@ -461,7 +461,7 @@ export default function PointsSettlement() {
                           <span className="text-white font-medium">{reward.nickname}</span>
                           <span className="text-white/60 text-sm">{reward.points} 分</span>
                         </div>
-                        <span className="text-green-400 font-semibold">¥{reward.reward.toFixed(1)}</span>
+                        <span className="text-green-400 font-semibold">¥{reward.reward.toFixed(2)}</span>
                       </div>
                     ))}
                   </div>

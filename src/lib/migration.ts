@@ -487,7 +487,7 @@ export async function performDatabaseHealthCheck(): Promise<{
 
     // 5. 如果需要迁移或检测到drift，自动应用
     if (migrationStatus.needsMigration) {
-      actions.push(`发现 ${migrationStatus.pendingMigrations.length} 个待应用迁移`);
+    actions.push(`发现 ${migrationStatus.pendingMigrations.length} 个待应用迁移`);
     } else if (driftStatus.hasDrift) {
       actions.push('检测到schema变更，准备同步数据库结构');
     }

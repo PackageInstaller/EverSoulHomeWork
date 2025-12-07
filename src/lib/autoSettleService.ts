@@ -69,7 +69,7 @@ async function checkAndSettle() {
 
     const duration = Date.now() - startTime
     console.log(`✅ [自动结算] ${currentYearMonth} 结算完成！耗时: ${duration}ms`)
-    console.log(`💰 [自动结算] 总积分: ${result.totalPoints}, 总奖池: ${result.totalPool}, 发放: ${result.distributed}, 累加: ${result.nextCarryOver}`)
+    console.log(`💰 [自动结算] 总积分: ${result.totalPoints.toFixed(2)}, 总奖池: ${result.totalPool.toFixed(2)}, 发放: ${result.distributed.toFixed(2)}, 累加: ${result.nextCarryOver.toFixed(2)}`)
 
   } catch (error: any) {
     console.error('❌ [自动结算] 执行失败:', error)

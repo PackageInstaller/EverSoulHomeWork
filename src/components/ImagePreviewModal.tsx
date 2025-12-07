@@ -121,7 +121,7 @@ export default function ImagePreviewModal({
       {/* 图片和缩略图的容器 - 整体居中 */}
       <div 
         className="flex flex-col items-center relative"
-        style={{ 
+        style={{
           maxHeight: '95vh',
           maxWidth: '95vw',
         }}
@@ -129,7 +129,7 @@ export default function ImagePreviewModal({
       >
         {/* 关闭按钮 */}
         <button
-          onClick={onClose}
+        onClick={onClose}
           className="absolute top-0 right-0 z-[1000000] bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-all duration-200 backdrop-blur-sm"
           style={{
             transform: 'translate(50%, -50%)'
@@ -144,68 +144,68 @@ export default function ImagePreviewModal({
         {/* 图片容器 */}
         <div className="relative">
           {/* 主图片 */}
-          <img
-            src={images[currentIndex].url}
-            alt={`作业预览 ${currentIndex + 1}/${images.length}`}
+      <img
+        src={images[currentIndex].url}
+        alt={`作业预览 ${currentIndex + 1}/${images.length}`}
             className="rounded-xl shadow-2xl max-w-full"
-            style={{ 
-              maxWidth: '90vw', 
+        style={{ 
+          maxWidth: '90vw', 
               maxHeight: maxImageHeight,
               width: 'auto',
               height: 'auto',
-              display: 'block'
-            }}
-            onClick={(e) => e.stopPropagation()}
+          display: 'block'
+        }}
+        onClick={(e) => e.stopPropagation()}
             onError={(e) => {
               console.error('图片加载失败:', images[currentIndex].url);
               console.log('所有图片数据:', images);
             }}
-          />
+      />
 
           {/* 图片计数器 - 位于图片内部上方 */}
-          {images.length > 1 && (
-            <div 
+      {images.length > 1 && (
+        <div 
               className="absolute bg-black/30 backdrop-blur-sm text-white px-4 py-2 rounded-lg text-sm shadow-lg font-medium"
-              style={{
+          style={{
                 top: '20px',
-                left: '50%',
-                transform: 'translateX(-50%)'
-              }}
-            >
-              {currentIndex + 1} / {images.length}
-            </div>
-          )}
+            left: '50%',
+            transform: 'translateX(-50%)'
+          }}
+        >
+          {currentIndex + 1} / {images.length}
+        </div>
+      )}
         </div>
 
         {/* 缩略图导航 - 在图片下方，完全不遮挡 */}
-        {images.length > 1 && (
-          <div 
+      {images.length > 1 && (
+        <div 
             className="flex space-x-2 bg-black/30 backdrop-blur-sm rounded-lg p-3 shadow-lg overflow-x-auto max-w-[90vw] mt-3"
-          >
-            {images.map((image, index) => (
-              <button
-                key={image.id}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onIndexChange(index);
-                }}
-                className={`flex-shrink-0 w-14 h-14 rounded-md overflow-hidden border-2 transition-all duration-200 ${
-                  index === currentIndex 
+        >
+          {images.map((image, index) => (
+            <button
+              key={image.id}
+              onClick={(e) => {
+                e.stopPropagation();
+                onIndexChange(index);
+              }}
+              className={`flex-shrink-0 w-14 h-14 rounded-md overflow-hidden border-2 transition-all duration-200 ${
+                index === currentIndex 
                     ? 'border-white/80 scale-110 shadow-md' 
                     : 'border-white/30 hover:border-white/60'
-                }`}
-              >
-                <img
-                  src={image.url}
-                  alt={`缩略图 ${index + 1}`}
+              }`}
+            >
+              <img
+                src={image.url}
+                alt={`缩略图 ${index + 1}`}
                   className={`w-full h-full object-cover transition-opacity duration-200 ${
                     index === currentIndex ? 'opacity-100' : 'opacity-70 hover:opacity-90'
                   }`}
-                />
-              </button>
-            ))}
-          </div>
-        )}
+              />
+            </button>
+          ))}
+        </div>
+      )}
       </div>
     </div>
   );

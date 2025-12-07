@@ -21,8 +21,8 @@ export async function GET(request: NextRequest) {
     // 获取奖池信息
     const prizePool = await getOrCreateMonthlyPrizePool(yearMonth)
 
-    // 计算总积分
-    const totalPoints = userPoints.reduce((sum, up) => sum + up.points, 0)
+    // 计算总积分（保留2位小数）
+    const totalPoints = Math.round(userPoints.reduce((sum, up) => sum + up.points, 0) * 100) / 100
 
     // 预估奖励（如果当前结算）
     const leaderboard = userPoints.map((up, index) => {
@@ -40,9 +40,9 @@ export async function GET(request: NextRequest) {
       return {
         rank: index + 1,
         nickname: up.nickname,
-        points: up.points,
+        points: Math.round(up.points * 100) / 100,
         homeworkCount: up.homeworkCount,
-        estimatedReward: Math.round(estimatedReward * 10) / 10,
+        estimatedReward: Math.round(estimatedReward * 100) / 100,
         updatedAt: up.updatedAt
       }
     })
@@ -52,11 +52,11 @@ export async function GET(request: NextRequest) {
       yearMonth,
       totalPoints,
       prizePool: {
-        basePool: prizePool.basePool,
-        carryOver: prizePool.carryOver,
-        totalPool: prizePool.totalPool,
+        basePool: Math.round(prizePool.basePool * 100) / 100,
+        carryOver: Math.round(prizePool.carryOver * 100) / 100,
+        totalPool: Math.round(prizePool.totalPool * 100) / 100,
         isSettled: prizePool.isSettled,
-        distributed: prizePool.distributed,
+        distributed: Math.round(prizePool.distributed * 100) / 100,
         settledAt: prizePool.settledAt
       },
       leaderboard

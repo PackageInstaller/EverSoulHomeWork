@@ -161,7 +161,7 @@ export default function TotalPointsRanking() {
               <span className="text-xl md:text-2xl">⭐</span>
             </div>
             <div className="text-2xl md:text-3xl font-bold text-green-600">
-              {rankStats.highestPoints.toFixed(1)} <span className="text-base md:text-lg font-normal text-gray-500">分</span>
+              {rankStats.highestPoints.toFixed(2)} <span className="text-base md:text-lg font-normal text-gray-500">分</span>
             </div>
           </div>
 
@@ -316,11 +316,11 @@ export default function TotalPointsRanking() {
 
                     <div className="text-center sm:text-right w-full sm:w-auto bg-gray-50 rounded-lg md:rounded-xl p-2.5 md:p-3">
                       <div className="text-xl md:text-2xl font-bold text-blue-600">
-                        {item.totalPoints.toFixed(1)}
+                        {item.totalPoints.toFixed(2)}
                         <span className="text-sm md:text-base font-normal text-gray-500 ml-1">总积分</span>
                       </div>
                       <div className="text-xs md:text-sm text-gray-500 mt-0.5 md:mt-1">
-                        平均 {(item.totalPoints / item.homeworkCount || 0).toFixed(1)} 分/作业
+                        平均 {(item.totalPoints / item.homeworkCount || 0).toFixed(2)} 分/作业
                       </div>
                     </div>
                   </div>

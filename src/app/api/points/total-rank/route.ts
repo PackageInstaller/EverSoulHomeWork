@@ -25,12 +25,12 @@ export async function GET(request: Request) {
       },
     });
 
-    // 转换为排行数据
+    // 转换为排行数据（保留2位小数）
     let rankData = allUsers
       .map((user, index) => ({
         id: index + 1,
         nickname: user.nickname,
-        totalPoints: user._sum.points || 0,
+        totalPoints: Math.round((user._sum.points || 0) * 100) / 100,
         homeworkCount: user._count.homeworkId || 0,
         lastUpdated: user._max.createdAt?.toLocaleString('zh-CN') || '',
       }))

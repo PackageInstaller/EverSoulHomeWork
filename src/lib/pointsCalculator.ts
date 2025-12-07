@@ -454,8 +454,8 @@ export async function settleMonthlyPrizePool(yearMonth: string) {
     where: { yearMonth }
   })
 
-  const totalPoints = userPoints.reduce((sum, up) => sum + up.points, 0)
-  const totalPool = pool.totalPool
+  const totalPoints = Math.round(userPoints.reduce((sum, up) => sum + up.points, 0) * 100) / 100
+  const totalPool = Math.round(pool.totalPool * 100) / 100
 
   let distributed = 0
   let nextCarryOver = 0
@@ -466,16 +466,20 @@ export async function settleMonthlyPrizePool(yearMonth: string) {
   } else if (totalPoints < 200) {
     // 总积分不足200，按1:1发放，剩余累加到下个月
     distributed = totalPoints
-    nextCarryOver = totalPool - totalPoints
+    nextCarryOver = Math.round((totalPool - totalPoints) * 100) / 100
   } else if (totalPoints >= 200 && totalPoints < totalPool) {
     // 总积分高于200但小于总奖池，按1:1发放，剩余也累加到下个月
     distributed = totalPoints
-    nextCarryOver = totalPool - totalPoints  // 修复：剩余也应该累加
+    nextCarryOver = Math.round((totalPool - totalPoints) * 100) / 100  // 修复：剩余也应该累加
   } else {
     // 总积分大于等于总奖池，按比例分配
     distributed = totalPool
     nextCarryOver = 0
   }
+
+  // 确保所有数值都是2位小数
+  distributed = Math.round(distributed * 100) / 100
+  nextCarryOver = Math.round(nextCarryOver * 100) / 100
 
   // 更新奖池记录
   await prisma.monthlyPrizePool.update({
@@ -498,14 +502,15 @@ export async function settleMonthlyPrizePool(yearMonth: string) {
 
     if (nextMonthPool && !nextMonthPool.isSettled) {
       // 下个月奖池已存在且未结算，更新累加金额
+      const newTotalPool = Math.round((nextMonthPool.basePool + nextCarryOver) * 100) / 100
       await prisma.monthlyPrizePool.update({
         where: { yearMonth: nextYearMonth },
         data: {
           carryOver: nextCarryOver,
-          totalPool: nextMonthPool.basePool + nextCarryOver
+          totalPool: newTotalPool
         }
       })
-      console.log(`✅ [结算] 已将 ${nextCarryOver} 元累加到 ${nextYearMonth} 奖池`)
+      console.log(`✅ [结算] 已将 ${nextCarryOver.toFixed(2)} 元累加到 ${nextYearMonth} 奖池`)
     }
   }
 
@@ -524,7 +529,7 @@ export async function settleMonthlyPrizePool(yearMonth: string) {
     return {
       nickname: up.nickname,
       points: up.points,
-      reward: Math.round(reward * 10) / 10 // 保留1位小数
+      reward: Math.round(reward * 100) / 100 // 保留2位小数
     }
   }).sort((a, b) => b.points - a.points) // 按积分排序
 

@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
   try {
     // 获取所有有积分记录的月份
-    const months = await prisma.monthlyPrizePool.findMany({
+    const monthsRaw = await prisma.monthlyPrizePool.findMany({
       orderBy: { yearMonth: 'desc' },
       select: {
         yearMonth: true,
@@ -16,6 +16,13 @@ export async function GET(request: NextRequest) {
         settledAt: true
       }
     })
+
+    // 格式化数值为2位小数
+    const months = monthsRaw.map(month => ({
+      ...month,
+      totalPoints: Math.round(month.totalPoints * 100) / 100,
+      totalPool: Math.round(month.totalPool * 100) / 100
+    }))
 
     return NextResponse.json({
       success: true,

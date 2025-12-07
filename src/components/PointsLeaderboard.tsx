@@ -198,7 +198,7 @@ export default function PointsLeaderboard({ initialYearMonth }: PointsLeaderboar
           {prizePool.carryOver > 0 && (
             <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-xl p-4 border border-green-500/30">
               <div className="text-white/70 text-sm mb-1">上月累加</div>
-              <div className="text-2xl font-bold text-green-300">¥{prizePool.carryOver.toFixed(1)}</div>
+              <div className="text-2xl font-bold text-green-300">¥{prizePool.carryOver}</div>
             </div>
           )}
 
@@ -209,7 +209,7 @@ export default function PointsLeaderboard({ initialYearMonth }: PointsLeaderboar
 
           <div className="bg-gradient-to-br from-pink-500/20 to-red-500/20 rounded-xl p-4 border border-pink-500/30">
             <div className="text-white/70 text-sm mb-1">当月总积分</div>
-            <div className="text-2xl font-bold text-pink-300">{totalPoints.toFixed(1)}</div>
+            <div className="text-2xl font-bold text-pink-300">{totalPoints.toFixed(2)}</div>
           </div>
         </div>
 
@@ -239,7 +239,7 @@ export default function PointsLeaderboard({ initialYearMonth }: PointsLeaderboar
           <div className="mt-4 bg-green-500/20 border border-green-500/50 rounded-lg p-3">
             <p className="text-green-300 text-sm">
               ✅ 本月已于 {new Date(prizePool.settledAt!).toLocaleString('zh-CN')} 结算完成
-              {prizePool.distributed > 0 && `，发放奖励 ¥${prizePool.distributed.toFixed(1)}`}
+              {prizePool.distributed > 0 && `，发放奖励 ¥${prizePool.distributed}`}
             </p>
           </div>
         )}
@@ -329,16 +329,16 @@ export default function PointsLeaderboard({ initialYearMonth }: PointsLeaderboar
 
                     <div className="text-right">
                       <div className="text-xl font-bold text-blue-300">
-                        {entry.points.toFixed(1)} 积分
+                        {entry.points.toFixed(2)} 积分
                       </div>
                       {!prizePool.isSettled && entry.estimatedReward > 0 && (
                         <div className="text-sm text-green-300">
-                          预估 ¥{entry.estimatedReward.toFixed(1)}
+                          预估 ¥{entry.estimatedReward.toFixed(2)}
                         </div>
                       )}
                       {prizePool.isSettled && entry.estimatedReward > 0 && (
                         <div className="text-sm text-yellow-300 font-semibold">
-                          奖励 ¥{entry.estimatedReward.toFixed(1)}
+                          奖励 ¥{entry.estimatedReward.toFixed(2)}
                         </div>
                       )}
                     </div>
