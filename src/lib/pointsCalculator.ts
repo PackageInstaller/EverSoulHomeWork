@@ -524,7 +524,7 @@ export async function settleMonthlyPrizePool(yearMonth: string) {
     return {
       nickname: up.nickname,
       points: up.points,
-      reward: Math.round(reward * 100) / 100 // 保留2位小数
+      reward: Math.round(reward * 10) / 10 // 保留1位小数
     }
   }).sort((a, b) => b.points - a.points) // 按积分排序
 

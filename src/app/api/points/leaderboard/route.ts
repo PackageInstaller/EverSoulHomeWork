@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
         nickname: up.nickname,
         points: up.points,
         homeworkCount: up.homeworkCount,
-        estimatedReward: Math.round(estimatedReward * 100) / 100,
+        estimatedReward: Math.round(estimatedReward * 10) / 10,
         updatedAt: up.updatedAt
       }
     })
