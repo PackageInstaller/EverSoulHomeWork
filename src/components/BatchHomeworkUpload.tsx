@@ -73,15 +73,16 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
           setSelectedStages(data.selectedStages || []);
           setCurrentStageId(data.currentStageId || null);
           
-          // 恢复作业数据（不包括File对象）
+          // 恢复作业数据
           const restoredData: Record<string, BatchHomeworkData> = {};
           for (const [stageId, homework] of Object.entries(data.homeworkData || {})) {
             const hw = homework as any;
             restoredData[stageId] = {
               stageId: hw.stageId,
               description: hw.description || '',
-              images: [], // File对象无法保存，需要重新选择
-              status: 'pending',
+              images: [], // File对象无法保存到localStorage
+              status: hw.status || 'pending', // 恢复上传状态
+              error: hw.error,
             };
           }
           setHomeworkData(restoredData);
@@ -104,6 +105,7 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
             description: data.description,
             imageCount: data.images.length,
             status: data.status,
+            error: data.error,
           };
           return acc;
         }, {} as Record<string, any>),
@@ -532,6 +534,24 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
                     需要上传 {currentStage.teamCount} 到{' '}
                     {currentStage.teamCount * 2 + 10} 张图片
                   </div>
+                  
+                  {/* 已上传成功的提示 */}
+                  {currentData.status === 'success' && currentData.images.length === 0 && (
+                    <div className="mb-3 bg-green-500/20 border border-green-500/50 rounded-lg p-3">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-green-400 text-lg">✓</span>
+                        <div>
+                          <p className="text-green-300 text-sm font-medium">
+                            图片已上传成功
+                          </p>
+                          <p className="text-green-300/70 text-xs mt-1">
+                            重新选择图片将替换已上传的内容
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   <input
                     key={`file-input-${currentStage.stageId}`}
                     type="file"
@@ -547,7 +567,7 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
                   />
                   {currentData.images.length > 0 && (
                     <div className="mt-2 text-white/70 text-sm">
-                      已选择 {currentData.images.length} 张图片
+                      已选择 {currentData.images.length} 张图片（将重新上传）
                     </div>
                   )}
                 </div>
