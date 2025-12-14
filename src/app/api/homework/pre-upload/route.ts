@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
       savedImages.push({
         filename,
         originalName: image.name,
-        url: `/uploads/temp/${filename}`,
+        url: `/api/uploads/temp/${filename}`,
         fileSize: processedBuffer.length
       })
     }
