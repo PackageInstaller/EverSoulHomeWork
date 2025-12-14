@@ -7,6 +7,7 @@ import { compressImages } from '@/utils/imageCompression';
 import { smartUpload } from '@/utils/uploadWithRetry';
 import { generateUploadSignature, addSignatureToUrl } from '@/utils/signatureHelper';
 import MarkdownEditor from './MarkdownEditor';
+import ImagePreviewModal from './ImagePreviewModal';
 
 interface StageData {
   stageId: string;
@@ -41,6 +42,10 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [uploadingStages, setUploadingStages] = useState<Set<string>>(new Set()); // 正在预上传的关卡
+  
+  // 图片预览状态
+  const [previewImages, setPreviewImages] = useState<Array<{ id: string; url: string }>>([]);
+  const [previewIndex, setPreviewIndex] = useState(0);
   
   // 自动保存的key
   const autoSaveKey = `batch_homework_${areaNo}_${dataSource}`;
@@ -752,7 +757,15 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
                         {currentData.tempImageUrls.map((url, index) => (
                           <div
                             key={index}
-                            className="relative aspect-video bg-white/5 rounded-lg overflow-hidden border border-white/10 hover:border-blue-400/50 transition-colors group"
+                            className="relative aspect-video bg-white/5 rounded-lg overflow-hidden border border-white/10 hover:border-blue-400/50 transition-colors group cursor-pointer"
+                            onClick={() => {
+                              const images = currentData.tempImageUrls!.map((u, i) => ({
+                                id: `temp-${i}`,
+                                url: u
+                              }));
+                              setPreviewImages(images);
+                              setPreviewIndex(index);
+                            }}
                           >
                             <img
                               src={url}
@@ -761,15 +774,9 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
                               loading="lazy"
                             />
                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <a
-                                href={url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-white text-xs bg-blue-500 px-2 py-1 rounded"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                查看大图
-                              </a>
+                              <span className="text-white text-sm">
+                                🔍 点击查看
+                              </span>
                             </div>
                             <div className="absolute top-1 right-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
                               {index + 1}
@@ -900,6 +907,16 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
       </button>
 
       {mounted && modalContent && createPortal(modalContent, document.body)}
+      
+      {/* 图片预览模态框 */}
+      {previewImages.length > 0 && (
+        <ImagePreviewModal
+          images={previewImages}
+          currentIndex={previewIndex}
+          onClose={() => setPreviewImages([])}
+          onIndexChange={setPreviewIndex}
+        />
+      )}
     </>
   );
 }
