@@ -21,6 +21,8 @@ interface BatchHomeworkData {
   images: File[];
   status: 'pending' | 'uploading' | 'success' | 'error';
   error?: string;
+  tempImageFilenames?: string[]; // 预上传的临时图片文件名
+  tempImageUrls?: string[]; // 预上传的临时图片URL
 }
 
 interface BatchHomeworkUploadProps {
@@ -83,6 +85,8 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
               images: [], // File对象无法保存到localStorage
               status: hw.status || 'pending', // 恢复上传状态
               error: hw.error,
+              tempImageFilenames: hw.tempImageFilenames, // 恢复临时图片文件名
+              tempImageUrls: hw.tempImageUrls, // 恢复临时图片URL
             };
           }
           setHomeworkData(restoredData);
@@ -106,6 +110,8 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
             imageCount: data.images.length,
             status: data.status,
             error: data.error,
+            tempImageFilenames: data.tempImageFilenames, // 保存临时图片文件名
+            tempImageUrls: data.tempImageUrls, // 保存临时图片URL
           };
           return acc;
         }, {} as Record<string, any>),
@@ -203,7 +209,7 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
     }));
   };
 
-  // 更新图片并自动上传
+  // 更新图片并预上传
   const updateImages = async (files: File[]) => {
     if (!currentStageId) return;
     
@@ -224,14 +230,126 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
       [currentStageId]: {
         ...prev[currentStageId],
         images: files,
+        status: 'pending', // 重置状态
+        tempImageFilenames: undefined,
+        tempImageUrls: undefined,
       },
     }));
 
-    // 自动上传该关卡
-    await uploadSingleStage(currentStageId, files);
+    // 预上传图片
+    await preUploadImages(currentStageId, files);
   };
 
-  // 上传单个关卡
+  // 预上传图片（只上传到临时目录，不创建作业记录）
+  const preUploadImages = async (stageId: string, files: File[]) => {
+    try {
+      // 更新状态为上传中
+      setHomeworkData(prev => ({
+        ...prev,
+        [stageId]: { ...prev[stageId], status: 'uploading' },
+      }));
+
+      // 压缩图片
+      const compressionResults = await compressImages(
+        files,
+        {
+          maxWidth: 1920,
+          maxHeight: 1920,
+          quality: 0.75,
+          targetSizeKB: 500,
+          maxSizeKB: 5120,
+          convertToWebP: true,
+          webpQuality: 0.75,
+        },
+        (current, total) => {
+          setUploadProgress(prev => ({
+            ...prev,
+            [stageId]: Math.floor((current / total) * 50), // 压缩占50%
+          }));
+        }
+      );
+
+      // 准备上传数据
+      const formData = new FormData();
+      formData.append('stageId', stageId);
+      formData.append('nickname', nickname.trim());
+
+      compressionResults.forEach((result) => {
+        formData.append('images', result.file);
+      });
+
+      const imageNames = compressionResults.map(r => r.file.name);
+      
+      // 生成签名
+      const { signature, timestamp, nonce, sessionId } = await generateUploadSignature(
+        stageId,
+        nickname.trim(),
+        imageNames
+      );
+
+      const signedUrl = addSignatureToUrl(
+        '/api/homework/pre-upload',
+        signature,
+        timestamp,
+        nonce,
+        sessionId
+      );
+
+      // 上传到临时目录
+      const uploadResult = await smartUpload({
+        url: signedUrl,
+        data: formData,
+        maxRetries: 3,
+        retryDelay: 2000,
+        timeout: 60000,
+        onProgress: (percent) => {
+          setUploadProgress(prev => ({
+            ...prev,
+            [stageId]: 50 + Math.floor(percent / 2), // 上传占50%
+          }));
+        },
+        onRetry: () => {},
+      });
+
+      if (uploadResult.success && uploadResult.data?.success) {
+        const images = uploadResult.data.images as Array<{
+          filename: string;
+          url: string;
+        }>;
+        
+        setHomeworkData(prev => ({
+          ...prev,
+          [stageId]: {
+            ...prev[stageId],
+            status: 'pending',
+            tempImageFilenames: images.map(img => img.filename),
+            tempImageUrls: images.map(img => img.url),
+          },
+        }));
+        setUploadProgress(prev => ({
+          ...prev,
+          [stageId]: 100,
+        }));
+        
+        console.log(`关卡 ${stageId} 图片预上传成功`);
+      } else {
+        throw new Error(uploadResult.error || '预上传失败');
+      }
+    } catch (error: any) {
+      setHomeworkData(prev => ({
+        ...prev,
+        [stageId]: {
+          ...prev[stageId],
+          status: 'error',
+          error: error.message || '预上传失败',
+        },
+      }));
+      console.error(`关卡 ${stageId} 图片预上传失败:`, error.message);
+      alert(`关卡 ${stageId} 图片预上传失败: ${error.message}`);
+    }
+  };
+
+  // 上传单个关卡（已弃用，保留以防需要）
   const uploadSingleStage = async (stageId: string, files: File[]) => {
     const data = homeworkData[stageId];
     const stage = stages.find(s => s.stageId === stageId);
@@ -336,62 +454,102 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
     }
   };
 
-  // 批量上传（只上传未成功的关卡）
+  // 批量提交作业（将预上传的图片提交审核）
   const handleBatchUpload = async () => {
     if (selectedStages.length === 0) {
       alert('请至少选择一个关卡');
       return;
     }
 
-    // 筛选出还没有上传成功的关卡
-    const pendingStages = selectedStages.filter(stageId => {
+    // 筛选出已预上传图片的关卡
+    const readyStages = selectedStages.filter(stageId => {
       const data = homeworkData[stageId];
-      return data && data.status !== 'success' && data.images.length > 0;
+      return data && data.tempImageFilenames && data.tempImageFilenames.length > 0;
     });
 
-    if (pendingStages.length === 0) {
-      // 检查是否全部已成功
-      const allSuccess = selectedStages.every(
-        stageId => homeworkData[stageId]?.status === 'success'
+    if (readyStages.length === 0) {
+      alert('请先为选中的关卡上传图片');
+      return;
+    }
+
+    // 准备批量提交的数据
+    const homeworks = readyStages.map(stageId => {
+      const data = homeworkData[stageId];
+      const stage = stages.find(s => s.stageId === stageId);
+      return {
+        stageId,
+        description: data.description || '',
+        teamCount: stage?.teamCount || 1,
+        tempImageFilenames: data.tempImageFilenames || [],
+      };
+    });
+
+    setIsUploading(true);
+
+    try {
+      // 生成签名
+      const stageIds = readyStages.join(',');
+      const { signature, timestamp, nonce, sessionId } = await generateUploadSignature(
+        stageIds,
+        nickname.trim(),
+        []
       );
-      
-      if (allSuccess) {
-        alert('所有选中的关卡都已上传成功！');
+
+      const signedUrl = addSignatureToUrl(
+        '/api/homework/batch-submit',
+        signature,
+        timestamp,
+        nonce,
+        sessionId
+      );
+
+      // 批量提交
+      const response = await fetch(signedUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nickname: nickname.trim(),
+          homeworks,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // 更新每个关卡的状态
+        const newHomeworkData = { ...homeworkData };
+        result.results.forEach((r: any) => {
+          if (r.success) {
+            newHomeworkData[r.stageId] = {
+              ...newHomeworkData[r.stageId],
+              status: 'success',
+            };
+          } else {
+            newHomeworkData[r.stageId] = {
+              ...newHomeworkData[r.stageId],
+              status: 'error',
+              error: r.error || '提交失败',
+            };
+          }
+        });
+        setHomeworkData(newHomeworkData);
+
+        alert(result.message);
+        
         // 清除自动保存的数据
         localStorage.removeItem(autoSaveKey);
         setIsOpen(false);
         window.location.reload();
       } else {
-        alert('请先为选中的关卡上传图片');
+        throw new Error(result.error || '批量提交失败');
       }
-      return;
-    }
-
-    setIsUploading(true);
-
-    // 逐个上传待处理的关卡
-    for (const stageId of pendingStages) {
-      const data = homeworkData[stageId];
-      if (!data || data.images.length === 0) continue;
-      
-      await uploadSingleStage(stageId, data.images);
-    }
-
-    setIsUploading(false);
-    
-    // 检查是否全部成功
-    const allSuccess = selectedStages.every(
-      stageId => homeworkData[stageId]?.status === 'success'
-    );
-
-    if (allSuccess) {
-      alert('批量上传完成！所有作业已提交审核。');
-      // 清除自动保存的数据
-      localStorage.removeItem(autoSaveKey);
-      setIsOpen(false);
-      window.location.reload();
-    } else {
-      alert('部分作业上传失败，请检查后重试。');
+    } catch (error: any) {
+      console.error('批量提交失败:', error);
+      alert(`批量提交失败: ${error.message}`);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -454,16 +612,21 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
                     {/* 状态图标 */}
                     <div className="flex items-center space-x-1">
                       {data?.status === 'success' && (
-                        <span className="text-green-400 text-xs">✓</span>
+                        <span className="text-green-400 text-xs" title="已提交审核">✓</span>
                       )}
                       {data?.status === 'error' && (
-                        <span className="text-red-400 text-xs">✗</span>
+                        <span className="text-red-400 text-xs" title="上传失败">✗</span>
                       )}
                       {data?.status === 'uploading' && (
-                        <span className="text-yellow-400 text-xs">↑</span>
+                        <span className="text-yellow-400 text-xs" title="上传中">↑</span>
                       )}
-                      {hasImages && data?.status === 'pending' && (
-                        <span className="text-white/70 text-xs">{data.images.length}📷</span>
+                      {data?.tempImageFilenames && data.tempImageFilenames.length > 0 && data.status === 'pending' && (
+                        <span className="text-blue-400 text-xs" title="已预上传，待提交">
+                          {data.tempImageFilenames.length}📷
+                        </span>
+                      )}
+                      {hasImages && !data?.tempImageFilenames && data?.status === 'pending' && (
+                        <span className="text-white/50 text-xs" title="图片选择中">...</span>
                       )}
                     </div>
                   </div>
@@ -535,17 +698,34 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
                     {currentStage.teamCount * 2 + 10} 张图片
                   </div>
                   
-                  {/* 已上传成功的提示 */}
-                  {currentData.status === 'success' && currentData.images.length === 0 && (
+                  {/* 已预上传的提示 */}
+                  {currentData.tempImageFilenames && currentData.tempImageFilenames.length > 0 && (
+                    <div className="mb-3 bg-blue-500/20 border border-blue-500/50 rounded-lg p-3">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-blue-400 text-lg">📷</span>
+                        <div>
+                          <p className="text-blue-300 text-sm font-medium">
+                            已预上传 {currentData.tempImageFilenames.length} 张图片
+                          </p>
+                          <p className="text-blue-300/70 text-xs mt-1">
+                            点击"批量上传"按钮提交审核，或重新选择图片替换
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* 已提交审核的提示 */}
+                  {currentData.status === 'success' && (
                     <div className="mb-3 bg-green-500/20 border border-green-500/50 rounded-lg p-3">
                       <div className="flex items-center space-x-2">
                         <span className="text-green-400 text-lg">✓</span>
                         <div>
                           <p className="text-green-300 text-sm font-medium">
-                            图片已上传成功
+                            作业已提交审核
                           </p>
                           <p className="text-green-300/70 text-xs mt-1">
-                            重新选择图片将替换已上传的内容
+                            该关卡作业已成功提交
                           </p>
                         </div>
                       </div>
@@ -562,12 +742,12 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
                         updateImages(Array.from(e.target.files));
                       }
                     }}
-                    disabled={isUploading}
+                    disabled={isUploading || currentData.status === 'uploading'}
                     className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:bg-blue-500 file:text-white file:cursor-pointer hover:file:bg-blue-600 disabled:opacity-50"
                   />
-                  {currentData.images.length > 0 && (
-                    <div className="mt-2 text-white/70 text-sm">
-                      已选择 {currentData.images.length} 张图片（将重新上传）
+                  {currentData.images.length > 0 && !currentData.tempImageFilenames && (
+                    <div className="mt-2 text-yellow-300/70 text-sm">
+                      已选择 {currentData.images.length} 张图片，正在预上传...
                     </div>
                   )}
                 </div>
