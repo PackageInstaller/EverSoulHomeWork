@@ -730,19 +730,52 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
                     {currentStage.teamCount * 2 + 10} 张图片
                   </div>
                   
-                  {/* 已预上传的提示 */}
-                  {currentData.tempImageFilenames && currentData.tempImageFilenames.length > 0 && (
-                    <div className="mb-3 bg-blue-500/20 border border-blue-500/50 rounded-lg p-3">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-blue-400 text-lg">📷</span>
-                        <div>
-                          <p className="text-blue-300 text-sm font-medium">
-                            已预上传 {currentData.tempImageFilenames.length} 张图片
-                          </p>
-                          <p className="text-blue-300/70 text-xs mt-1">
-                            点击"批量上传"按钮提交审核，或重新选择图片替换
-                          </p>
+                  {/* 已预上传的图片预览 */}
+                  {currentData.tempImageFilenames && currentData.tempImageFilenames.length > 0 && currentData.tempImageUrls && (
+                    <div className="mb-3">
+                      <div className="bg-blue-500/20 border border-blue-500/50 rounded-lg p-3 mb-3">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-blue-400 text-lg">📷</span>
+                          <div>
+                            <p className="text-blue-300 text-sm font-medium">
+                              已预上传 {currentData.tempImageFilenames.length} 张图片
+                            </p>
+                            <p className="text-blue-300/70 text-xs mt-1">
+                              点击"批量上传"按钮提交审核，或重新选择图片替换
+                            </p>
+                          </div>
                         </div>
+                      </div>
+                      
+                      {/* 图片预览网格 */}
+                      <div className="grid grid-cols-3 gap-2">
+                        {currentData.tempImageUrls.map((url, index) => (
+                          <div
+                            key={index}
+                            className="relative aspect-video bg-white/5 rounded-lg overflow-hidden border border-white/10 hover:border-blue-400/50 transition-colors group"
+                          >
+                            <img
+                              src={url}
+                              alt={`预览 ${index + 1}`}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <a
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-white text-xs bg-blue-500 px-2 py-1 rounded"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                查看大图
+                              </a>
+                            </div>
+                            <div className="absolute top-1 right-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+                              {index + 1}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
