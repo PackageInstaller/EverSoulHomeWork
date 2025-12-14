@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getRandomMainStoryBackground, getBackgroundStyle } from '@/utils/backgroundUtils';
 import { Stage, DataSource } from '@/types';
+import BatchHomeworkUpload from './BatchHomeworkUpload';
 
 interface StageListContentProps {
   initialStages?: Stage[];
@@ -21,6 +22,7 @@ export default function StageListContent({ initialStages = [] }: StageListConten
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
   const [backgroundImage, setBackgroundImage] = useState<string>('');
   const [selectedArea, setSelectedArea] = useState<number | null>(null);
+  const [stageTeamCounts, setStageTeamCounts] = useState<Record<string, number>>({});
 
   // 从URL参数获取数据源，默认为live
   const dataSource = (searchParams.get('source') || 'live') as DataSource;
@@ -110,8 +112,37 @@ export default function StageListContent({ initialStages = [] }: StageListConten
   };
 
   // 打开章节详情模态框
-  const openAreaModal = (areaNo: number) => {
+  const openAreaModal = async (areaNo: number) => {
     setSelectedArea(areaNo);
+    
+    // 获取该章节所有关卡的teamCount
+    const areaStages = stagesByArea[areaNo];
+    if (areaStages && areaStages.length > 0) {
+      const stageIds = areaStages.map(s => `${s.area_no}-${s.stage_no}`).join(',');
+      try {
+        const timestamp = Date.now();
+        const response = await fetch(
+          `/api/stages/batch-info?source=${dataSource}&stageIds=${stageIds}&_t=${timestamp}`,
+          {
+            headers: {
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache',
+            },
+            cache: 'no-store',
+          }
+        );
+        const data = await response.json();
+        if (data.success && data.results) {
+          const counts: Record<string, number> = {};
+          for (const [stageId, info] of Object.entries(data.results)) {
+            counts[stageId] = (info as any).teamCount;
+          }
+          setStageTeamCounts(counts);
+        }
+      } catch (error) {
+        console.error('获取关卡teamCount失败:', error);
+      }
+    }
   };
 
   // 关闭模态框
@@ -278,16 +309,38 @@ export default function StageListContent({ initialStages = [] }: StageListConten
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-black/20 backdrop-blur-sm rounded-xl shadow-2xl max-w-6xl max-h-[90vh] w-full overflow-hidden border border-white/20">
             {/* 模态框头部 */}
-            <div className="bg-white/20 backdrop-blur-sm text-white p-6 flex items-center justify-between border-b border-white/20">
-              <h2 className="text-2xl font-bold">第 {selectedArea} 章关卡详情</h2>
-              <button
-                onClick={closeAreaModal}
-                className="text-white/80 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+            <div className="bg-white/20 backdrop-blur-sm text-white p-6 border-b border-white/20">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold">第 {selectedArea} 章关卡详情</h2>
+                <button
+                  onClick={closeAreaModal}
+                  className="text-white/80 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              {/* 批量上传按钮 */}
+              <div className="flex items-center justify-between">
+                <p className="text-white/80 text-sm">
+                  快速为多个关卡上传作业，支持自动保存
+                </p>
+                <BatchHomeworkUpload
+                  areaNo={selectedArea}
+                  stages={stagesByArea[selectedArea].map(stage => {
+                    const stageId = `${stage.area_no}-${stage.stage_no}`;
+                    return {
+                      stageId,
+                      teamCount: stageTeamCounts[stageId] || 1,
+                      areaNo: stage.area_no,
+                      stageNo: stage.stage_no,
+                    };
+                  })}
+                  dataSource={dataSource}
+                />
+              </div>
             </div>
 
             {/* 模态框内容 */}

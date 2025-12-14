@@ -1,0 +1,635 @@
+'use client';
+
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { getTokenPayload } from '@/utils/jwtDecode';
+import { compressImages } from '@/utils/imageCompression';
+import { smartUpload } from '@/utils/uploadWithRetry';
+import { generateUploadSignature, addSignatureToUrl } from '@/utils/signatureHelper';
+import MarkdownEditor from './MarkdownEditor';
+
+interface StageData {
+  stageId: string;
+  teamCount: number;
+  areaNo: number;
+  stageNo: number;
+}
+
+interface BatchHomeworkData {
+  stageId: string;
+  description: string;
+  images: File[];
+  status: 'pending' | 'uploading' | 'success' | 'error';
+  error?: string;
+}
+
+interface BatchHomeworkUploadProps {
+  areaNo: number;
+  stages: StageData[];
+  dataSource: 'live' | 'review';
+}
+
+export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: BatchHomeworkUploadProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [nickname, setNickname] = useState('');
+  const [selectedStages, setSelectedStages] = useState<string[]>([]);
+  const [currentStageId, setCurrentStageId] = useState<string | null>(null);
+  const [homeworkData, setHomeworkData] = useState<Record<string, BatchHomeworkData>>({});
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
+  
+  // 自动保存的key
+  const autoSaveKey = `batch_homework_${areaNo}_${dataSource}`;
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  // 加载自动保存的数据
+  useEffect(() => {
+    if (isOpen) {
+      const token = localStorage.getItem('Token');
+      if (!token) {
+        alert('请先登录后再上传作业');
+        setIsOpen(false);
+        const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = `/loginResignter?returnUrl=${returnUrl}`;
+        return;
+      }
+
+      const payload = getTokenPayload();
+      if (payload?.nickname) {
+        setNickname(payload.nickname);
+      }
+
+      // 加载自动保存的数据
+      try {
+        const saved = localStorage.getItem(autoSaveKey);
+        if (saved) {
+          const data = JSON.parse(saved);
+          setSelectedStages(data.selectedStages || []);
+          setCurrentStageId(data.currentStageId || null);
+          
+          // 恢复作业数据（不包括File对象）
+          const restoredData: Record<string, BatchHomeworkData> = {};
+          for (const [stageId, homework] of Object.entries(data.homeworkData || {})) {
+            const hw = homework as any;
+            restoredData[stageId] = {
+              stageId: hw.stageId,
+              description: hw.description || '',
+              images: [], // File对象无法保存，需要重新选择
+              status: 'pending',
+            };
+          }
+          setHomeworkData(restoredData);
+        }
+      } catch (error) {
+        console.error('加载自动保存数据失败:', error);
+      }
+    }
+  }, [isOpen, autoSaveKey]);
+
+  // 自动保存数据
+  const autoSave = useCallback(() => {
+    try {
+      const dataToSave = {
+        selectedStages,
+        currentStageId,
+        homeworkData: Object.entries(homeworkData).reduce((acc, [stageId, data]) => {
+          acc[stageId] = {
+            stageId: data.stageId,
+            description: data.description,
+            imageCount: data.images.length,
+            status: data.status,
+          };
+          return acc;
+        }, {} as Record<string, any>),
+      };
+      localStorage.setItem(autoSaveKey, JSON.stringify(dataToSave));
+    } catch (error) {
+      console.error('自动保存失败:', error);
+    }
+  }, [selectedStages, currentStageId, homeworkData, autoSaveKey]);
+
+  // 监听数据变化，触发自动保存
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+
+    autoSaveTimerRef.current = setTimeout(() => {
+      autoSave();
+    }, 1000); // 1秒后保存
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [selectedStages, currentStageId, homeworkData, isOpen, autoSave]);
+
+  // 阻止body滚动
+  useEffect(() => {
+    if (isOpen) {
+      const scrollY = window.scrollY;
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      document.body.style.overflow = 'hidden';
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+
+      return () => {
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+        requestAnimationFrame(() => {
+          window.scrollTo(0, scrollY);
+        });
+      };
+    }
+  }, [isOpen]);
+
+  // 切换关卡选择
+  const toggleStageSelection = (stageId: string) => {
+    setSelectedStages(prev => {
+      if (prev.includes(stageId)) {
+        return prev.filter(id => id !== stageId);
+      } else {
+        return [...prev, stageId];
+      }
+    });
+  };
+
+  // 切换当前编辑的关卡
+  const switchToStage = (stageId: string) => {
+    setCurrentStageId(stageId);
+    
+    // 自动勾选该关卡
+    if (!selectedStages.includes(stageId)) {
+      setSelectedStages(prev => [...prev, stageId]);
+    }
+    
+    // 如果该关卡还没有数据，初始化
+    if (!homeworkData[stageId]) {
+      const stage = stages.find(s => s.stageId === stageId);
+      if (stage) {
+        setHomeworkData(prev => ({
+          ...prev,
+          [stageId]: {
+            stageId,
+            description: '',
+            images: [],
+            status: 'pending',
+          },
+        }));
+      }
+    }
+  };
+
+  // 更新描述
+  const updateDescription = (description: string) => {
+    if (!currentStageId) return;
+    
+    setHomeworkData(prev => ({
+      ...prev,
+      [currentStageId]: {
+        ...prev[currentStageId],
+        description,
+      },
+    }));
+  };
+
+  // 更新图片并自动上传
+  const updateImages = async (files: File[]) => {
+    if (!currentStageId) return;
+    
+    const stage = stages.find(s => s.stageId === currentStageId);
+    if (!stage) return;
+
+    const minImages = stage.teamCount;
+    const maxImages = (stage.teamCount * 2) + 10;
+
+    if (files.length < minImages || files.length > maxImages) {
+      alert(`请选择 ${minImages} 到 ${maxImages} 张图片`);
+      return;
+    }
+
+    // 更新图片
+    setHomeworkData(prev => ({
+      ...prev,
+      [currentStageId]: {
+        ...prev[currentStageId],
+        images: files,
+      },
+    }));
+
+    // 自动上传该关卡
+    await uploadSingleStage(currentStageId, files);
+  };
+
+  // 上传单个关卡
+  const uploadSingleStage = async (stageId: string, files: File[]) => {
+    const data = homeworkData[stageId];
+    const stage = stages.find(s => s.stageId === stageId);
+    if (!stage) return;
+
+    try {
+      // 更新状态为上传中
+      setHomeworkData(prev => ({
+        ...prev,
+        [stageId]: { ...prev[stageId], status: 'uploading', images: files },
+      }));
+
+      // 压缩图片
+      const compressionResults = await compressImages(
+        files,
+        {
+          maxWidth: 1920,
+          maxHeight: 1920,
+          quality: 0.75,
+          targetSizeKB: 500,
+          maxSizeKB: 5120,
+          convertToWebP: true,
+          webpQuality: 0.75,
+        },
+        (current, total) => {
+          setUploadProgress(prev => ({
+            ...prev,
+            [stageId]: Math.floor((current / total) * 50), // 压缩占50%
+          }));
+        }
+      );
+
+      // 准备上传数据
+      const formData = new FormData();
+      formData.append('stageId', stageId);
+      formData.append('nickname', nickname.trim());
+      formData.append('description', (data?.description || '').trim());
+      formData.append('teamCount', stage.teamCount.toString());
+
+      compressionResults.forEach((result) => {
+        formData.append('images', result.file);
+      });
+
+      const imageNames = compressionResults.map(r => r.file.name);
+      
+      // 生成签名
+      const { signature, timestamp, nonce, sessionId } = await generateUploadSignature(
+        stageId,
+        nickname.trim(),
+        imageNames
+      );
+
+      const signedUrl = addSignatureToUrl(
+        '/api/homework/upload',
+        signature,
+        timestamp,
+        nonce,
+        sessionId
+      );
+
+      // 上传
+      const uploadResult = await smartUpload({
+        url: signedUrl,
+        data: formData,
+        maxRetries: 3,
+        retryDelay: 2000,
+        timeout: 60000,
+        onProgress: (percent) => {
+          setUploadProgress(prev => ({
+            ...prev,
+            [stageId]: 50 + Math.floor(percent / 2), // 上传占50%
+          }));
+        },
+        onRetry: () => {},
+      });
+
+      if (uploadResult.success && uploadResult.data?.success) {
+        setHomeworkData(prev => ({
+          ...prev,
+          [stageId]: { ...prev[stageId], status: 'success' },
+        }));
+        setUploadProgress(prev => ({
+          ...prev,
+          [stageId]: 100,
+        }));
+        
+        // 静默上传，不显示提示
+      } else {
+        throw new Error(uploadResult.error || '上传失败');
+      }
+    } catch (error: any) {
+      setHomeworkData(prev => ({
+        ...prev,
+        [stageId]: {
+          ...prev[stageId],
+          status: 'error',
+          error: error.message || '上传失败',
+        },
+      }));
+      // 只在失败时显示提示
+      console.error(`关卡 ${stageId} 上传失败:`, error.message);
+    }
+  };
+
+  // 批量上传（只上传未成功的关卡）
+  const handleBatchUpload = async () => {
+    if (selectedStages.length === 0) {
+      alert('请至少选择一个关卡');
+      return;
+    }
+
+    // 筛选出还没有上传成功的关卡
+    const pendingStages = selectedStages.filter(stageId => {
+      const data = homeworkData[stageId];
+      return data && data.status !== 'success' && data.images.length > 0;
+    });
+
+    if (pendingStages.length === 0) {
+      // 检查是否全部已成功
+      const allSuccess = selectedStages.every(
+        stageId => homeworkData[stageId]?.status === 'success'
+      );
+      
+      if (allSuccess) {
+        alert('所有选中的关卡都已上传成功！');
+        // 清除自动保存的数据
+        localStorage.removeItem(autoSaveKey);
+        setIsOpen(false);
+        window.location.reload();
+      } else {
+        alert('请先为选中的关卡上传图片');
+      }
+      return;
+    }
+
+    setIsUploading(true);
+
+    // 逐个上传待处理的关卡
+    for (const stageId of pendingStages) {
+      const data = homeworkData[stageId];
+      if (!data || data.images.length === 0) continue;
+      
+      await uploadSingleStage(stageId, data.images);
+    }
+
+    setIsUploading(false);
+    
+    // 检查是否全部成功
+    const allSuccess = selectedStages.every(
+      stageId => homeworkData[stageId]?.status === 'success'
+    );
+
+    if (allSuccess) {
+      alert('批量上传完成！所有作业已提交审核。');
+      // 清除自动保存的数据
+      localStorage.removeItem(autoSaveKey);
+      setIsOpen(false);
+      window.location.reload();
+    } else {
+      alert('部分作业上传失败，请检查后重试。');
+    }
+  };
+
+  const currentStage = stages.find(s => s.stageId === currentStageId);
+  const currentData = currentStageId ? homeworkData[currentStageId] : null;
+
+  const modalContent = mounted && isOpen ? (
+    <div
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+    >
+      <div
+        className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/20 w-full max-w-7xl max-h-[90vh] overflow-hidden flex"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* 左侧关卡列表 */}
+        <div className="w-80 bg-white/10 backdrop-blur-sm border-r border-white/20 overflow-y-auto">
+          <div className="p-4 border-b border-white/20">
+            <h3 className="text-white font-bold text-lg">选择关卡</h3>
+            <p className="text-white/70 text-xs mt-1">
+              已选择 {selectedStages.length} 个关卡
+            </p>
+          </div>
+          
+          <div className="p-3 grid grid-cols-3 gap-2">
+            {stages.map((stage) => {
+              const isSelected = selectedStages.includes(stage.stageId);
+              const isCurrent = currentStageId === stage.stageId;
+              const data = homeworkData[stage.stageId];
+              const hasImages = data && data.images.length > 0;
+              
+              return (
+                <div
+                  key={stage.stageId}
+                  className={`p-2 rounded-lg cursor-pointer transition-all relative ${
+                    isCurrent
+                      ? 'bg-blue-500/30 border-2 border-blue-400'
+                      : isSelected
+                      ? 'bg-white/20 border border-white/30'
+                      : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                  }`}
+                  onClick={() => switchToStage(stage.stageId)}
+                >
+                  <div className="flex flex-col items-center space-y-1">
+                    <div className="flex items-center space-x-1">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          toggleStageSelection(stage.stageId);
+                        }}
+                        className="w-3 h-3"
+                      />
+                      <span className="text-white font-medium text-sm">
+                        {stage.stageId}
+                      </span>
+                    </div>
+                    
+                    {/* 状态图标 */}
+                    <div className="flex items-center space-x-1">
+                      {data?.status === 'success' && (
+                        <span className="text-green-400 text-xs">✓</span>
+                      )}
+                      {data?.status === 'error' && (
+                        <span className="text-red-400 text-xs">✗</span>
+                      )}
+                      {data?.status === 'uploading' && (
+                        <span className="text-yellow-400 text-xs">↑</span>
+                      )}
+                      {hasImages && data?.status === 'pending' && (
+                        <span className="text-white/70 text-xs">{data.images.length}📷</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 右侧编辑区域 */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* 头部 */}
+          <div className="p-4 border-b border-white/20 bg-white/10">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-white">
+                  批量上传作业 - 第 {areaNo} 章
+                </h3>
+                {currentStage && (
+                  <p className="text-white/70 text-sm mt-1">
+                    当前编辑: {currentStage.stageId} ({currentStage.teamCount} 队)
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => setIsOpen(false)}
+                disabled={isUploading}
+                className="text-white/80 hover:text-white transition-colors p-2 disabled:opacity-50"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
+          {/* 编辑表单 */}
+          <div className="flex-1 overflow-y-auto p-6">
+            {currentStage && currentData ? (
+              <div className="space-y-4 max-w-3xl mx-auto">
+                {/* 自动保存提示 */}
+                <div className="bg-blue-500/20 border border-blue-500/50 rounded-lg p-3">
+                  <p className="text-blue-300 text-sm">
+                    💾 数据会自动保存，切换关卡或刷新页面不会丢失
+                  </p>
+                </div>
+
+                {/* 作业说明 */}
+                <div>
+                  <label className="block text-white text-sm font-medium mb-2">
+                    作业说明 (可选)
+                    <span className="text-white/50 text-xs ml-2 font-normal">
+                      支持Markdown格式
+                    </span>
+                  </label>
+                  <MarkdownEditor
+                    value={currentData.description}
+                    onChange={updateDescription}
+                    maxLength={1024}
+                    placeholder="请描述您的通关策略、队伍配置、角色站位等信息"
+                  />
+                </div>
+
+                {/* 图片上传 */}
+                <div key={currentStage.stageId}>
+                  <label className="block text-white text-sm font-medium mb-2">
+                    作业截图 <span className="text-red-400">*</span>
+                  </label>
+                  <div className="text-white/70 text-xs mb-2">
+                    需要上传 {currentStage.teamCount} 到{' '}
+                    {currentStage.teamCount * 2 + 10} 张图片
+                  </div>
+                  <input
+                    key={`file-input-${currentStage.stageId}`}
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files) {
+                        updateImages(Array.from(e.target.files));
+                      }
+                    }}
+                    disabled={isUploading}
+                    className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:bg-blue-500 file:text-white file:cursor-pointer hover:file:bg-blue-600 disabled:opacity-50"
+                  />
+                  {currentData.images.length > 0 && (
+                    <div className="mt-2 text-white/70 text-sm">
+                      已选择 {currentData.images.length} 张图片
+                    </div>
+                  )}
+                </div>
+
+                {/* 上传进度 */}
+                {isUploading && uploadProgress[currentStage.stageId] !== undefined && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm text-white/70">
+                      <span>上传进度</span>
+                      <span>{uploadProgress[currentStage.stageId]}%</span>
+                    </div>
+                    <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-green-500 to-blue-500 transition-all duration-300"
+                        style={{ width: `${uploadProgress[currentStage.stageId]}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* 错误信息 */}
+                {currentData.status === 'error' && currentData.error && (
+                  <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-3">
+                    <p className="text-red-300 text-sm">{currentData.error}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center text-white/70">
+                  <p className="text-lg mb-2">👈 请从左侧选择要编辑的关卡</p>
+                  <p className="text-sm">选择关卡后可以填写作业说明和上传图片</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 底部操作栏 */}
+          <div className="p-4 border-t border-white/20 bg-white/10">
+            <div className="flex items-center justify-between">
+              <div className="text-white/70 text-sm">
+                已选择 {selectedStages.length} 个关卡 •{' '}
+                {selectedStages.filter(id => homeworkData[id]?.images.length > 0).length}{' '}
+                个已准备好
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  disabled={isUploading}
+                  className="bg-white/10 hover:bg-white/20 disabled:bg-gray-500 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg transition-colors border border-white/20"
+                >
+                  取消
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBatchUpload}
+                  disabled={isUploading || selectedStages.length === 0}
+                  className="bg-green-500 hover:bg-green-600 disabled:bg-gray-500 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg transition-colors"
+                >
+                  {isUploading ? '上传中...' : `批量上传 (${selectedStages.length})`}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
+  return (
+    <>
+      <button
+        onClick={() => setIsOpen(true)}
+        className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+      >
+        <span>📦</span>
+        <span>批量上传</span>
+      </button>
+
+      {mounted && modalContent && createPortal(modalContent, document.body)}
+    </>
+  );
+}
+

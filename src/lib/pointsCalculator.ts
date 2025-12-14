@@ -440,6 +440,8 @@ function getNextYearMonth(yearMonth: string): string {
 
 /**
  * 月度结算
+ * 新规则：只有当月基础奖池的未使用部分才能结转到下个月
+ * 上个月结转来的部分如果没用完，不再继续结转
  */
 export async function settleMonthlyPrizePool(yearMonth: string) {
   // 获取奖池
@@ -456,25 +458,63 @@ export async function settleMonthlyPrizePool(yearMonth: string) {
 
   const totalPoints = Math.round(userPoints.reduce((sum, up) => sum + up.points, 0) * 100) / 100
   const totalPool = Math.round(pool.totalPool * 100) / 100
+  const basePool = Math.round(pool.basePool * 100) / 100
+  const carryOver = Math.round(pool.carryOver * 100) / 100
 
   let distributed = 0
   let nextCarryOver = 0
 
   if (totalPoints === 0) {
-    // 没有积分，全部累加到下个月
-    nextCarryOver = totalPool
+    // 没有积分，只结转当月基础奖池到下个月
+    // 上个月结转来的部分不再结转
+    distributed = 0
+    nextCarryOver = basePool
+    console.log(`📊 [结算] 无积分，只结转当月基础奖池 ${basePool}，上月结转 ${carryOver} 不再结转`)
   } else if (totalPoints < 200) {
-    // 总积分不足200，按1:1发放，剩余累加到下个月
+    // 总积分不足200，按1:1发放
     distributed = totalPoints
-    nextCarryOver = Math.round((totalPool - totalPoints) * 100) / 100
+    
+    // 计算剩余金额
+    const remaining = totalPool - totalPoints
+    
+    // 只结转当月基础奖池的未使用部分
+    if (remaining >= basePool) {
+      // 剩余金额大于等于基础奖池，说明基础奖池完全没用，全部结转
+      nextCarryOver = basePool
+    } else if (remaining > 0) {
+      // 剩余金额小于基础奖池，只结转剩余部分
+      nextCarryOver = remaining
+    } else {
+      // 没有剩余，不结转
+      nextCarryOver = 0
+    }
+    
+    console.log(`📊 [结算] 积分不足200，发放 ${distributed}，剩余 ${remaining}，结转 ${nextCarryOver}（只结转基础奖池部分）`)
   } else if (totalPoints >= 200 && totalPoints < totalPool) {
-    // 总积分高于200但小于总奖池，按1:1发放，剩余也累加到下个月
+    // 总积分高于200但小于总奖池，按1:1发放
     distributed = totalPoints
-    nextCarryOver = Math.round((totalPool - totalPoints) * 100) / 100  // 修复：剩余也应该累加
+    
+    // 计算剩余金额
+    const remaining = totalPool - totalPoints
+    
+    // 只结转当月基础奖池的未使用部分
+    if (remaining >= basePool) {
+      // 剩余金额大于等于基础奖池，说明基础奖池完全没用，全部结转
+      nextCarryOver = basePool
+    } else if (remaining > 0) {
+      // 剩余金额小于基础奖池，只结转剩余部分
+      nextCarryOver = remaining
+    } else {
+      // 没有剩余，不结转
+      nextCarryOver = 0
+    }
+    
+    console.log(`📊 [结算] 按1:1发放 ${distributed}，剩余 ${remaining}，结转 ${nextCarryOver}（只结转基础奖池部分）`)
   } else {
-    // 总积分大于等于总奖池，按比例分配
+    // 总积分大于等于总奖池，按比例分配，全部用完
     distributed = totalPool
     nextCarryOver = 0
+    console.log(`📊 [结算] 按比例分配 ${distributed}，无剩余`)
   }
 
   // 确保所有数值都是2位小数
