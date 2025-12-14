@@ -40,6 +40,7 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
   const [homeworkData, setHomeworkData] = useState<Record<string, BatchHomeworkData>>({});
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
+  const [uploadingStages, setUploadingStages] = useState<Set<string>>(new Set()); // 正在预上传的关卡
   
   // 自动保存的key
   const autoSaveKey = `batch_homework_${areaNo}_${dataSource}`;
@@ -174,11 +175,6 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
   const switchToStage = (stageId: string) => {
     setCurrentStageId(stageId);
     
-    // 自动勾选该关卡
-    if (!selectedStages.includes(stageId)) {
-      setSelectedStages(prev => [...prev, stageId]);
-    }
-    
     // 如果该关卡还没有数据，初始化
     if (!homeworkData[stageId]) {
       const stage = stages.find(s => s.stageId === stageId);
@@ -196,6 +192,19 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
     }
   };
 
+  // 自动勾选关卡（当有内容时）
+  const autoSelectStage = (stageId: string) => {
+    const data = homeworkData[stageId];
+    const hasContent = data && (
+      (data.description && data.description.trim().length > 0) ||
+      (data.tempImageFilenames && data.tempImageFilenames.length > 0)
+    );
+    
+    if (hasContent && !selectedStages.includes(stageId)) {
+      setSelectedStages(prev => [...prev, stageId]);
+    }
+  };
+
   // 更新描述
   const updateDescription = (description: string) => {
     if (!currentStageId) return;
@@ -207,6 +216,9 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
         description,
       },
     }));
+    
+    // 如果有内容，自动勾选
+    autoSelectStage(currentStageId);
   };
 
   // 更新图片并预上传
@@ -242,6 +254,9 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
 
   // 预上传图片（只上传到临时目录，不创建作业记录）
   const preUploadImages = async (stageId: string, files: File[]) => {
+    // 标记为正在上传
+    setUploadingStages(prev => new Set(prev).add(stageId));
+    
     try {
       // 更新状态为上传中
       setHomeworkData(prev => ({
@@ -331,6 +346,9 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
           [stageId]: 100,
         }));
         
+        // 预上传成功后自动勾选
+        autoSelectStage(stageId);
+        
         console.log(`关卡 ${stageId} 图片预上传成功`);
       } else {
         throw new Error(uploadResult.error || '预上传失败');
@@ -346,6 +364,13 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
       }));
       console.error(`关卡 ${stageId} 图片预上传失败:`, error.message);
       alert(`关卡 ${stageId} 图片预上传失败: ${error.message}`);
+    } finally {
+      // 移除上传中标记
+      setUploadingStages(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(stageId);
+        return newSet;
+      });
     }
   };
 
@@ -458,6 +483,13 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
   const handleBatchUpload = async () => {
     if (selectedStages.length === 0) {
       alert('请至少选择一个关卡');
+      return;
+    }
+
+    // 检查是否有正在预上传的关卡
+    if (uploadingStages.size > 0) {
+      const uploadingList = Array.from(uploadingStages).join(', ');
+      alert(`请等待图片预上传完成：${uploadingList}`);
       return;
     }
 
@@ -790,8 +822,13 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
             <div className="flex items-center justify-between">
               <div className="text-white/70 text-sm">
                 已选择 {selectedStages.length} 个关卡 •{' '}
-                {selectedStages.filter(id => homeworkData[id]?.images.length > 0).length}{' '}
-                个已准备好
+                {selectedStages.filter(id => homeworkData[id]?.tempImageFilenames?.length).length}{' '}
+                个已预上传
+                {uploadingStages.size > 0 && (
+                  <span className="text-yellow-300 ml-2">
+                    • {uploadingStages.size} 个预上传中...
+                  </span>
+                )}
               </div>
               <div className="flex space-x-3">
                 <button
@@ -805,10 +842,11 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
                 <button
                   type="button"
                   onClick={handleBatchUpload}
-                  disabled={isUploading || selectedStages.length === 0}
+                  disabled={isUploading || selectedStages.length === 0 || uploadingStages.size > 0}
                   className="bg-green-500 hover:bg-green-600 disabled:bg-gray-500 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg transition-colors"
+                  title={uploadingStages.size > 0 ? '请等待图片预上传完成' : ''}
                 >
-                  {isUploading ? '上传中...' : `批量上传 (${selectedStages.length})`}
+                  {isUploading ? '提交中...' : uploadingStages.size > 0 ? '预上传中...' : `批量上传 (${selectedStages.length})`}
                 </button>
               </div>
             </div>
