@@ -85,11 +85,18 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
           const restoredData: Record<string, BatchHomeworkData> = {};
           for (const [stageId, homework] of Object.entries(data.homeworkData || {})) {
             const hw = homework as any;
+            
+            // 修复状态：如果是 uploading，重置为 pending（因为页面刷新时上传已中断）
+            let restoredStatus = hw.status || 'pending';
+            if (restoredStatus === 'uploading') {
+              restoredStatus = 'pending';
+            }
+            
             restoredData[stageId] = {
               stageId: hw.stageId,
               description: hw.description || '',
               images: [], // File对象无法保存到localStorage
-              status: hw.status || 'pending', // 恢复上传状态
+              status: restoredStatus, // 使用修复后的状态
               error: hw.error,
               tempImageFilenames: hw.tempImageFilenames, // 恢复临时图片文件名
               tempImageUrls: hw.tempImageUrls, // 恢复临时图片URL
@@ -200,12 +207,26 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
   // 自动勾选关卡（当有内容时）
   const autoSelectStage = (stageId: string) => {
     const data = homeworkData[stageId];
-    const hasContent = data && (
-      (data.description && data.description.trim().length > 0) ||
-      (data.tempImageFilenames && data.tempImageFilenames.length > 0)
-    );
+    if (!data) return;
     
-    if (hasContent && !selectedStages.includes(stageId)) {
+    const stage = stages.find(s => s.stageId === stageId);
+    if (!stage) return;
+    
+    const hasDescription = !!(data.description && data.description.trim().length > 0);
+    const hasImages = !!(data.tempImageFilenames && data.tempImageFilenames.length > 0);
+    
+    // 判断是否满足勾选条件
+    let shouldSelect = false;
+    
+    if (stage.teamCount === 1) {
+      // 1队的图：只要有图片就可以勾选，不需要描述
+      shouldSelect = hasImages;
+    } else {
+      // 2队或3队的图：必须同时有图片和描述
+      shouldSelect = hasImages && hasDescription;
+    }
+    
+    if (shouldSelect && !selectedStages.includes(stageId)) {
       setSelectedStages(prev => [...prev, stageId]);
     }
   };
