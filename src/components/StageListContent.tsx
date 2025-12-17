@@ -311,15 +311,15 @@ export default function StageListContent({ initialStages = [] }: StageListConten
             {/* 模态框头部 */}
             <div className="bg-white/20 backdrop-blur-sm text-white p-6 border-b border-white/20">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold">第 {selectedArea} 章关卡详情</h2>
-                <button
-                  onClick={closeAreaModal}
-                  className="text-white/80 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+              <h2 className="text-2xl font-bold">第 {selectedArea} 章关卡详情</h2>
+              <button
+                onClick={closeAreaModal}
+                className="text-white/80 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
               </div>
               
               {/* 批量上传按钮 */}
