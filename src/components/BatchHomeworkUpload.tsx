@@ -367,22 +367,52 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
           url: string;
         }>;
         
-        setHomeworkData(prev => ({
-          ...prev,
-          [stageId]: {
-            ...prev[stageId],
-            status: 'pending',
-            tempImageFilenames: images.map(img => img.filename),
-            tempImageUrls: images.map(img => img.url),
-          },
-        }));
+        const tempImageFilenames = images.map(img => img.filename);
+        const tempImageUrls = images.map(img => img.url);
+        
+        setHomeworkData(prev => {
+          const updatedData = {
+            ...prev,
+            [stageId]: {
+              ...prev[stageId],
+              status: 'pending' as const,
+              tempImageFilenames,
+              tempImageUrls,
+            },
+          };
+          
+          // 在状态更新后立即检查是否应该自动勾选
+          const data = updatedData[stageId];
+          const stage = stages.find(s => s.stageId === stageId);
+          
+          if (stage && data) {
+            const hasDescription = !!(data.description && data.description.trim().length > 0);
+            const hasImages = !!(tempImageFilenames && tempImageFilenames.length > 0);
+            
+            let shouldSelect = false;
+            if (stage.teamCount === 1) {
+              shouldSelect = hasImages;
+            } else {
+              shouldSelect = hasImages && hasDescription;
+            }
+            
+            if (shouldSelect && !selectedStages.includes(stageId)) {
+              // 使用setTimeout避免在渲染期间调用setState
+              setTimeout(() => {
+                setSelectedStages(prev => 
+                  prev.includes(stageId) ? prev : [...prev, stageId]
+                );
+              }, 0);
+            }
+          }
+          
+          return updatedData;
+        });
+        
         setUploadProgress(prev => ({
           ...prev,
           [stageId]: 100,
         }));
-        
-        // 预上传成功后自动勾选
-        autoSelectStage(stageId);
         
         console.log(`关卡 ${stageId} 图片预上传成功`);
       } else {
