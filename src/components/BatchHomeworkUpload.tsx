@@ -275,16 +275,42 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
   const updateDescription = (description: string) => {
     if (!currentStageId) return;
     
-    setHomeworkData(prev => ({
-      ...prev,
-      [currentStageId]: {
-        ...prev[currentStageId],
-        description,
-      },
-    }));
-    
-    // 如果有内容，自动勾选
-    autoSelectStage(currentStageId);
+    setHomeworkData(prev => {
+      const updatedData = {
+        ...prev,
+        [currentStageId]: {
+          ...prev[currentStageId],
+          description,
+        },
+      };
+      
+      // 在状态更新后立即检查是否应该自动勾选
+      const data = updatedData[currentStageId];
+      const stage = stages.find(s => s.stageId === currentStageId);
+      
+      if (stage && data) {
+        const hasDescription = !!(description && description.trim().length > 0);
+        const hasImages = !!(data.tempImageFilenames && data.tempImageFilenames.length > 0);
+        
+        let shouldSelect = false;
+        if (stage.teamCount === 1) {
+          shouldSelect = hasImages;
+        } else {
+          shouldSelect = hasImages && hasDescription;
+        }
+        
+        if (shouldSelect && !selectedStages.includes(currentStageId)) {
+          // 使用setTimeout避免在渲染期间调用setState
+          setTimeout(() => {
+            setSelectedStages(prev => 
+              prev.includes(currentStageId) ? prev : [...prev, currentStageId]
+            );
+          }, 0);
+        }
+      }
+      
+      return updatedData;
+    });
   };
 
   // 更新图片并预上传
