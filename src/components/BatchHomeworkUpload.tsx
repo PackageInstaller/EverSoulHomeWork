@@ -92,6 +92,15 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
               restoredStatus = 'pending';
             }
             
+            // 恢复临时图片URL：如果有文件名但没有URL，或者强制刷新导致URL失效，就重新生成
+            let tempImageUrls = hw.tempImageUrls;
+            if (hw.tempImageFilenames && hw.tempImageFilenames.length > 0) {
+              // 无论有没有保存的URL，都从文件名重新生成，确保URL正确
+              tempImageUrls = hw.tempImageFilenames.map((filename: string) => 
+                `/api/uploads/temp/${filename}?t=${Date.now()}`
+              );
+            }
+            
             restoredData[stageId] = {
               stageId: hw.stageId,
               description: hw.description || '',
@@ -99,7 +108,7 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
               status: restoredStatus, // 使用修复后的状态
               error: hw.error,
               tempImageFilenames: hw.tempImageFilenames, // 恢复临时图片文件名
-              tempImageUrls: hw.tempImageUrls, // 恢复临时图片URL
+              tempImageUrls: tempImageUrls, // 使用重新生成的URL
             };
           }
           setHomeworkData(restoredData);
