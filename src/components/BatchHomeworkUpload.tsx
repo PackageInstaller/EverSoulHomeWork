@@ -113,34 +113,35 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
           }
           setHomeworkData(restoredData);
           
-          // 恢复数据后，重新检查每个关卡是否应该自动勾选
-          if (data.selectedStages && data.selectedStages.length > 0) {
-            // 使用保存的勾选状态
-            setSelectedStages(data.selectedStages);
-          } else {
-            // 如果没有保存勾选状态，根据内容自动勾选
-            const autoSelectedStages: string[] = [];
-            Object.entries(restoredData).forEach(([stageId, hwData]) => {
-              const stage = stages.find(s => s.stageId === stageId);
-              if (stage) {
-                const hasDescription = !!(hwData.description && hwData.description.trim().length > 0);
-                const hasImages = !!(hwData.tempImageFilenames && hwData.tempImageFilenames.length > 0);
-                
-                let shouldSelect = false;
-                if (stage.teamCount === 1) {
-                  shouldSelect = hasImages;
-                } else {
-                  shouldSelect = hasImages && hasDescription;
-                }
-                
-                if (shouldSelect) {
-                  autoSelectedStages.push(stageId);
-                }
+          // 恢复数据后，根据实际内容重新检查每个关卡是否应该自动勾选
+          const autoSelectedStages: string[] = [];
+          Object.entries(restoredData).forEach(([stageId, hwData]) => {
+            const stage = stages.find(s => s.stageId === stageId);
+            if (stage) {
+              const hasDescription = !!(hwData.description && hwData.description.trim().length > 0);
+              const hasImages = !!(hwData.tempImageFilenames && hwData.tempImageFilenames.length > 0);
+              
+              let shouldSelect = false;
+              if (stage.teamCount === 1) {
+                // 1队：只要有图片就自动勾选
+                shouldSelect = hasImages;
+              } else {
+                // 2队或3队：必须同时有图片和描述
+                shouldSelect = hasImages && hasDescription;
               }
-            });
-            if (autoSelectedStages.length > 0) {
-              setSelectedStages(autoSelectedStages);
+              
+              if (shouldSelect) {
+                autoSelectedStages.push(stageId);
+              }
             }
+          });
+          
+          // 合并保存的勾选状态和自动勾选状态（去重）
+          const savedSelectedStages = data.selectedStages || [];
+          const mergedSelectedStages = Array.from(new Set([...savedSelectedStages, ...autoSelectedStages]));
+          
+          if (mergedSelectedStages.length > 0) {
+            setSelectedStages(mergedSelectedStages);
           }
         }
       } catch (error) {
