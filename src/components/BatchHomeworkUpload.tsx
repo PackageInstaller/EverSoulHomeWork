@@ -112,12 +112,42 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
             };
           }
           setHomeworkData(restoredData);
+          
+          // 恢复数据后，重新检查每个关卡是否应该自动勾选
+          if (data.selectedStages && data.selectedStages.length > 0) {
+            // 使用保存的勾选状态
+            setSelectedStages(data.selectedStages);
+          } else {
+            // 如果没有保存勾选状态，根据内容自动勾选
+            const autoSelectedStages: string[] = [];
+            Object.entries(restoredData).forEach(([stageId, hwData]) => {
+              const stage = stages.find(s => s.stageId === stageId);
+              if (stage) {
+                const hasDescription = !!(hwData.description && hwData.description.trim().length > 0);
+                const hasImages = !!(hwData.tempImageFilenames && hwData.tempImageFilenames.length > 0);
+                
+                let shouldSelect = false;
+                if (stage.teamCount === 1) {
+                  shouldSelect = hasImages;
+                } else {
+                  shouldSelect = hasImages && hasDescription;
+                }
+                
+                if (shouldSelect) {
+                  autoSelectedStages.push(stageId);
+                }
+              }
+            });
+            if (autoSelectedStages.length > 0) {
+              setSelectedStages(autoSelectedStages);
+            }
+          }
         }
       } catch (error) {
         console.error('加载自动保存数据失败:', error);
       }
     }
-  }, [isOpen, autoSaveKey]);
+  }, [isOpen, autoSaveKey, stages]);
 
   // 自动保存数据
   const autoSave = useCallback(() => {
