@@ -733,7 +733,7 @@ export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: Batc
               const isSelected = selectedStages.includes(stage.stageId);
               const isCurrent = currentStageId === stage.stageId;
               const data = homeworkData[stage.stageId];
-              const hasImages = data && data.images.length > 0;
+              const hasImages = data && (data.images.length > 0 || (data.tempImageFilenames && data.tempImageFilenames.length > 0));
               
               return (
                 <div
