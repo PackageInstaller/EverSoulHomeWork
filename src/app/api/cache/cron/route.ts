@@ -43,31 +43,31 @@ export async function POST(request: NextRequest) {
       const errors: string[] = [];
       
       // 并行加载两个数据源（提高速度，减少总耗时）
-      console.log('🔄 [手动刷新缓存] 开始并行加载 live 和 review 数据源...');
+      console.log('🔄 [手动刷新缓存] 开始并行加载 Live 和 Review 数据源...');
       
       const loadPromises = [
-        preloadGameData('live')
+        preloadGameData('Live')
           .then(() => {
-            successes.push('live');
-            console.log('✅ [手动刷新缓存] live数据源加载成功');
+            successes.push('Live');
+            console.log('✅ [手动刷新缓存] Live数据源加载成功');
           })
           .catch((error: any) => {
-            failures.push('live');
+            failures.push('Live');
             const errorMsg = error?.message || '未知错误';
-            errors.push(`live: ${errorMsg}`);
-            console.error('❌ [手动刷新缓存] live数据源加载失败:', errorMsg);
+            errors.push(`Live: ${errorMsg}`);
+            console.error('❌ [手动刷新缓存] Live数据源加载失败:', errorMsg);
           }),
         
-        preloadGameData('review')
+        preloadGameData('Review')
           .then(() => {
-            successes.push('review');
-            console.log('✅ [手动刷新缓存] review数据源加载成功');
+            successes.push('Review');
+            console.log('✅ [手动刷新缓存] Review数据源加载成功');
           })
           .catch((error: any) => {
-            failures.push('review');
+            failures.push('Review');
             const errorMsg = error?.message || '未知错误';
-            errors.push(`review: ${errorMsg}`);
-            console.error('❌ [手动刷新缓存] review数据源加载失败:', errorMsg);
+            errors.push(`Review: ${errorMsg}`);
+            console.error('❌ [手动刷新缓存] Review数据源加载失败:', errorMsg);
           })
       ];
       

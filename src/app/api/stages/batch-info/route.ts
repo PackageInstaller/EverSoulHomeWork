@@ -6,12 +6,12 @@ export const dynamic = 'force-dynamic';
 
 /**
  * 批量获取关卡信息（主要是teamCount）
- * GET /api/stages/batch-info?source=live|review&stageIds=1-1,1-2,1-3
+ * GET /api/stages/batch-info?source=Live|Review&stageIds=1-1,1-2,1-3
  */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const dataSource = (searchParams.get('source') || 'live') as DataSource;
+    const dataSource = (searchParams.get('source') || 'Live') as DataSource;
     const stageIdsParam = searchParams.get('stageIds');
     
     // 添加时间戳参数以防止CDN缓存

@@ -17,7 +17,7 @@ export default function StageDetailPage() {
 
   // 从 URL 参数解析关卡信息
   const stageId = params.id as string;
-  const dataSource = (searchParams.get('source') || 'live') as DataSource;
+  const dataSource = (searchParams.get('source') || 'Live') as DataSource;
   const returnSource = searchParams.get('returnSource') || dataSource; // 返回时使用的数据源
 
   const [areaNo, stageNo] = stageId.split('-').map(Number);
@@ -179,8 +179,8 @@ export default function StageDetailPage() {
                   <span className="text-white/80 font-medium">数据源：</span>
                   <div className="relative inline-flex bg-white/10 backdrop-blur-sm rounded-full p-1 border border-white/20">
                     <a
-                      href={`/stage/${areaNo}-${stageNo}?source=live&returnSource=${returnSource}`}
-                      className={`px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-medium rounded-full transition-all duration-300 ${dataSource === 'live'
+                      href={`/stage/${areaNo}-${stageNo}?source=Live&returnSource=${returnSource}`}
+                      className={`px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-medium rounded-full transition-all duration-300 ${dataSource === 'Live'
                         ? 'bg-white text-gray-900 shadow-lg'
                         : 'text-white/70 hover:text-white hover:bg-white/10'
                         }`}
@@ -188,8 +188,8 @@ export default function StageDetailPage() {
                       正式服
                     </a>
                     <a
-                      href={`/stage/${areaNo}-${stageNo}?source=review&returnSource=${returnSource}`}
-                      className={`px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-medium rounded-full transition-all duration-300 ${dataSource === 'review'
+                      href={`/stage/${areaNo}-${stageNo}?source=Review&returnSource=${returnSource}`}
+                      className={`px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-medium rounded-full transition-all duration-300 ${dataSource === 'Review'
                         ? 'bg-white text-gray-900 shadow-lg'
                         : 'text-white/70 hover:text-white hover:bg-white/10'
                         }`}

@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { getRandomMainStoryBackground, getBackgroundStyle } from '@/utils/backgroundUtils';
 import { Stage, DataSource } from '@/types';
 import BatchHomeworkUpload from './BatchHomeworkUpload';
+import { getTokenPayload } from '@/utils/jwtDecode';
 
 interface StageListContentProps {
   initialStages?: Stage[];
@@ -23,14 +24,22 @@ export default function StageListContent({ initialStages = [] }: StageListConten
   const [backgroundImage, setBackgroundImage] = useState<string>('');
   const [selectedArea, setSelectedArea] = useState<number | null>(null);
   const [stageTeamCounts, setStageTeamCounts] = useState<Record<string, number>>({});
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  // 从URL参数获取数据源，默认为live
-  const dataSource = (searchParams.get('source') || 'live') as DataSource;
+  // 从URL参数获取数据源，默认为Live
+  const dataSource = (searchParams.get('source') || 'Live') as DataSource;
 
   // 根据当前数据源选择对应的stages
-  const stages = dataSource === 'live' ? liveStages : reviewStages;
+  const stages = dataSource === 'Live' ? liveStages : reviewStages;
 
   useEffect(() => {
+    // 检查是否为管理员
+    const checkAdmin = () => {
+      const adminToken = localStorage.getItem('adminToken');
+      setIsAdmin(!!adminToken);
+    };
+    
+    checkAdmin();
     loadAllStages();
     // 每次加载时设置随机背景
     setBackgroundImage(getRandomMainStoryBackground());
@@ -49,11 +58,11 @@ export default function StageListContent({ initialStages = [] }: StageListConten
 
       // 并行加载两个数据源（通过 API）
       const [liveData, reviewData] = await Promise.allSettled([
-        fetch('/api/stages/list?source=live').then(res => res.json()),
-        fetch('/api/stages/list?source=review').then(res => res.json())
+        fetch('/api/stages/list?source=Live').then(res => res.json()),
+        fetch('/api/stages/list?source=Review').then(res => res.json())
       ]);
 
-      // 处理 live 数据
+      // 处理 Live 数据
       if (liveData.status === 'fulfilled' && liveData.value.success) {
         setLiveStages(liveData.value.stages);
         addDebugInfo(`Live数据源加载成功: ${liveData.value.stages.length} 个关卡（服务器缓存）`);
@@ -62,7 +71,7 @@ export default function StageListContent({ initialStages = [] }: StageListConten
         console.error('Live数据加载失败:', liveData);
       }
 
-      // 处理 review 数据
+      // 处理 Review 数据
       if (reviewData.status === 'fulfilled' && reviewData.value.success) {
         setReviewStages(reviewData.value.stages);
         addDebugInfo(`Review数据源加载成功: ${reviewData.value.stages.length} 个关卡（服务器缓存）`);
@@ -228,23 +237,25 @@ export default function StageListContent({ initialStages = [] }: StageListConten
               <div className="flex items-center space-x-4">
                 <div className="relative inline-flex bg-white/10 backdrop-blur-sm rounded-full p-1 border border-white/20">
                   <button
-                    onClick={() => router.push('/stage?source=live')}
-                    className={`px-4 py-2 text-xs font-medium rounded-full transition-all duration-300 relative ${dataSource === 'live'
+                    onClick={() => router.push('/stage?source=Live')}
+                    className={`px-4 py-2 text-xs font-medium rounded-full transition-all duration-300 relative ${dataSource === 'Live'
                         ? 'bg-white text-gray-900 shadow-lg transform scale-105'
                         : 'text-white/70 hover:text-white hover:bg-white/10'
                       }`}
                   >
                     正式服
                   </button>
-                  <button
-                    onClick={() => router.push('/stage?source=review')}
-                    className={`px-4 py-2 text-xs font-medium rounded-full transition-all duration-300 relative ${dataSource === 'review'
-                        ? 'bg-white text-gray-900 shadow-lg transform scale-105'
-                        : 'text-white/70 hover:text-white hover:bg-white/10'
-                      }`}
-                  >
-                    测试服
-                  </button>
+                  {isAdmin && (
+                    <button
+                      onClick={() => router.push('/stage?source=Review')}
+                      className={`px-4 py-2 text-xs font-medium rounded-full transition-all duration-300 relative ${dataSource === 'Review'
+                          ? 'bg-white text-gray-900 shadow-lg transform scale-105'
+                          : 'text-white/70 hover:text-white hover:bg-white/10'
+                        }`}
+                    >
+                      测试服
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -338,7 +349,7 @@ export default function StageListContent({ initialStages = [] }: StageListConten
                       stageNo: stage.stage_no,
                     };
                   })}
-                  dataSource={dataSource}
+                  dataSource={dataSource as DataSource}
                 />
               </div>
             </div>

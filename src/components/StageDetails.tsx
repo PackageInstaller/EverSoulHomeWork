@@ -7,7 +7,7 @@ import HomeworkSection from './HomeworkSection';
 
 interface StageDetailsProps {
   stageDetails: StageDetailsType;
-  dataSource: 'live' | 'review';
+  dataSource: 'Live' | 'Review';
 }
 
 export default function StageDetails({ stageDetails, dataSource }: StageDetailsProps) {
@@ -33,11 +33,11 @@ export default function StageDetails({ stageDetails, dataSource }: StageDetailsP
             关卡 {area_no}-{stage_no}
           </h1>
           <div className="flex items-center space-x-2">
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${dataSource === 'live'
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${dataSource === 'Live'
               ? 'bg-green-100 text-green-800'
               : 'bg-blue-100 text-blue-800'
               }`}>
-              {dataSource === 'live' ? '正式服' : '测试服'}
+              {dataSource === 'Live' ? '正式服' : '测试服'}
             </span>
           </div>
         </div>

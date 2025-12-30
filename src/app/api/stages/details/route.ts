@@ -6,12 +6,12 @@ export const dynamic = 'force-dynamic';
 
 /**
  * 获取关卡详情
- * GET /api/stages/details?source=live|review&area=1&stage=1
+ * GET /api/stages/details?source=Live|Review&area=1&stage=1
  */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const dataSource = (searchParams.get('source') || 'live') as DataSource;
+    const dataSource = (searchParams.get('source') || 'Live') as DataSource;
     const area = parseInt(searchParams.get('area') || '0');
     const stage = parseInt(searchParams.get('stage') || '0');
 

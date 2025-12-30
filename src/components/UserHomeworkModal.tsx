@@ -195,12 +195,12 @@ export default function UserHomeworkModal({ nickname, onClose }: UserHomeworkMod
                       <p className="text-white/50">该区域暂无作业</p>
                     </div>
                   ) : (
-                    filteredHomeworks.map(homework => (
-                      <Link
-                        key={homework.id}
-                        href={`/stage/${homework.stageId}?source=live&returnSource=live`}
-                        className="group bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 overflow-hidden transition-all hover:scale-105 hover:shadow-xl"
-                      >
+                  filteredHomeworks.map(homework => (
+                    <Link
+                      key={homework.id}
+                      href={`/stage/${homework.stageId}?source=Live&returnSource=Live`}
+                      className="group bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 overflow-hidden transition-all hover:scale-105 hover:shadow-xl"
+                    >
                         {/* 缩略图 */}
                         {homework.thumbnail ? (
                           <div className="relative h-32 bg-black/20 overflow-hidden">

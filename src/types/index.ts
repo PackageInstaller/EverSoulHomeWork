@@ -107,7 +107,7 @@ export interface CashShopItem extends BaseData {
 }
 
 // 数据源类型
-export type DataSource = 'live' | 'review';
+export type DataSource = 'Live' | 'Review';
 
 // 键值对数据接口
 export interface KeyValue extends BaseData {

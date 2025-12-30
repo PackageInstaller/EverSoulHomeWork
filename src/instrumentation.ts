@@ -33,24 +33,24 @@ export async function register() {
 
       // 并行加载两个数据源
       const loadPromises = [
-        preloadGameData('live')
+        preloadGameData('Live')
           .then(() => {
             successCount++;
-            console.log('✅ [服务器启动] live 数据源加载成功');
+            console.log('✅ [服务器启动] Live 数据源加载成功');
           })
           .catch((error: any) => {
             failureCount++;
-            console.error('❌ [服务器启动] live 数据源加载失败:', error.message);
+            console.error('❌ [服务器启动] Live 数据源加载失败:', error.message);
           }),
 
-        preloadGameData('review')
+        preloadGameData('Review')
           .then(() => {
             successCount++;
-            console.log('✅ [服务器启动] review 数据源加载成功');
+            console.log('✅ [服务器启动] Review 数据源加载成功');
           })
           .catch((error: any) => {
             failureCount++;
-            console.error('❌ [服务器启动] review 数据源加载失败:', error.message);
+            console.error('❌ [服务器启动] Review 数据源加载失败:', error.message);
           })
       ];
 

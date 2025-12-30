@@ -29,7 +29,7 @@ interface BatchHomeworkData {
 interface BatchHomeworkUploadProps {
   areaNo: number;
   stages: StageData[];
-  dataSource: 'live' | 'review';
+  dataSource: 'Live' | 'Review';
 }
 
 export default function BatchHomeworkUpload({ areaNo, stages, dataSource }: BatchHomeworkUploadProps) {

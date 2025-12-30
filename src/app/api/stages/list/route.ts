@@ -6,12 +6,12 @@ export const dynamic = 'force-dynamic';
 
 /**
  * 获取关卡列表
- * GET /api/stages/list?source=live|review
+ * GET /api/stages/list?source=Live|Review
  */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const dataSource = (searchParams.get('source') || 'live') as DataSource;
+    const dataSource = (searchParams.get('source') || 'Live') as DataSource;
 
     console.log(`[API] 获取关卡列表，数据源: ${dataSource}`);
 
