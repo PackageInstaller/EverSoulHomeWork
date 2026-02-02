@@ -48,8 +48,15 @@ async function checkAndSettle() {
       return
     }
 
-    if (currentHour !== autoSettleHour) {
-      console.log(`⏰ [自动结算] 当前时间 ${currentHour}:00 不是结算时间 ${autoSettleHour}:00，跳过结算`)
+    // 修改判断逻辑：允许在结算时间之后的一小时内执行
+    // 例如设定23:00结算，那么23:00-23:59都可以执行
+    if (currentHour < autoSettleHour) {
+      console.log(`⏰ [自动结算] 当前时间 ${currentHour}:00 早于结算时间 ${autoSettleHour}:00，跳过结算`)
+      return
+    }
+    
+    if (currentHour > autoSettleHour + 1) {
+      console.log(`⏰ [自动结算] 当前时间 ${currentHour}:00 已超过结算时间窗口 ${autoSettleHour}:00-${autoSettleHour + 1}:59，跳过结算`)
       return
     }
 
